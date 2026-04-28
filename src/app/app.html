@@ -1,0 +1,16 @@
+<ng-container *ngIf="userService.isLoggedIn()">
+  <div class="deloitte-layout">
+    <app-sidebar></app-sidebar>
+    <div class="main-wrapper">
+      <app-header></app-header>
+      <main class="page-content">
+        <router-outlet></router-outlet>
+      </main>
+    </div>
+    <app-ai-assistant></app-ai-assistant>
+  </div>
+</ng-container>
+
+<ng-container *ngIf="!userService.isLoggedIn()">
+  <router-outlet></router-outlet>
+</ng-container>
