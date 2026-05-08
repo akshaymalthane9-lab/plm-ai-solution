@@ -87,7 +87,7 @@ import { UserService } from '../../services/user.service';
           <div class="flex justify-end items-center w-full gap-4">
              <button type="button" class="btn btn-secondary" (click)="closeModal()">Cancel</button>
              <button type="button" class="btn btn-primary" (click)="onSubmit()" [disabled]="!itemForm.valid || userService.isReadOnly()">
-               {{ editItem ? 'Update Record' : 'Initialize Item Record' }}
+               {{ editItem ? 'Update Record' : 'Add Record' }}
              </button>
           </div>
         </div>

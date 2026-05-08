@@ -23,7 +23,7 @@ import { UserService, UserRole } from '../../services/user.service';
             <input 
               type="text" 
               class="form-control" 
-              placeholder="e.g. Vivek Admin" 
+              placeholder="e.g. Akshay Admin" 
               [(ngModel)]="username" 
               name="username" 
               required

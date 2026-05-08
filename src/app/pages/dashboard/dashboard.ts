@@ -134,9 +134,9 @@ export class Dashboard {
   showCreateModal = false;
 
   tiles = [
-    { title: 'Pending Engineering Changes', icon: '📝', value: '14', trend: 5 },
-    { title: 'New Lifecycle Approvals', icon: '✅', value: '3', trend: -2 },
-    { title: 'Bill of Materials Loaded', icon: '📦', value: '1,402', trend: 14 }
+    { title: 'My Favourite', icon: '📝', value: '14', trend: 5 },
+    { title: 'My Worklist', icon: '✅', value: '3', trend: -2 },
+    { title: 'My Changes', icon: '📦', value: '1,402', trend: 14 }
   ];
 
   getSearchResults(): Product[] {

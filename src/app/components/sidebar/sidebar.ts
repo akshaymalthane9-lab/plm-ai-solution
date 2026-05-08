@@ -21,7 +21,7 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
           <span class="icon">📦</span> <span class="label">Inventory</span>
         </a>
 
-        <div class="nav-section">ERP (Finance)</div>
+        <!-- <div class="nav-section">ERP (Finance)</div>
         <div class="nav-item disabled flex items-center gap-4">
           <span class="icon">📄</span> <span class="label">Invoices</span>
         </div>
@@ -29,7 +29,7 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
         <div class="nav-section">HCM (HR)</div>
         <div class="nav-item disabled flex items-center gap-4">
           <span class="icon">👥</span> <span class="label">Directory</span>
-        </div>
+        </div> -->
       </nav>
 
       <div class="sidebar-footer">

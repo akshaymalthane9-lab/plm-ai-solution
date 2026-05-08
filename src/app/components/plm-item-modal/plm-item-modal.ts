@@ -38,8 +38,8 @@ import { UserService } from '../../services/user.service';
           <!-- Tabs -->
           <div class="tabs flex mt-8 border-b w-full">
             <button class="tab-btn" [class.active]="activeTab === 'Overview'" (click)="activeTab = 'Overview'">Overview</button>
-            <button class="tab-btn" [class.active]="activeTab === 'Details'" (click)="activeTab = 'Details'">Details & Auth</button>
-            <button class="tab-btn" [class.active]="activeTab === 'Changes'" (click)="activeTab = 'Changes'">Change Orders</button>
+            <button class="tab-btn" [class.active]="activeTab === 'Details'" (click)="activeTab = 'Details'">Details</button>
+            <button class="tab-btn" [class.active]="activeTab === 'Changes'" (click)="activeTab = 'Changes'">Changes</button>
             <button class="tab-btn" [class.active]="activeTab === 'Attachments'" (click)="activeTab = 'Attachments'">Attachments ({{item.attachments.length}})</button>
             <button class="tab-btn" [class.active]="activeTab === 'History'" (click)="activeTab = 'History'">History Log</button>
           </div>
