@@ -11,9 +11,13 @@ export interface Product {
   type: 'Part' | 'Document';
   revision: string;
   lifecycle: 'Design' | 'Prototype' | 'Production' | 'Obsolete';
+  part?: string;
+  document?: string;
+  partType?: string;
+  classification?: string;
   bom: string[]; 
-  history: Array<{ date: string; action: string; user: string }>;
-  changes: Array<{ id: string; description: string; status: string }>;
+  history: Array<{ date: string; action: string; user: string; details?: string }>;
+  changes: Array<{ id: string; description: string; status: string; date?: string }>;
   attachments: string[];
 }
 

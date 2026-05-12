@@ -1,16 +1,15 @@
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { RouterLink, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { InventoryService, Product } from '../../services/inventory.service';
 import { UserService } from '../../services/user.service';
-import { PlmItemModal } from '../../components/plm-item-modal/plm-item-modal';
 import { ItemFormModal } from '../../components/item-form-modal/item-form-modal';
 
 @Component({
   selector: 'app-inventory',
   standalone: true,
-  imports: [CommonModule, RouterLink, FormsModule, PlmItemModal, ItemFormModal],
+  imports: [CommonModule, RouterLink, FormsModule, ItemFormModal],
   template: `
     <div class="page-container flex-col gap-6">
       <div class="page-header flex justify-between items-center">
@@ -36,7 +35,7 @@ import { ItemFormModal } from '../../components/item-form-modal/item-form-modal'
             </tr>
           </thead>
           <tbody>
-            <tr *ngFor="let item of inventoryService.inventory()" class="hover-row" (click)="selectedItem = item" style="cursor: pointer;">
+            <tr *ngFor="let item of inventoryService.inventory()" class="hover-row" (click)="navigateToItem(item.sku)" style="cursor: pointer;">
               <td class="font-mono text-sm" style="color:var(--accent-primary); font-weight:600;">{{ item.sku }}</td>
               <td class="font-medium">{{ item.name }}</td>
               <td>{{ item.category }}</td>
@@ -61,13 +60,6 @@ import { ItemFormModal } from '../../components/item-form-modal/item-form-modal'
           </tbody>
         </table>
       </div>
-
-      <!-- Detail Modal -->
-      <app-plm-item-modal 
-        *ngIf="selectedItem" 
-        [item]="selectedItem" 
-        (close)="selectedItem = null">
-      </app-plm-item-modal>
 
       <!-- Form Modal (Create/Edit) -->
       <app-item-form-modal 
@@ -120,11 +112,15 @@ import { ItemFormModal } from '../../components/item-form-modal/item-form-modal'
 export class Inventory {
   inventoryService = inject(InventoryService);
   userService = inject(UserService);
+  router = inject(Router);
   
-  selectedItem: Product | null = null;
   itemToEdit: Product | null = null;
   showFormModal = false;
   showCreateModal = false;
+
+  navigateToItem(sku: string) {
+    this.router.navigate(['/inventory', sku]);
+  }
 
   openEdit(item: Product) {
     this.itemToEdit = item;
