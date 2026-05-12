@@ -73,6 +73,45 @@ import { UserService } from '../../services/user.service';
                   <input id="revision" type="text" class="form-control" formControlName="revision" placeholder="A.01" />
                 </div>
              </div>
+
+             <div class="grid-2">
+                <div class="form-group">
+                  <label class="form-label" for="part">Part *</label>
+                  <select id="part" class="form-control" formControlName="part" (change)="onPartChange()">
+                    <option value="" disabled>Select part type</option>
+                    <option value="Part">Part</option>
+                    <option value="Document">Document</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="document">Document</label>
+                  <input id="document" type="text" class="form-control" formControlName="document" placeholder="Enter document reference" />
+                </div>
+             </div>
+
+             <div class="grid-2" *ngIf="isPartSelected()">
+                <div class="form-group">
+                  <label class="form-label" for="partType">Part Types *</label>
+                  <select id="partType" class="form-control" formControlName="partType" [disabled]="!isPartSelected()">
+                    <option value="" disabled>Select part type</option>
+                    <option value="Mechanical">Mechanical</option>
+                    <option value="Electrical">Electrical</option>
+                    <option value="Electronic">Electronic</option>
+                    <option value="Fastener">Fastener</option>
+                    <option value="Material">Material</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="classification">Classification *</label>
+                  <select id="classification" class="form-control" formControlName="classification" [disabled]="!isPartSelected()">
+                    <option value="" disabled>Select classification</option>
+                    <option value="Standard">Standard</option>
+                    <option value="Custom">Custom</option>
+                    <option value="Deprecated">Deprecated</option>
+                    <option value="Experimental">Experimental</option>
+                  </select>
+                </div>
+             </div>
              
              <div class="grid-2" *ngIf="editItem">
                 <div class="form-group">
@@ -103,7 +142,7 @@ import { UserService } from '../../services/user.service';
     .close-icon-btn { width: 36px; height: 36px; border-radius: 50%; background: transparent; border: 1px solid transparent; font-size: 1.1rem; color: var(--text-muted); transition: all var(--transition-fast); }
     .close-icon-btn:hover { background: var(--bg-app); color: var(--text-primary); }
     
-    .modal-body { padding: 2.5rem; background: var(--bg-app); }
+    .modal-body { padding: 2.5rem; background: var(--bg-app); max-height: 60vh; overflow-y: auto; }
     .modal-footer { padding: 1.5rem 2.5rem; display: flex; }
     
     .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
@@ -127,6 +166,10 @@ export class ItemFormModal implements OnInit {
     type: ['Part', Validators.required],
     lifecycle: ['Design', Validators.required],
     revision: ['A.01', Validators.required],
+    part: ['', Validators.required],
+    document: [''],
+    partType: [''],
+    classification: [''],
     quantity: [0]
   });
 
@@ -139,13 +182,40 @@ export class ItemFormModal implements OnInit {
         type: this.editItem.type,
         lifecycle: this.editItem.lifecycle,
         revision: this.editItem.revision,
+        part: (this.editItem as any)?.part || '',
+        document: (this.editItem as any)?.document || '',
+        partType: (this.editItem as any)?.partType || '',
+        classification: (this.editItem as any)?.classification || '',
         quantity: this.editItem.quantity
       });
+      this.onPartChange();
     }
   }
 
   closeModal() {
     this.close.emit();
+  }
+
+  isPartSelected(): boolean {
+    return this.itemForm.get('part')?.value === 'Part';
+  }
+
+  onPartChange() {
+    const partTypeControl = this.itemForm.get('partType');
+    const classificationControl = this.itemForm.get('classification');
+    
+    if (this.isPartSelected()) {
+      partTypeControl?.setValidators([Validators.required]);
+      classificationControl?.setValidators([Validators.required]);
+    } else {
+      partTypeControl?.clearValidators();
+      classificationControl?.clearValidators();
+      partTypeControl?.reset();
+      classificationControl?.reset();
+    }
+    
+    partTypeControl?.updateValueAndValidity();
+    classificationControl?.updateValueAndValidity();
   }
 
   onSubmit() {
