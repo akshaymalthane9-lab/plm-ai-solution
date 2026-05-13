@@ -12,6 +12,7 @@ export interface Product {
   revision: string;
   lifecycle: 'Design' | 'Prototype' | 'Production' | 'Obsolete';
   part?: string;
+  partDescription?: string;
   document?: string;
   partType?: string;
   classification?: string;
@@ -97,6 +98,7 @@ export class InventoryService {
       type: productDef.type || (productDef.category === 'Software' ? 'Document' : 'Part'),
       revision: productDef.revision || 'A.00',
       lifecycle: productDef.lifecycle || 'Design',
+      partDescription: productDef.partDescription || '',
       bom: productDef.bom || [],
       history: [{date: new Date().toISOString(), action: 'Created item record', user: 'Current User'}],
       changes: [],

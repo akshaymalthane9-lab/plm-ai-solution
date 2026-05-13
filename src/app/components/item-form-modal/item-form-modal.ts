@@ -14,7 +14,7 @@ import { UserService } from '../../services/user.service';
         
         <div class="modal-header border-b">
           <div class="flex justify-between items-center w-full">
-            <h2 class="title">{{ editItem ? 'Edit Enterprise Record' : 'Create Enterprise Record' }}</h2>
+            <h2 class="title">{{ editItem ? 'Edit Enterprise Record' : 'Create product item' }}</h2>
             <button class="close-icon-btn flex items-center justify-center" (click)="closeModal()">✕</button>
           </div>
           <p class="text-muted mt-2">
@@ -30,7 +30,7 @@ import { UserService } from '../../services/user.service';
            <form [formGroup]="itemForm" class="flex-col gap-y-6" *ngIf="!userService.isReadOnly()">
              <div class="grid-2">
                 <div class="form-group">
-                  <label class="form-label" for="sku">Primary SKU (Identifier) *</label>
+                  <label class="form-label" for="sku">Item Number *</label>
                   <input id="sku" type="text" class="form-control" formControlName="sku" placeholder="e.g. ASM-990" [readOnly]="editItem" />
                 </div>
                 <div class="form-group">
@@ -40,34 +40,13 @@ import { UserService } from '../../services/user.service';
              </div>
 
              <div class="grid-2">
-                <div class="form-group">
-                  <label class="form-label" for="category">Functional Category *</label>
-                  <select id="category" class="form-control" formControlName="category">
-                    <option value="" disabled>Select categorical domain</option>
-                    <option value="Assembly">Assembly</option>
-                    <option value="Hardware Subcomponent">Hardware Subcomponent</option>
-                    <option value="Software Manifest">Software Manifest</option>
-                  </select>
-                </div>
-                <div class="form-group">
-                  <label class="form-label" for="lifecycle">Target State *</label>
-                  <select id="lifecycle" class="form-control" formControlName="lifecycle">
-                    <option value="Design">Design (WIP)</option>
-                    <option value="Prototype">Prototype</option>
-                    <option value="Production">Production</option>
-                    <option value="Obsolete">Obsolete</option>
-                  </select>
-                </div>
-             </div>
-             
-             <div class="grid-2">
-                <div class="form-group">
-                  <label class="form-label" for="type">Engineering Type *</label>
+                <!-- <div class="form-group">
+                  <label class="form-label" for="type">Item Type *</label>
                   <select id="type" class="form-control" formControlName="type">
                     <option value="Part">Part (Hardware)</option>
                     <option value="Document">Document (Software/Spec)</option>
                   </select>
-                </div>
+                </div> -->
                 <div class="form-group">
                   <label class="form-label" for="revision">Active Revision *</label>
                   <input id="revision" type="text" class="form-control" formControlName="revision" placeholder="A.01" />
@@ -76,9 +55,9 @@ import { UserService } from '../../services/user.service';
 
              <div class="grid-2">
                 <div class="form-group">
-                  <label class="form-label" for="part">Part *</label>
+                  <label class="form-label" for="part">Item Type *</label>
                   <select id="part" class="form-control" formControlName="part" (change)="onPartChange()">
-                    <option value="" disabled>Select part type</option>
+                    <option value="" disabled>Select Item Type</option>
                     <option value="Part">Part</option>
                     <option value="Document">Document</option>
                   </select>
@@ -92,25 +71,67 @@ import { UserService } from '../../services/user.service';
              <div class="grid-2" *ngIf="isPartSelected()">
                 <div class="form-group">
                   <label class="form-label" for="partType">Part Types *</label>
-                  <select id="partType" class="form-control" formControlName="partType" [disabled]="!isPartSelected()">
+                  <select id="partType" class="form-control" formControlName="partType" [disabled]="!isPartSelected()" (change)="onPartTypeChange()">
                     <option value="" disabled>Select part type</option>
-                    <option value="Mechanical">Mechanical</option>
-                    <option value="Electrical">Electrical</option>
-                    <option value="Electronic">Electronic</option>
-                    <option value="Fastener">Fastener</option>
-                    <option value="Material">Material</option>
+                    <option value="Electronic">Assembly</option>
+                    <option value="Mechanical">Mechanical Part</option>
+                    <option value="Electrical">Electrical Part</option>
+                    <option value="Fastener">Raw Material</option>
+                    <option value="Material">Packaging Material</option>
                   </select>
                 </div>
                 <div class="form-group">
                   <label class="form-label" for="classification">Classification *</label>
                   <select id="classification" class="form-control" formControlName="classification" [disabled]="!isPartSelected()">
                     <option value="" disabled>Select classification</option>
-                    <option value="Standard">Standard</option>
-                    <option value="Custom">Custom</option>
-                    <option value="Deprecated">Deprecated</option>
-                    <option value="Experimental">Experimental</option>
+                    <!-- Assembly options -->
+                    <ng-container *ngIf="isAssemblySelected()">
+                      <option value="Top Assembly">Top Assembly</option>
+                      <option value="Sub Assembly">Sub Assembly</option>
+                      <option value="Kit Assembly">Kit Assembly</option>
+                    </ng-container>
+                    <!-- Mechanical Part options -->
+                    <ng-container *ngIf="isMechanicalPartSelected()">
+                      <option value="Fasteners">Fasteners</option>
+                      <option value="Sheet Metal Parts">Sheet Metal Parts</option>
+                      <option value="Machined Components">Machined Components</option>
+                      <option value="Castings">Castings</option>
+                    </ng-container>
+                    <!-- Electrical Part options -->
+                    <ng-container *ngIf="isElectricalPartSelected()">
+                      <option value="PCB">PCB</option>
+                      <option value="Connector">Connector</option>
+                      <option value="Cable Assembly">Cable Assembly</option>
+                      <option value="Semiconductor">Semiconductor</option>
+                      <option value="Resistor">Resistor</option>
+                    </ng-container>
+                    <!-- Raw Material options -->
+                    <ng-container *ngIf="isRawMaterialSelected()">
+                      <option value="Steel">Steel</option>
+                      <option value="Aluminum">Aluminum</option>
+                      <option value="Plastic Resin">Plastic Resin</option>
+                      <option value="Rubber">Rubber</option>
+                      <option value="Chemical Compound">Chemical Compound</option>
+                    </ng-container>
+                    <!-- Packaging Material options -->
+                    <ng-container *ngIf="isPackagingMaterialSelected()">
+                      <option value="Carton Box">Carton Box</option>
+                      <option value="Label">Label</option>
+                      <option value="Pallet">Pallet</option>
+                      <option value="Foam Insert">Foam Insert</option>
+                      <option value="User Manual">User Manual</option>
+                    </ng-container>
                   </select>
                 </div>
+             </div>
+
+              <div class="form-group">
+               <label class="form-label" for="partDescription">Part description</label>
+               <textarea id="partDescription" class="form-control" formControlName="partDescription" placeholder="Describe the part (max 1000 characters)" maxlength="1000" style="min-height: 120px; resize: vertical;" (input)="updateDescriptionCount()"></textarea>
+               <div class="flex justify-between items-center mt-2">
+                 <span class="text-xs text-muted">{{ descriptionCount }}/1000 characters</span>
+                 <span *ngIf="descriptionCount >= 1000" class="text-xs" style="color: var(--color-danger);">Maximum 1000 characters reached.</span>
+               </div>
              </div>
              
              <div class="grid-2" *ngIf="editItem">
@@ -159,14 +180,17 @@ export class ItemFormModal implements OnInit {
   inventoryService = inject(InventoryService);
   userService = inject(UserService);
 
+  descriptionCount = 0;
+
   itemForm = this.fb.group({
     sku: ['', Validators.required],
     name: ['', Validators.required],
     category: ['', Validators.required],
     type: ['Part', Validators.required],
-    lifecycle: ['Design', Validators.required],
+    lifecycle: ['Preliminary', Validators.required],
     revision: ['A.01', Validators.required],
     part: ['', Validators.required],
+    partDescription: ['', Validators.maxLength(1000)],
     document: [''],
     partType: [''],
     classification: [''],
@@ -183,6 +207,7 @@ export class ItemFormModal implements OnInit {
         lifecycle: this.editItem.lifecycle,
         revision: this.editItem.revision,
         part: (this.editItem as any)?.part || '',
+        partDescription: (this.editItem as any)?.partDescription || '',
         document: (this.editItem as any)?.document || '',
         partType: (this.editItem as any)?.partType || '',
         classification: (this.editItem as any)?.classification || '',
@@ -190,6 +215,7 @@ export class ItemFormModal implements OnInit {
       });
       this.onPartChange();
     }
+    this.updateDescriptionCount();
   }
 
   closeModal() {
@@ -198,6 +224,31 @@ export class ItemFormModal implements OnInit {
 
   isPartSelected(): boolean {
     return this.itemForm.get('part')?.value === 'Part';
+  }
+
+  isAssemblySelected(): boolean {
+    return this.itemForm.get('partType')?.value === 'Electronic';
+  }
+
+  isMechanicalPartSelected(): boolean {
+    return this.itemForm.get('partType')?.value === 'Mechanical';
+  }
+
+  isElectricalPartSelected(): boolean {
+    return this.itemForm.get('partType')?.value === 'Electrical';
+  }
+
+  isRawMaterialSelected(): boolean {
+    return this.itemForm.get('partType')?.value === 'Fastener';
+  }
+
+  isPackagingMaterialSelected(): boolean {
+    return this.itemForm.get('partType')?.value === 'Material';
+  }
+
+  onPartTypeChange() {
+    // Reset classification when part type changes
+    this.itemForm.get('classification')?.reset();
   }
 
   onPartChange() {
@@ -216,6 +267,11 @@ export class ItemFormModal implements OnInit {
     
     partTypeControl?.updateValueAndValidity();
     classificationControl?.updateValueAndValidity();
+  }
+
+  updateDescriptionCount() {
+    const value = this.itemForm.get('partDescription')?.value || '';
+    this.descriptionCount = Math.min(value.length, 1000);
   }
 
   onSubmit() {
