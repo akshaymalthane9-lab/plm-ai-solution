@@ -26,11 +26,11 @@ import { ItemFormModal } from '../../components/item-form-modal/item-form-modal'
         <table class="data-table">
           <thead>
             <tr>
-              <th>SKU</th>
-              <th>Product Name</th>
-              <th>Category</th>
-              <th>Stock Qty</th>
-              <th>Status</th>
+              <th>Item Number</th>
+              <th>Common Name </th>
+              <th>Active Revision</th>
+              <th>Item Type </th>
+              <th>Part Types</th>
               <th>Actions</th>
             </tr>
           </thead>

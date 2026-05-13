@@ -69,10 +69,12 @@ export class InventoryService {
     const saved = localStorage.getItem(this.storageKey);
     if (saved) {
       let data: Product[] = JSON.parse(saved);
-      // Migration: Ensure all legacy records have 'type' and 'status'
+      // Migration: Ensure all legacy records have normalized item metadata
       data = data.map(p => ({
         ...p,
         type: p.type || (p.category === 'Software' ? 'Document' : 'Part'),
+        part: p.part || p.type || (p.category === 'Software' ? 'Document' : 'Part'),
+        partType: p.partType ? this.normalizePartType(p.partType) : p.partType,
         status: p.status || this.calculateStatus(p.quantity || 0)
       })) as Product[];
       this.inventory.set(data);
@@ -87,7 +89,24 @@ export class InventoryService {
     localStorage.setItem(this.storageKey, JSON.stringify(this.inventory()));
   }
 
+  private normalizePartType(partType?: string): string | undefined {
+    if (!partType) {
+      return partType;
+    }
+
+    const mapping: Record<string, string> = {
+      Electronic: 'Assembly',
+      Mechanical: 'Mechanical Part',
+      Electrical: 'Electrical Part',
+      Fastener: 'Raw Material',
+      Material: 'Packaging Material'
+    };
+
+    return mapping[partType] || partType;
+  }
+
   addProduct(productDef: Partial<Product>) {
+    const normalizedPartType = this.normalizePartType(productDef.partType);
     const newProduct: Product = {
       id: Math.random().toString(36).substr(2, 9),
       sku: productDef.sku || 'N/A',
@@ -96,6 +115,10 @@ export class InventoryService {
       category: productDef.category || 'Uncategorized',
       status: this.calculateStatus(productDef.quantity || 0),
       type: productDef.type || (productDef.category === 'Software' ? 'Document' : 'Part'),
+      part: productDef.part || productDef.type || (productDef.category === 'Software' ? 'Document' : 'Part'),
+      partType: normalizedPartType,
+      classification: productDef.classification || '',
+      document: productDef.document || '',
       revision: productDef.revision || 'A.00',
       lifecycle: productDef.lifecycle || 'Design',
       partDescription: productDef.partDescription || '',

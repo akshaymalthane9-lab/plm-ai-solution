@@ -31,7 +31,7 @@ import { UserService } from '../../services/user.service';
              <div class="grid-2">
                 <div class="form-group">
                   <label class="form-label" for="sku">Item Number *</label>
-                  <input id="sku" type="text" class="form-control" formControlName="sku" placeholder="e.g. ASM-990" [readOnly]="editItem" />
+                  <input id="sku" type="text" class="form-control" formControlName="sku" placeholder="e.g. ASM-990" />
                 </div>
                 <div class="form-group">
                   <label class="form-label" for="name">Common Name *</label>
@@ -73,11 +73,11 @@ import { UserService } from '../../services/user.service';
                   <label class="form-label" for="partType">Part Types *</label>
                   <select id="partType" class="form-control" formControlName="partType" [disabled]="!isPartSelected()" (change)="onPartTypeChange()">
                     <option value="" disabled>Select part type</option>
-                    <option value="Electronic">Assembly</option>
-                    <option value="Mechanical">Mechanical Part</option>
-                    <option value="Electrical">Electrical Part</option>
-                    <option value="Fastener">Raw Material</option>
-                    <option value="Material">Packaging Material</option>
+                    <option value="Assembly">Assembly</option>
+                    <option value="Mechanical Part">Mechanical Part</option>
+                    <option value="Electrical Part">Electrical Part</option>
+                    <option value="Raw Material">Raw Material</option>
+                    <option value="Packaging Material">Packaging Material</option>
                   </select>
                 </div>
                 <div class="form-group">
@@ -185,7 +185,6 @@ export class ItemFormModal implements OnInit {
   itemForm = this.fb.group({
     sku: ['', Validators.required],
     name: ['', Validators.required],
-    category: ['', Validators.required],
     type: ['Part', Validators.required],
     lifecycle: ['Preliminary', Validators.required],
     revision: ['A.01', Validators.required],
@@ -199,17 +198,17 @@ export class ItemFormModal implements OnInit {
 
   ngOnInit() {
     if (this.editItem) {
+      const normalizedPartType = this.normalizePartType((this.editItem as any)?.partType);
       this.itemForm.patchValue({
         sku: this.editItem.sku,
         name: this.editItem.name,
-        category: this.editItem.category,
         type: this.editItem.type,
         lifecycle: this.editItem.lifecycle,
         revision: this.editItem.revision,
-        part: (this.editItem as any)?.part || '',
+        part: (this.editItem as any)?.part || this.editItem.type || '',
         partDescription: (this.editItem as any)?.partDescription || '',
         document: (this.editItem as any)?.document || '',
-        partType: (this.editItem as any)?.partType || '',
+        partType: normalizedPartType || '',
         classification: (this.editItem as any)?.classification || '',
         quantity: this.editItem.quantity
       });
@@ -227,23 +226,39 @@ export class ItemFormModal implements OnInit {
   }
 
   isAssemblySelected(): boolean {
-    return this.itemForm.get('partType')?.value === 'Electronic';
+    return this.itemForm.get('partType')?.value === 'Assembly';
   }
 
   isMechanicalPartSelected(): boolean {
-    return this.itemForm.get('partType')?.value === 'Mechanical';
+    return this.itemForm.get('partType')?.value === 'Mechanical Part';
   }
 
   isElectricalPartSelected(): boolean {
-    return this.itemForm.get('partType')?.value === 'Electrical';
+    return this.itemForm.get('partType')?.value === 'Electrical Part';
   }
 
   isRawMaterialSelected(): boolean {
-    return this.itemForm.get('partType')?.value === 'Fastener';
+    return this.itemForm.get('partType')?.value === 'Raw Material';
   }
 
   isPackagingMaterialSelected(): boolean {
-    return this.itemForm.get('partType')?.value === 'Material';
+    return this.itemForm.get('partType')?.value === 'Packaging Material';
+  }
+
+  normalizePartType(partType?: string): string {
+    if (!partType) {
+      return '';
+    }
+
+    const mapping: Record<string, string> = {
+      Electronic: 'Assembly',
+      Mechanical: 'Mechanical Part',
+      Electrical: 'Electrical Part',
+      Fastener: 'Raw Material',
+      Material: 'Packaging Material'
+    };
+
+    return mapping[partType] || partType;
   }
 
   onPartTypeChange() {
@@ -277,6 +292,9 @@ export class ItemFormModal implements OnInit {
   onSubmit() {
     if (this.itemForm.valid && !this.userService.isReadOnly()) {
       const formValue = this.itemForm.value;
+      if (!formValue.type && formValue.part) {
+        formValue.type = formValue.part;
+      }
       
       if (this.editItem) {
         this.inventoryService.updateProduct(this.editItem.sku, formValue as Partial<Product>);
