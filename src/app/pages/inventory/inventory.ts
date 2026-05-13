@@ -1,6 +1,6 @@
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink, Router } from '@angular/router';
+import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { InventoryService, Product } from '../../services/inventory.service';
 import { UserService } from '../../services/user.service';
@@ -9,7 +9,7 @@ import { ItemFormModal } from '../../components/item-form-modal/item-form-modal'
 @Component({
   selector: 'app-inventory',
   standalone: true,
-  imports: [CommonModule, RouterLink, FormsModule, ItemFormModal],
+  imports: [CommonModule, FormsModule, ItemFormModal],
   template: `
     <div class="page-container flex-col gap-6">
       <div class="page-header flex justify-between items-center">
@@ -31,6 +31,7 @@ import { ItemFormModal } from '../../components/item-form-modal/item-form-modal'
               <th>Active Revision</th>
               <th>Item Type </th>
               <th>Part Types</th>
+              <th>Classification</th>
               <th>Actions</th>
             </tr>
           </thead>
@@ -38,13 +39,10 @@ import { ItemFormModal } from '../../components/item-form-modal/item-form-modal'
             <tr *ngFor="let item of inventoryService.inventory()" class="hover-row" (click)="navigateToItem(item.sku)" style="cursor: pointer;">
               <td class="font-mono text-sm" style="color:var(--accent-primary); font-weight:600;">{{ item.sku }}</td>
               <td class="font-medium">{{ item.name }}</td>
-              <td>{{ item.category }}</td>
-              <td>{{ item.quantity }}</td>
-              <td>
-                <span class="status-badge" [class]="item.status">
-                  {{ item.status.replace('-', ' ') }}
-                </span>
-              </td>
+              <td>{{ item.revision }}</td>
+              <td>{{ item.part || item.type }}</td>
+              <td>{{ item.partType || '—' }}</td>
+              <td>{{ item.classification || '—' }}</td>
               
               <td>
                 <div class="flex gap-2" *ngIf="!userService.isReadOnly()" (click)="$event.stopPropagation()">
@@ -55,7 +53,7 @@ import { ItemFormModal } from '../../components/item-form-modal/item-form-modal'
               </td>
             </tr>
             <tr *ngIf="inventoryService.inventory().length === 0">
-              <td colspan="6" class="text-center py-8 text-muted">No products found in inventory.</td>
+              <td colspan="7" class="text-center py-8 text-muted">No products found in inventory.</td>
             </tr>
           </tbody>
         </table>
