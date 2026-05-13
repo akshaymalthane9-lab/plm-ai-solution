@@ -47,25 +47,35 @@ import { UserService } from '../../services/user.service';
       <div class="tab-content" *ngIf="item">
 
         <ng-container *ngIf="activeTab === 'Overview' && item">
-          <div class="grid-2 attributes-board mb-8">
-            <div class="attr-group card p-6 flex-col justify-between">
-              <span class="attr-label mb-3 text-secondary">Revision Level</span>
-              <span class="attr-val font-mono text-2xl">{{ item.revision }}</span>
-            </div>
-            <div class="attr-group card p-6 flex-col justify-between">
-              <span class="attr-label mb-3 text-secondary">Inventory Status</span>
-              <span class="attr-val flex items-center gap-3">
-                <span class="status-badge" [class]="item.status"></span>
-                {{ item.status.replace('-', ' ') }}
-              </span>
-            </div>
-          </div>
+        <div class="grid-2 attributes-board mb-8">
+  <div class="attr-group card p-6 flex-col justify-between" style="min-height: 100px;">
+    <span class="attr-label mb-3 text-secondary" style="margin-left: 1rem; margin-top: 1rem; display: inline-block;">
+      Revision Level
+    </span>
+    <span class="attr-val font-mono text-2xl" style="margin-left: 1rem; margin-bottom: 1rem; display: inline-block;">
+      {{ item.revision }}
+    </span>
+  </div>
+
+  <div class="attr-group card p-6 flex-col justify-between" style="min-height: 80px;">
+    <span class="attr-label mb-3 text-secondary" style="margin-left: 1rem; margin-top: 1rem; display: inline-block;">
+      Inventory Status
+    </span>
+    <span class="attr-val flex items-center gap-3">
+      <span class="status-badge" [class]="item.status" style="margin-left: 1rem; margin-bottom: 1rem; display: inline-block;">
+        {{ item.status.replace('-', ' ') }}
+      </span>
+    </span>
+  </div>
+</div>
 
           <!-- Bill of Materials -->
           <div class="card mb-8 p-6">
             <div class="flex justify-between items-end mb-4">
                <h3 class="section-title">Bill of Materials</h3>
-               <span class="text-sm text-muted">{{ getResolvedBom().length }} components connected</span>
+<span class="text-sm text-muted" style="margin-right: 1rem; margin-top: 1rem; display: inline-block;">
+  {{ getResolvedBom().length }} components connected
+</span>
             </div>
 
             <div class="table-container border rounded">
@@ -74,19 +84,23 @@ import { UserService } from '../../services/user.service';
                    <tr>
                      <th>Component SKU</th>
                      <th>Item Name</th>
-                     <th>Category</th>
-                     <th>Lifecycle</th>
+                     <th>Revision</th>
+                     <th>Item Type</th>
+                     <th>Part Types</th>
+                     <th>Classification</th>
                    </tr>
                  </thead>
                  <tbody>
                    <tr *ngFor="let child of getResolvedBom()" class="hover-row cursor-pointer" (click)="navigateToItem(child.sku)">
                       <td class="font-mono text-primary font-medium">{{ child.sku }}</td>
                       <td class="font-medium">{{ child.name }}</td>
-                      <td>{{ child.category }}</td>
-                      <td><span class="sub-badge">{{ child.lifecycle }}</span></td>
+                      <td>{{ child.revision }}</td>
+                      <td>{{ child.part || child.type }}</td>
+                      <td>{{ child.partType || '—' }}</td>
+                      <td>{{ child.classification || '—' }}</td>
                    </tr>
                    <tr *ngIf="getResolvedBom().length === 0">
-                      <td colspan="4" class="text-center py-12 text-muted">No BOM components attached to this entity.</td>
+                      <td colspan="6" class="text-center py-12 text-muted">No BOM components attached to this entity.</td>
                    </tr>
                  </tbody>
                </table>
@@ -186,15 +200,16 @@ import { UserService } from '../../services/user.service';
 
     .tab-content { min-height: 400px; }
 
-    .attributes-board { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1.5rem; }
-    .attr-group { background: var(--bg-surface); display: flex; flex-direction: column; justify-content: space-between; min-height: 140px; }
+    .attributes-board { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+    .attr-group { background: var(--bg-surface); display: flex; flex-direction: column; justify-content: space-between; min-height: 140px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
     .attr-label { font-size: 0.875rem; color: var(--text-secondary); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
     .attr-val { font-size: 1.25rem; font-weight: 600; color: var(--text-primary); }
 
-    .section-title { font-size: 1.25rem; font-weight: 600; margin-bottom: 1rem; }
+    .section-title { font-size: 1.25rem; font-weight: 600; margin-bottom: 1rem; margin-left: 1rem;
+    margin-top: 1rem; }
 
-    .table-container { overflow-x: auto; background: var(--bg-surface); box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
-    .data-table { width: 100%; min-width: 640px; border-collapse: collapse; }
+    .table-container { overflow-x: auto; background: var(--bg-surface); box-shadow: 0 1px 3px rgba(0,0,0,0.05); border-radius: 8px; }
+    .data-table { width: 100%; min-width: 800px; border-collapse: collapse; }
     .data-table th { background: var(--bg-surface-hover); color: var(--text-secondary); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; padding: 1rem 1.25rem; border-bottom: 2px solid var(--border-color); text-align: left; }
     .data-table td { padding: 1rem 1.25rem; border-bottom: 1px solid var(--border-color); font-size: 0.875rem; }
     .hover-row { transition: background var(--transition-fast); }
