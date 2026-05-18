@@ -7,6 +7,7 @@ interface ChangeRequestDetails {
   changeType: string;
   priority: string;
   description: string;
+  createdDate?: string;
 }
 
 @Component({
@@ -61,6 +62,10 @@ interface ChangeRequestDetails {
               <div class="overview-item">
                 <span class="label">Priority</span>
                 <strong>{{ changeDetails.priority }}</strong>
+              </div>
+              <div class="overview-item">
+                <span class="label">Created Date</span>
+                <strong>{{ changeDetails.createdDate }}</strong>
               </div>
               <div class="overview-item full-width">
                 <span class="label">Description</span>
@@ -158,8 +163,23 @@ export class ChangesReview {
 
   constructor() {
     const currentNav = this.router.getCurrentNavigation();
-    const navigationState = currentNav?.extras?.state as { changeRequest?: ChangeRequestDetails } | undefined;
-    this.changeDetails = navigationState?.changeRequest || (window.history.state?.changeRequest as ChangeRequestDetails | undefined) || null;
+    const navigationState = currentNav?.extras?.state as { changeRequest?: Partial<ChangeRequestDetails> } | undefined;
+    const routeState = navigationState?.changeRequest || (window.history.state?.changeRequest as Partial<ChangeRequestDetails> | undefined) || null;
+
+    if (routeState) {
+      this.changeDetails = {
+        ...routeState,
+        createdDate: routeState.createdDate ?? this.formatCurrentDate()
+      } as ChangeRequestDetails;
+    }
+  }
+
+  formatCurrentDate() {
+    return new Date().toLocaleDateString('en-GB', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
   }
 
   selectTab(tab: 'Overview' | 'Affected Items' | 'Workflow States') {

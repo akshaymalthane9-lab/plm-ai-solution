@@ -518,11 +518,18 @@ export class Changes {
       return;
     }
 
+    const formattedDate = new Date().toLocaleDateString('en-GB', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
+
     const changeRequest = {
       coNumber: this.normalizeCONumber(this.coNumber),
       changeType: this.changeType,
       priority: this.priority,
       description: this.description.trim(),
+      createdDate: formattedDate
     };
 
     this.router.navigate(['/changes/review'], {
