@@ -5,6 +5,7 @@ import { Dashboard } from './pages/dashboard/dashboard';
 import { Inventory } from './pages/inventory/inventory';
 import { ItemDetails } from './pages/item-details/item-details';
 import { Login } from './pages/login/login';
+import { Changes } from './pages/changes/changes';
 
 const authGuard: CanActivateFn = () => {
   const router = inject(Router);
@@ -18,5 +19,8 @@ export const routes: Routes = [
   { path: 'dashboard', component: Dashboard, canActivate: [authGuard] },
   { path: 'inventory', component: Inventory, canActivate: [authGuard] },
   { path: 'inventory/:sku', component: ItemDetails, canActivate: [authGuard] },
+  { path: 'changes', component: Changes, canActivate: [authGuard] },
+  { path: 'changes/create', component: Changes, canActivate: [authGuard] },
+  { path: 'changes/manage', component: Changes, canActivate: [authGuard] },
   { path: '**', redirectTo: 'dashboard' }
 ];

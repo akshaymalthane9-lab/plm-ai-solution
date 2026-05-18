@@ -123,6 +123,9 @@ import { ItemFormModal } from '../../components/item-form-modal/item-form-modal'
     .pt-4 { padding-top: 1.25rem; }
     .mt-auto { margin-top: auto; }
     .shadow-glow { box-shadow: var(--shadow-glow); }
+    .btn { transition: all var(--transition-fast); font-weight: 600; border: none; cursor: pointer; }
+    .btn-primary { background: var(--accent-primary); color: white; }
+    .btn-primary:hover { background: var(--accent-primary-dark, #76ba1b); transform: translateY(-2px); }
 
     @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
   `

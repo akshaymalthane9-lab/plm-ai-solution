@@ -20,6 +20,9 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
         <a routerLink="/inventory" routerLinkActive="active" class="nav-item flex items-center gap-4">
           <span class="icon">📦</span> <span class="label">My dashboard</span>
         </a>
+        <a routerLink="/changes" routerLinkActive="active" class="nav-item flex items-center gap-4">
+          <span class="icon">📝</span> <span class="label">Changes</span>
+        </a>
 
         <!-- <div class="nav-section">ERP (Finance)</div>
         <div class="nav-item disabled flex items-center gap-4">
