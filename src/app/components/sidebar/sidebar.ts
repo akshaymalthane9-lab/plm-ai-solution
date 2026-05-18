@@ -18,7 +18,7 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
         </a>
         <div class="nav-section">SCM (Supply Chain)</div>
         <a routerLink="/inventory" routerLinkActive="active" class="nav-item flex items-center gap-4">
-          <span class="icon">📦</span> <span class="label">Inventory</span>
+          <span class="icon">📦</span> <span class="label">My dashboard</span>
         </a>
 
         <!-- <div class="nav-section">ERP (Finance)</div>

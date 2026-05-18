@@ -37,7 +37,7 @@ import { ItemFormModal } from '../../components/item-form-modal/item-form-modal'
       </div>
 
       <!-- Detailed PLM Search Entry Point -->
-      <div class="search-container mt-6">
+      <!-- <div class="search-container mt-6">
          <div class="search-box flex items-center gap-4">
            <span class="ext-icon">🔍</span>
            <input 
@@ -49,7 +49,7 @@ import { ItemFormModal } from '../../components/item-form-modal/item-form-modal'
            <button class="btn btn-primary shadow-glow text-sm" (click)="searchQuery = ''" *ngIf="searchQuery">Clear Search</button>
          </div>
 
-         <!-- Enterprise Results Grid -->
+
          <div class="results-grid mt-6" *ngIf="getSearchResults().length > 0">
             <div class="result-card card flex-col" *ngFor="let item of getSearchResults()" (click)="openItem(item)">
                <div class="flex justify-between items-start mb-3">
@@ -72,7 +72,7 @@ import { ItemFormModal } from '../../components/item-form-modal/item-form-modal'
             <h4 class="text-secondary font-medium">No entities matched your query.</h4>
             <p class="text-muted text-center" style="margin:0;">Try adjusting your search criteria across SKU or descriptions.</p>
          </div>
-      </div>
+      </div> -->
     </div>
 
     <!-- The PLM Modals Inject -->
