@@ -153,16 +153,19 @@ import { UserService } from '../../services/user.service';
     .modal-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.4); z-index: 1000; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(2px); animation: fadeIn var(--transition-fast); }
     .modal-card { width: 700px; max-width: 95vw; background: var(--bg-surface); border-radius: var(--border-radius-lg); box-shadow: var(--shadow-float); overflow: hidden; display: flex; flex-direction: column; }
     
-    .modal-header { padding: 2rem 2.5rem 1rem; background: var(--bg-surface); }
+    .modal-header { padding: 1.5rem 2rem 1rem; background: var(--bg-surface); }
     .title { font-size: 1.5rem; margin: 0; color: var(--text-primary); font-weight: 600; letter-spacing:-0.03em;}
     .close-icon-btn { width: 36px; height: 36px; border-radius: 50%; background: transparent; border: 1px solid transparent; font-size: 1.1rem; color: var(--text-muted); transition: all var(--transition-fast); }
     .close-icon-btn:hover { background: var(--bg-app); color: var(--text-primary); }
     
-    .modal-body { padding: 2.5rem; background: var(--bg-app); max-height: 60vh; overflow-y: auto; }
-    .modal-footer { padding: 1.5rem 2.5rem; display: flex; }
+    .modal-body { padding: 1.5rem 2rem; background: var(--bg-app); max-height: 60vh; overflow-y: auto; }
+    .modal-footer { padding: 1rem 2rem; display: flex; }
     
-    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
-    .gap-y-6 { row-gap: 1.5rem; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.9rem 1rem; }
+    .gap-y-6 { row-gap: 0.9rem; }
+    .form-group { margin-bottom: 0; }
+    .form-label { margin-bottom: 0.3rem; }
+    .form-control { padding: 0.65rem 0.85rem; }
     
     @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
   `
