@@ -63,8 +63,8 @@ import { Router } from '@angular/router';
             </div>
           </div>
 
-          <div class="modal-body p-6">
-            <form (ngSubmit)="submitChange()" class="flex-col gap-y-6">
+          <form (ngSubmit)="submitChange()" class="create-change-form">
+            <div class="modal-body">
               <div class="field-group">
                 <label class="field-label" for="coNumber">CO Number *</label>
                 <input
@@ -77,7 +77,7 @@ import { Router } from '@angular/router';
                   required
                   (input)="normalizeCOInput()"
                 />
-                <p class="field-help">Enter the numeric change order number. Submitted value will be normalized to <strong>CO-XXXX</strong>.</p>
+                
               </div>
 
               <div class="field-group">
@@ -115,14 +115,15 @@ import { Router } from '@angular/router';
                 </div>
               </div>
 
-              <div class="modal-footer border-t bg-surface">
-                <div class="flex justify-end items-center w-full gap-4">
-                  <button class="btn btn-secondary" type="button" (click)="closeForm()">Cancel</button>
-                  <button class="btn btn-primary" type="submit" [disabled]="!canSubmit()">Submit Change</button>
-                </div>
+            </div>
+
+            <div class="modal-footer border-t bg-surface">
+              <div class="flex justify-end items-center w-full gap-4">
+                <button class="btn btn-secondary" type="button" (click)="closeForm()">Cancel</button>
+                <button class="btn btn-primary" type="submit" [disabled]="!canSubmit()">Submit Change</button>
               </div>
-            </form>
-          </div>
+            </div>
+          </form>
         </div>
       </div>
     </div>
@@ -141,6 +142,7 @@ import { Router } from '@angular/router';
       flex-direction: column;
       gap: 0.5rem;
       margin-bottom: 1rem;
+       margin-top: 1rem;
     }
 
     .page-title {
@@ -206,15 +208,17 @@ import { Router } from '@angular/router';
       display: flex;
       align-items: center;
       justify-content: center;
+      padding: 1.5rem;
       backdrop-filter: blur(2px);
       animation: fadeIn var(--transition-fast);
     }
 
     .modal-card {
-      width: 700px;
-      max-width: 95vw;
+      width: min(720px, 100%);
+      max-height: calc(100vh - 3rem);
       background: var(--bg-surface);
-      border-radius: var(--border-radius-lg);
+      border: 1px solid var(--border-color);
+      border-radius: var(--border-radius-md);
       box-shadow: var(--shadow-float);
       overflow: hidden;
       display: flex;
@@ -222,44 +226,58 @@ import { Router } from '@angular/router';
     }
 
     .modal-header {
-      padding: 2rem 2.5rem 1rem;
+      padding: 1.5rem 1.75rem;
       background: var(--bg-surface);
+      border-bottom: 1px solid var(--border-color);
+      flex-shrink: 0;
     }
 
     .title {
-      font-size: 1.5rem;
+      font-size: 1.35rem;
       margin: 0;
       color: var(--text-primary);
-      font-weight: 600;
-      letter-spacing: -0.03em;
+      font-weight: 700;
     }
 
     .close-icon-btn {
       width: 36px;
       height: 36px;
       border-radius: 50%;
-      background: transparent;
-      border: 1px solid transparent;
+      background: var(--bg-app);
+      border: 1px solid var(--border-color);
       font-size: 1.1rem;
       color: var(--text-muted);
       transition: all var(--transition-fast);
+      flex-shrink: 0;
     }
 
     .close-icon-btn:hover {
-      background: var(--bg-app);
+      background: var(--border-color);
       color: var(--text-primary);
     }
 
+    .create-change-form {
+      min-height: 0;
+      display: flex;
+      flex: 1;
+      flex-direction: column;
+    }
+
     .modal-body {
-      padding: 1.5rem 2rem;
+      padding: 1.5rem 1.75rem;
       background: var(--bg-app);
-      max-height: 75vh;
       overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
     }
 
     .modal-footer {
-      padding: 1.25rem 2rem;
+      padding: 1rem 1.75rem;
       display: flex;
+      background: var(--bg-surface);
+      border-top: 1px solid var(--border-color);
+      flex-shrink: 0;
     }
 
     .create-form {
@@ -289,22 +307,23 @@ import { Router } from '@angular/router';
     .field-group {
       display: flex;
       flex-direction: column;
-      gap: 0.5rem;
+      gap: 0.45rem;
     }
 
     .field-label {
       font-weight: 600;
       color: var(--text-secondary);
+      font-size: 0.9rem;
     }
 
     .field-input,
     .field-textarea,
     select {
       width: 100%;
-      padding: 0.95rem 1rem;
+      padding: 0.8rem 0.9rem;
       border-radius: var(--border-radius-sm);
       border: 1px solid var(--border-color);
-      background: var(--bg-app);
+      background: var(--bg-surface);
       color: var(--text-primary);
       font-size: 0.95rem;
       outline: none;
@@ -319,13 +338,14 @@ import { Router } from '@angular/router';
     }
 
     .field-textarea {
-      min-height: 160px;
+      min-height: 130px;
       resize: vertical;
     }
 
     .field-help {
       color: var(--text-muted);
-      font-size: 0.9rem;
+      font-size: 0.85rem;
+      line-height: 1.45;
     }
 
     .description-meta {
@@ -352,12 +372,12 @@ import { Router } from '@angular/router';
     }
 
     .error-message {
-      color: var(--danger);
+      color: var(--color-danger);
       font-size: 0.9rem;
     }
 
     .error-text {
-      color: var(--danger);
+      color: var(--color-danger);
     }
 
     .grid {
@@ -443,8 +463,36 @@ import { Router } from '@angular/router';
     }
 
     .gap-2 { gap: 0.5rem; }
+    .gap-4 { gap: 1rem; }
     .gap-6 { gap: 1.5rem; }
     .gap-8 { gap: 2rem; }
+
+    @media (max-width: 640px) {
+      .modal-overlay {
+        align-items: stretch;
+        padding: 0.75rem;
+      }
+
+      .modal-card {
+        max-height: calc(100vh - 1.5rem);
+      }
+
+      .modal-header,
+      .modal-body,
+      .modal-footer {
+        padding-left: 1rem;
+        padding-right: 1rem;
+      }
+
+      .modal-footer .flex {
+        flex-direction: column-reverse;
+        align-items: stretch;
+      }
+
+      .modal-footer .btn {
+        width: 100%;
+      }
+    }
 
     @keyframes fadeIn {
       from {

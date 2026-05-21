@@ -74,7 +74,7 @@ import { ItemFormModal } from '../../components/item-form-modal/item-form-modal'
   `,
   styles: `
     .page-container { animation: fadeIn var(--transition-fast); }
-    .page-header { margin-bottom: 1.5rem; }
+    .page-header { margin-bottom: 1.5rem; margin-top: 1.5rem;}
     .page-title { font-size: 1.5rem; margin-bottom: 0.25rem; }
     .text-muted { color: var(--text-muted); font-size: 0.875rem; }
     

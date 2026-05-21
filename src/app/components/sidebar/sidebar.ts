@@ -44,7 +44,7 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
   `,
   styles: `
     .sidebar {
-      width: 260px;
+      width: 220px;
       height: 100vh;
       background-color: var(--bg-surface);
       border-right: 1px solid var(--border-color);

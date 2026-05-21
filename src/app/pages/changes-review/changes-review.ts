@@ -22,7 +22,7 @@ type ReviewTab = 'General Information' | 'Affected Objects' | 'Workflow' | 'Rela
         <div class="header-top flex items-center justify-between gap-4">
           <div>
             <h1 class="page-title">Change Request Review</h1>
-            <p class="text-muted">Review the submitted change details and monitor workflow progress.</p>
+        
           </div>
           <button class="btn btn-secondary" type="button" (click)="router.navigate(['/changes'])">
             ← Back to Changes
