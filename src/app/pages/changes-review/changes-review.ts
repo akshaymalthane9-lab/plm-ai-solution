@@ -10,7 +10,7 @@ interface ChangeRequestDetails {
   createdDate?: string;
 }
 
-type ReviewTab = 'General Information' | 'Affected Objects' | 'Workflow' | 'Relationship' | 'Attachments' | 'History';
+type ReviewTab = 'General Information' | 'Affected Objects' | 'Workflow';
 
 @Component({
   selector: 'app-changes-review',
@@ -40,7 +40,7 @@ type ReviewTab = 'General Information' | 'Affected Objects' | 'Workflow' | 'Rela
         </nav>
       </div>
 
-      <div class="card review-panel">
+      <div class="card review-panel" style="margin-top: 1rem">
         <ng-container *ngIf="changeDetails; else noData">
           <section *ngIf="activeTab === 'General Information'" class="tab-panel">
             <h2 class="section-title">General Information</h2>
@@ -263,23 +263,6 @@ type ReviewTab = 'General Information' | 'Affected Objects' | 'Workflow' | 'Rela
             </div>
           </section>
 
-          <section *ngIf="activeTab === 'Relationship'" class="tab-panel">
-            <h2 class="section-title">Relationship</h2>
-            <div class="empty-tab-panel">No related change orders are linked yet.</div>
-          </section>
-
-          <section *ngIf="activeTab === 'Attachments'" class="tab-panel">
-            <h2 class="section-title">Attachments</h2>
-            <div class="empty-tab-panel">No attachments uploaded for this change order.</div>
-          </section>
-
-          <section *ngIf="activeTab === 'History'" class="tab-panel">
-            <h2 class="section-title">History</h2>
-            <div class="history-entry">
-              <strong>Change order created</strong>
-              <span>{{ changeDetails.createdDate }} by Admin</span>
-            </div>
-          </section>
         </ng-container>
 
         <ng-template #noData>
@@ -294,12 +277,12 @@ type ReviewTab = 'General Information' | 'Affected Objects' | 'Workflow' | 'Rela
   `,
   styles: `
     .review-container { max-width: 1100px; margin: 0 auto; width: 100%; }
-    .page-header { display: flex; flex-direction: column; gap: 1.5rem; }
+    .page-header { display: flex; flex-direction: column; gap: 1.5rem; margin-top: 2rem; }
     .header-top { display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
     .page-title { margin: 0; font-size: 1.9rem; color: var(--text-primary); font-weight: 700; }
     .text-muted { color: var(--text-muted); font-size: 0.95rem; }
     .tabs { display: flex; gap: 0.75rem; flex-wrap: wrap; }
-    .tab-btn { padding: 0.85rem 1.25rem; border-radius: 999px; border: 1px solid var(--border-color); background: var(--bg-app); color: var(--text-secondary); cursor: pointer; font-weight: 600; transition: all var(--transition-fast); }
+    .tab-btn { padding: 0.85rem 1.25rem; border-radius: 999px; border: 1px solid #94a3b8; background: var(--bg-app); color: var(--text-secondary); cursor: pointer; font-weight: 600; transition: all var(--transition-fast); }
     .tab-btn.active { background: var(--accent-primary); color: #fff; border-color: transparent; }
     .review-panel { background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--border-radius-lg); }
     .tab-panel { padding: 1.5rem; min-height: 360px; }
@@ -371,7 +354,7 @@ type ReviewTab = 'General Information' | 'Affected Objects' | 'Workflow' | 'Rela
 })
 export class ChangesReview {
   router = inject(Router);
-  tabs: ReviewTab[] = ['General Information', 'Affected Objects', 'Workflow', 'Relationship', 'Attachments', 'History'];
+  tabs: ReviewTab[] = ['General Information', 'Affected Objects', 'Workflow'];
   activeTab: ReviewTab = 'General Information';
   changeDetails: ChangeRequestDetails | null = null;
 

@@ -134,12 +134,7 @@ import { UserService } from '../../services/user.service';
                </div>
              </div>
              
-             <div class="grid-2" *ngIf="editItem">
-                <div class="form-group">
-                  <label class="form-label" for="quantity">Inventory Quantity</label>
-                  <input id="quantity" type="number" class="form-control" formControlName="quantity" />
-                </div>
-             </div>
+          
            </form>
         </div>
         

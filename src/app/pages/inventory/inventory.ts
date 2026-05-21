@@ -14,7 +14,7 @@ import { ItemFormModal } from '../../components/item-form-modal/item-form-modal'
     <div class="page-container flex-col gap-6">
       <div class="page-header flex justify-between items-center">
         <div>
-          <h1 class="page-title">Inventory Management</h1>
+          <h1 class="page-title">My Items</h1>
           <p class="text-muted">Manage your supply chain products and stock levels.</p>
         </div>
         <button class="btn btn-primary" (click)="showCreateModal = true" *ngIf="!userService.isReadOnly()">
