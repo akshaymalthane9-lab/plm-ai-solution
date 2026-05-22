@@ -3,6 +3,16 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 
+interface ChangeRequest {
+  coNumber: string;
+  changeType: string;
+  priority: string;
+  description: string;
+  createdDate: string;
+  status: string;
+  requestedBy: string;
+}
+
 @Component({
   selector: 'app-changes',
   standalone: true,
@@ -21,6 +31,7 @@ import { Router } from '@angular/router';
         <div>Priority: {{ submittedChange.priority }}</div>
       </div>
 
+      <ng-container *ngIf="!isManageView(); else manageChangesView">
       <div class="options-grid grid">
         <!-- Create Changes Option -->
         <div class="option-card card flex-col gap-6">
@@ -50,6 +61,63 @@ import { Router } from '@angular/router';
           </div>
         </div>
       </div>
+      </ng-container>
+
+      <ng-template #manageChangesView>
+        <section class="manage-panel card">
+          <div class="manage-header">
+            <div>
+              <h2 class="section-title">Manage Changes</h2>
+              <p class="text-muted">Track submitted change requests and open them for review.</p>
+            </div>
+            <div class="manage-actions">
+              <button class="btn btn-secondary" type="button" (click)="router.navigate(['/changes'])">Back</button>
+              <button class="btn btn-primary" type="button" (click)="openCreateForm()">Create Change</button>
+            </div>
+          </div>
+
+          <div class="table-shell" *ngIf="changeRequests.length; else noChanges">
+            <table>
+              <thead>
+                <tr>
+                  <th>CO Number</th>
+                  <th>Change Type</th>
+                  <th>Priority</th>
+                  <th>Status</th>
+                  <th>Created Date</th>
+                  <th>Requested By</th>
+                  <th>Description</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let change of changeRequests">
+                  <td><strong class="co-number">{{ change.coNumber }}</strong></td>
+                  <td>{{ change.changeType }}</td>
+                  <td>
+                    <span class="priority-pill" [ngClass]="change.priority.toLowerCase()">{{ change.priority }}</span>
+                  </td>
+                  <td><span class="status-pill">{{ change.status }}</span></td>
+                  <td>{{ change.createdDate }}</td>
+                  <td>{{ change.requestedBy }}</td>
+                  <td class="description-cell">{{ change.description }}</td>
+                  <td>
+                    <button class="link-button" type="button" (click)="reviewChange(change)">Review</button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <ng-template #noChanges>
+            <div class="empty-state">
+              <h3>No changes created yet</h3>
+              <p class="text-muted">Create a change request to see it listed here.</p>
+              <button class="btn btn-primary" type="button" (click)="openCreateForm()">Create Change</button>
+            </div>
+          </ng-template>
+        </section>
+      </ng-template>
 
       <div class="modal-overlay" *ngIf="showCreateForm" (click)="closeForm()">
         <div class="modal-card flex-col" (click)="$event.stopPropagation()">
@@ -97,7 +165,7 @@ import { Router } from '@angular/router';
               </div>
 
               <div class="field-group">
-                <label class="field-label" for="description">Description *</label>
+                <label class="field-label" for="description">Description</label>
                 <textarea
                   id="description"
                   class="field-textarea"
@@ -457,6 +525,148 @@ import { Router } from '@angular/router';
       transform: translateX(4px);
     }
 
+    .manage-panel {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: var(--border-radius-md);
+      box-shadow: var(--shadow-sm);
+      overflow: hidden;
+    }
+
+    .manage-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 1rem;
+      padding: 1.5rem;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .section-title {
+      margin: 0 0 0.35rem;
+      font-size: 1.35rem;
+      color: var(--text-primary);
+      font-weight: 700;
+    }
+
+    .manage-actions {
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .table-shell {
+      width: 100%;
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      min-width: 960px;
+      border-collapse: collapse;
+    }
+
+    th,
+    td {
+      padding: 0.9rem 1rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border-color-light);
+      color: var(--text-secondary);
+      font-size: 0.92rem;
+      vertical-align: middle;
+    }
+
+    th {
+      background: var(--bg-app);
+      color: var(--text-primary);
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    tbody tr:hover {
+      background: var(--accent-primary-subtle);
+    }
+
+    .co-number {
+      color: var(--text-primary);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      white-space: nowrap;
+    }
+
+    .priority-pill,
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 68px;
+      padding: 0.25rem 0.65rem;
+      border-radius: 999px;
+      border: 1px solid var(--border-color);
+      font-size: 0.8rem;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .priority-pill.high {
+      color: #b91c1c;
+      background: #fee2e2;
+      border-color: #fecaca;
+    }
+
+    .priority-pill.medium {
+      color: #92400e;
+      background: #fef3c7;
+      border-color: #fde68a;
+    }
+
+    .priority-pill.low {
+      color: #047857;
+      background: #d1fae5;
+      border-color: #a7f3d0;
+    }
+
+    .status-pill {
+      color: var(--accent-primary-hover);
+      background: var(--accent-primary-subtle);
+      border-color: var(--accent-primary);
+    }
+
+    .description-cell {
+      max-width: 280px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .link-button {
+      border: 0;
+      background: transparent;
+      color: var(--accent-primary-hover);
+      font-weight: 700;
+      cursor: pointer;
+      padding: 0.25rem 0;
+    }
+
+    .link-button:hover {
+      text-decoration: underline;
+    }
+
+    .empty-state {
+      display: grid;
+      justify-items: center;
+      gap: 0.75rem;
+      padding: 3rem 1.5rem;
+      text-align: center;
+      background: var(--bg-app);
+    }
+
+    .empty-state h3 {
+      margin: 0;
+      color: var(--text-primary);
+      font-size: 1.15rem;
+    }
+
     .flex-col {
       display: flex;
       flex-direction: column;
@@ -492,6 +702,18 @@ import { Router } from '@angular/router';
       .modal-footer .btn {
         width: 100%;
       }
+
+      .manage-header {
+        flex-direction: column;
+      }
+
+      .manage-actions {
+        width: 100%;
+      }
+
+      .manage-actions .btn {
+        flex: 1;
+      }
     }
 
     @keyframes fadeIn {
@@ -508,12 +730,18 @@ import { Router } from '@angular/router';
 })
 export class Changes {
   router = inject(Router);
+  private changeStorageKey = 'deloitte_plm_change_requests_v1';
   showCreateForm = false;
   coNumber = '';
   changeType = 'Engineering Change Order';
   priority = 'High';
   description = '';
   submittedChange: { coNumber: string; changeType: string; priority: string; description: string } | null = null;
+  changeRequests: ChangeRequest[] = [];
+
+  constructor() {
+    this.changeRequests = this.loadChangeRequests();
+  }
 
   openCreateForm() {
     this.showCreateForm = true;
@@ -556,7 +784,6 @@ export class Changes {
       !!this.coNumber.trim() &&
       !!this.changeType &&
       !!this.priority &&
-      !!this.description.trim() &&
       this.description.length <= 1000
     );
   }
@@ -577,8 +804,12 @@ export class Changes {
       changeType: this.changeType,
       priority: this.priority,
       description: this.description.trim(),
-      createdDate: formattedDate
+      createdDate: formattedDate,
+      status: 'Open',
+      requestedBy: 'Admin'
     };
+
+    this.saveChangeRequest(changeRequest);
 
     this.router.navigate(['/changes/review'], {
       state: { changeRequest }
@@ -593,5 +824,36 @@ export class Changes {
 
   navigateToManageChanges() {
     this.router.navigate(['/changes/manage']);
+  }
+
+  isManageView() {
+    return this.router.url.includes('/changes/manage');
+  }
+
+  reviewChange(changeRequest: ChangeRequest) {
+    this.router.navigate(['/changes/review'], {
+      state: { changeRequest }
+    });
+  }
+
+  private loadChangeRequests(): ChangeRequest[] {
+    const saved = localStorage.getItem(this.changeStorageKey);
+    if (!saved) {
+      return [];
+    }
+
+    try {
+      return JSON.parse(saved) as ChangeRequest[];
+    } catch {
+      return [];
+    }
+  }
+
+  private saveChangeRequest(changeRequest: ChangeRequest) {
+    this.changeRequests = [
+      changeRequest,
+      ...this.changeRequests.filter(change => change.coNumber !== changeRequest.coNumber)
+    ];
+    localStorage.setItem(this.changeStorageKey, JSON.stringify(this.changeRequests));
   }
 }
