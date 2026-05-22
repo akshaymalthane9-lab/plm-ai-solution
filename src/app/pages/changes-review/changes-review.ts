@@ -180,100 +180,24 @@ type ReviewTab = 'General Information' | 'Affected Objects' | 'Workflow';
 
           <section *ngIf="activeTab === 'Workflow'" class="tab-panel">
             <div class="workflow-stage-strip" aria-label="Workflow stages">
-              <div class="workflow-stage completed">
+              <button
+                class="workflow-stage completed"
+                *ngFor="let stage of workflowStages; let last = last"
+                type="button"
+                [class.active]="selectedWorkflowStage === stage"
+                [class.locked]="!canSelectWorkflowStage(stage)"
+                [disabled]="!canSelectWorkflowStage(stage)"
+                (click)="selectWorkflowStage(stage)"
+              >
                 <span class="stage-status"></span>
-                <div>
-                  <strong>1 Open</strong>
-                  <span>Completed</span>
-                </div>
-              </div>
-              <div class="workflow-stage completed">
-                <span class="stage-status"></span>
-                <div>
-                  <strong>2 Concept &amp; Definition</strong>
-                  <span>Completed</span>
-                </div>
-              </div>
-              <div class="workflow-stage completed">
-                <span class="stage-status"></span>
-                <div>
-                  <strong>3 Engineering Development</strong>
-                  <span>Completed</span>
-                </div>
-              </div>
-              <div class="workflow-stage completed">
-                <span class="stage-status"></span>
-                <div>
-                  <strong>4 Validation &amp; Qualification</strong>
-                  <span>Completed</span>
-                </div>
-              </div>
-              <div class="workflow-stage active">
-                <span class="stage-status"></span>
-                <div>
-                  <strong>5 Approval</strong>
-                  <span>Completed</span>
-                </div>
-              </div>
-              <div class="workflow-stage completed">
-                <span class="stage-status"></span>
-                <div>
-                  <strong>6 Scheduled</strong>
-                  <span>Completed</span>
-                </div>
-              </div>
-              <div class="workflow-stage final">
-                <span class="stage-status"></span>
-                <div>
-                  <strong>7 Production</strong>
-                  <span>Completed</span>
-                </div>
-              </div>
+                <span>
+                  <strong>{{ stage }}</strong>
+                  <small>{{ getWorkflowStageHint(stage) }}</small>
+                </span>
+              </button>
             </div>
 
             <div class="workflow-board">
-              <div class="workflow-summary">
-                <h2 class="section-title">Workflow Summary</h2>
-                <div class="summary-list">
-                  <div class="summary-row">
-                    <span class="summary-caret">›</span>
-                    <strong>Status Changed to Production</strong>
-                    <span>Changed On {{ changeDetails.createdDate }} 5:55 AM CST</span>
-                  </div>
-                  <div class="summary-row">
-                    <span class="summary-caret">›</span>
-                    <strong>Status Changed to Scheduled</strong>
-                    <span>Changed On {{ changeDetails.createdDate }} 5:55 AM CST</span>
-                  </div>
-                  <div class="summary-row selected">
-                    <span class="summary-caret">›</span>
-                    <div>
-                      <strong>Status Changed to Approval</strong>
-                      <div class="assignee-row">
-                        <span class="person-dot"></span>
-                        <span>Admin_Product</span>
-                      </div>
-                    </div>
-                    <span>Changed On {{ changeDetails.createdDate }} 5:54 AM CST</span>
-                  </div>
-                  <div class="summary-row">
-                    <span class="summary-caret">›</span>
-                    <strong>Status Changed to Validation &amp; Qualification</strong>
-                    <span>Changed On {{ changeDetails.createdDate }} 5:49 AM CST</span>
-                  </div>
-                  <div class="summary-row">
-                    <span class="summary-caret">›</span>
-                    <strong>Status Changed to Engineering Development</strong>
-                    <span>Changed On {{ changeDetails.createdDate }} 5:49 AM CST</span>
-                  </div>
-                  <div class="summary-row">
-                    <span class="summary-caret">›</span>
-                    <strong>Status Changed to Concept &amp; Definition</strong>
-                    <span>Changed On {{ changeDetails.createdDate }} 5:48 AM CST</span>
-                  </div>
-                </div>
-              </div>
-
               <div class="approver-panel">
                 <div class="approver-header">
                   <h2 class="section-title">Approvers: Approval</h2>
@@ -367,25 +291,19 @@ type ReviewTab = 'General Information' | 'Affected Objects' | 'Workflow';
     .empty-table-cell { text-align: center; color: var(--text-muted); padding: 2rem; }
     .empty-tab-panel { border: 1px dashed var(--border-color); border-radius: var(--border-radius-md); background: var(--bg-app); padding: 1rem; color: var(--text-secondary); }
     .history-entry { display: grid; gap: 0.25rem; border-left: 3px solid var(--accent-primary); padding-left: 1rem; color: var(--text-secondary); }
-    .workflow-stage-strip { display: grid; grid-template-columns: repeat(7, minmax(140px, 1fr)); gap: 0.75rem; overflow-x: auto; padding-bottom: 1rem; border-bottom: 1px solid var(--border-color); }
-    .workflow-stage { position: relative; display: grid; grid-template-columns: auto 1fr; gap: 0.65rem; align-items: start; min-height: 76px; padding: 0.9rem; border: 1px solid var(--border-color); border-radius: var(--border-radius-sm); background: var(--bg-app); color: var(--text-secondary); }
-    .workflow-stage::after { content: '›'; position: absolute; right: -0.55rem; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 1.5rem; z-index: 1; }
-    .workflow-stage:last-child::after { content: ''; }
-    .workflow-stage strong { display: block; font-size: 0.78rem; line-height: 1.25; color: var(--text-primary); }
-    .workflow-stage span:not(.stage-status) { display: block; margin-top: 0.15rem; font-size: 0.75rem; color: var(--text-secondary); }
-    .stage-status { width: 14px; height: 14px; border-radius: 50%; background: var(--accent-primary); margin-top: 0.1rem; box-shadow: 0 0 0 3px var(--accent-primary-subtle); }
-    .workflow-stage.active { border-color: var(--accent-primary); background: var(--accent-primary-subtle); box-shadow: 0 0 0 1px var(--accent-primary); }
-    .workflow-stage.final { background: rgba(134, 188, 37, 0.18); border-color: rgba(134, 188, 37, 0.35); }
-    .workflow-board { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 1rem; padding-top: 1rem; }
-    .workflow-summary, .approver-panel { min-height: 360px; border: 1px solid var(--border-color); border-radius: var(--border-radius-md); background: var(--bg-surface); overflow: hidden; }
-    .workflow-summary .section-title, .approver-panel .section-title { margin: 0; padding: 1rem; border-bottom: 1px solid var(--border-color); font-size: 1rem; }
-    .summary-list { display: grid; }
-    .summary-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 0.75rem; align-items: start; min-height: 58px; padding: 0.85rem 1rem; border-bottom: 1px solid var(--border-color-light); color: var(--text-secondary); font-size: 0.86rem; }
-    .summary-row strong { color: var(--text-secondary); font-weight: 600; }
-    .summary-row > span:last-child { white-space: nowrap; color: var(--text-secondary); font-size: 0.82rem; }
-    .summary-row.selected { min-height: 96px; background: var(--accent-primary-subtle); border-left: 3px solid var(--accent-primary); }
-    .summary-row.selected strong { color: var(--text-primary); }
-    .summary-caret { color: var(--text-muted); font-size: 1.4rem; line-height: 1; }
+    .workflow-stage-strip { display: grid; grid-template-columns: repeat(7, 150px); gap: 2rem; overflow-x: auto; padding: 2rem 1rem 1.75rem; border-bottom: 1px solid var(--border-color); }
+    .workflow-stage { position: relative; display: grid; place-items: center; min-height: 62px; padding: 0.65rem 0.8rem; border: 2px solid var(--border-color); border-radius: 2px; background: var(--bg-app); color: var(--text-secondary); text-align: center; cursor: pointer; box-shadow: 0 6px 14px rgba(15, 23, 42, 0.08); }
+    .workflow-stage::before { content: ''; position: absolute; left: calc(100% + 1px); top: 50%; width: 2rem; height: 2px; background: var(--text-muted); }
+    .workflow-stage::after { content: ''; position: absolute; left: calc(100% + 1.75rem); top: calc(50% - 5px); border-left: 8px solid var(--text-muted); border-top: 5px solid transparent; border-bottom: 5px solid transparent; z-index: 1; }
+    .workflow-stage:last-child::before, .workflow-stage:last-child::after { content: ''; display: none; }
+    .workflow-stage strong { display: block; font-size: 0.82rem; line-height: 1.2; color: var(--text-primary); }
+    .workflow-stage small { display: block; margin-top: 0.2rem; font-size: 0.72rem; color: var(--text-secondary); }
+    .stage-status { display: none; }
+    .workflow-stage.active { border-color: var(--accent-primary); background: var(--accent-primary-subtle); box-shadow: 0 0 0 1px var(--accent-primary), 0 6px 14px rgba(15, 23, 42, 0.08); }
+    .workflow-stage.locked { opacity: 0.55; cursor: not-allowed; box-shadow: none; }
+    .workflow-board { display: grid; grid-template-columns: 1fr; gap: 1rem; padding-top: 1rem; }
+    .approver-panel { min-height: 360px; border: 1px solid var(--border-color); border-radius: var(--border-radius-md); background: var(--bg-surface); overflow: hidden; }
+    .approver-panel .section-title { margin: 0; padding: 1rem; border-bottom: 1px solid var(--border-color); font-size: 1rem; }
     .assignee-row { display: inline-flex; align-items: center; gap: 0.45rem; color: var(--accent-primary-hover); font-weight: 600; }
     .person-dot { width: 18px; height: 18px; border-radius: 50%; background: var(--bg-app); border: 1px solid var(--border-color); display: inline-block; position: relative; }
     .person-dot::before { content: ''; position: absolute; top: 3px; left: 6px; width: 4px; height: 4px; border-radius: 50%; background: var(--text-muted); }
@@ -396,10 +314,6 @@ type ReviewTab = 'General Information' | 'Affected Objects' | 'Workflow';
     .workflow-table-shell { border: 0; border-radius: 0; }
     .workflow-table { min-width: 760px; }
     .approved-dot { width: 14px; height: 14px; border-radius: 50%; display: inline-block; margin-right: 0.4rem; vertical-align: -2px; background: var(--accent-primary); box-shadow: 0 0 0 3px var(--accent-primary-subtle); }
-    .workflow-step-list { display: grid; gap: 1rem; }
-    .workflow-step { display: grid; grid-template-columns: auto 1fr; gap: 1rem; padding: 1.25rem; border-radius: var(--border-radius-md); border: 1px solid var(--border-color); background: var(--bg-app); }
-    .workflow-step.active { border-color: var(--accent-primary); background: rgba(134, 188, 37, 0.08); }
-    .step-marker { width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; background: var(--bg-surface); border: 1px solid var(--border-color); font-weight: 700; color: var(--text-primary); }
     .empty-state { background: var(--bg-app); border: 1px dashed var(--border-color); border-radius: var(--border-radius-md); }
     .empty-icon { font-size: 2.5rem; }
     .mb-4 { margin-bottom: 1rem; }
@@ -415,7 +329,7 @@ type ReviewTab = 'General Information' | 'Affected Objects' | 'Workflow';
       .tab-panel { padding: 1.25rem 1rem; }
       .affected-header { flex-direction: column; }
       .affected-actions { width: 100%; justify-content: flex-start; }
-      .workflow-stage-strip { grid-template-columns: repeat(7, minmax(180px, 1fr)); }
+      .workflow-stage-strip { grid-template-columns: repeat(7, 150px); }
       .workflow-board { grid-template-columns: 1fr; }
       .summary-row { grid-template-columns: auto 1fr; }
       .summary-row > span:last-child { grid-column: 2; white-space: normal; }
@@ -428,6 +342,8 @@ export class ChangesReview {
   private changeStorageKey = 'deloitte_plm_change_requests_v1';
   tabs: ReviewTab[] = ['General Information', 'Affected Objects', 'Workflow'];
   activeTab: ReviewTab = 'General Information';
+  workflowStages = ['1 Open', '2 Concept & Definition', '3 Engineering Development', '4 Validation & Qualification', '5 Approval', '6 Scheduled', '7 Production'];
+  selectedWorkflowStage = '1 Open';
   changeDetails: ChangeRequestDetails | null = null;
   showAddSearch = false;
   itemSearchQuery = '';
@@ -457,6 +373,39 @@ export class ChangesReview {
 
   selectTab(tab: ReviewTab) {
     this.activeTab = tab;
+  }
+
+  selectWorkflowStage(stage: string) {
+    if (!this.canSelectWorkflowStage(stage)) {
+      return;
+    }
+
+    this.selectedWorkflowStage = stage;
+  }
+
+  canSelectWorkflowStage(stage: string) {
+    const selectedIndex = this.workflowStages.indexOf(this.selectedWorkflowStage);
+    const targetIndex = this.workflowStages.indexOf(stage);
+    return targetIndex <= selectedIndex + 1;
+  }
+
+  getWorkflowStageHint(stage: string) {
+    const selectedIndex = this.workflowStages.indexOf(this.selectedWorkflowStage);
+    const targetIndex = this.workflowStages.indexOf(stage);
+
+    if (targetIndex === selectedIndex) {
+      return 'Selected';
+    }
+
+    if (targetIndex === selectedIndex + 1) {
+      return 'Next';
+    }
+
+    if (targetIndex < selectedIndex) {
+      return 'View';
+    }
+
+    return 'Locked';
   }
 
   toggleAddSearch() {
