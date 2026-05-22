@@ -1,6 +1,8 @@
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
+import { InventoryService, Product } from '../../services/inventory.service';
 
 interface ChangeRequestDetails {
   coNumber: string;
@@ -8,6 +10,9 @@ interface ChangeRequestDetails {
   priority: string;
   description: string;
   createdDate?: string;
+  status?: string;
+  requestedBy?: string;
+  affectedItemSkus?: string[];
 }
 
 type ReviewTab = 'General Information' | 'Affected Objects' | 'Workflow';
@@ -15,7 +20,7 @@ type ReviewTab = 'General Information' | 'Affected Objects' | 'Workflow';
 @Component({
   selector: 'app-changes-review',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, FormsModule, RouterModule],
   template: `
     <div class="review-container flex-col gap-8">
       <div class="page-header flex-col gap-2">
@@ -89,11 +94,49 @@ type ReviewTab = 'General Information' | 'Affected Objects' | 'Workflow';
           </section>
 
           <section *ngIf="activeTab === 'Affected Objects'" class="tab-panel">
-            <h2 class="section-title">Affected Objects</h2>
+            <div class="affected-header">
+              <h2 class="section-title">Affected Objects</h2>
+              <div class="affected-actions">
+                <button class="btn btn-primary" type="button" (click)="toggleAddSearch()">Add</button>
+                <button class="btn btn-secondary" type="button" [disabled]="!selectedAffectedSku" (click)="removeAffectedItem()">Remove</button>
+              </div>
+            </div>
+
+            <div class="search-panel" *ngIf="showAddSearch">
+              <label class="search-label" for="affectedItemSearch">Search item</label>
+              <input
+                id="affectedItemSearch"
+                class="search-input"
+                type="search"
+                [(ngModel)]="itemSearchQuery"
+                placeholder="Search by item number or common name"
+              />
+              <div class="search-results" *ngIf="filteredInventoryItems().length; else noSearchResults">
+                <div class="search-result-row" *ngFor="let item of filteredInventoryItems()">
+                  <div>
+                    <strong class="font-mono">{{ item.sku }}</strong>
+                    <span>{{ item.name }}</span>
+                  </div>
+                  <button
+                    class="btn btn-secondary btn-sm"
+                    type="button"
+                    [disabled]="isAffectedItem(item.sku)"
+                    (click)="addAffectedItem(item)"
+                  >
+                    {{ isAffectedItem(item.sku) ? 'Added' : 'Add' }}
+                  </button>
+                </div>
+              </div>
+              <ng-template #noSearchResults>
+                <div class="empty-search text-muted">No matching items found.</div>
+              </ng-template>
+            </div>
+
             <div class="table-shell">
               <table>
                 <thead>
                   <tr>
+                    <th>Select</th>
                     <th>Line No.</th>
                     <th>Item Number</th>
                     <th>Class</th>
@@ -106,16 +149,29 @@ type ReviewTab = 'General Information' | 'Affected Objects' | 'Workflow';
                   </tr>
                 </thead>
                 <tbody>
-                  <tr>
-                    <td>1</td>
-                    <td>MBT-001</td>
-                    <td>MB Tank</td>
-                    <td>Main Battle Tank</td>
-                    <td>A</td>
-                    <td>1</td>
-                    <td>Open</td>
-                    <td>Production</td>
+                  <tr *ngFor="let item of affectedItems(); let index = index">
+                    <td>
+                      <input
+                        type="radio"
+                        name="affectedItem"
+                        [value]="item.sku"
+                        [(ngModel)]="selectedAffectedSku"
+                      />
+                    </td>
+                    <td>{{ index + 1 }}</td>
+                    <td>
+                      <a class="item-link font-mono" [routerLink]="['/inventory', item.sku]">{{ item.sku }}</a>
+                    </td>
+                    <td>{{ item.classification || item.partType || item.part || item.type }}</td>
+                    <td>{{ item.name }}</td>
+                    <td>{{ item.revision }}</td>
+                    <td>{{ nextRevision(item.revision) }}</td>
+                    <td>{{ item.lifecycle }}</td>
+                    <td>{{ item.lifecycle }}</td>
                     <td>-</td>
+                  </tr>
+                  <tr *ngIf="affectedItems().length === 0">
+                    <td colspan="10" class="empty-table-cell">No affected items added.</td>
                   </tr>
                 </tbody>
               </table>
@@ -287,6 +343,16 @@ type ReviewTab = 'General Information' | 'Affected Objects' | 'Workflow';
     .review-panel { background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--border-radius-lg); }
     .tab-panel { padding: 1.5rem; min-height: 360px; }
     .section-title { font-size: 1.25rem; margin-bottom: 1.25rem; font-weight: 700; color: var(--text-primary); }
+    .affected-header { display: flex; justify-content: space-between; gap: 1rem; margin-bottom: 1rem; }
+    .affected-actions { display: flex; gap: 0.75rem; flex-wrap: wrap; }
+    .btn-sm { padding: 0.35rem 0.7rem; font-size: 0.8rem; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+    .search-panel { display: grid; gap: 0.75rem; padding: 1rem; margin-bottom: 1rem; border: 1px solid var(--border-color); border-radius: var(--border-radius-md); background: var(--bg-app); }
+    .search-input { width: 100%; padding: 0.8rem 0.9rem; border: 1px solid var(--border-color); border-radius: var(--border-radius-sm); background: var(--bg-surface); color: var(--text-primary); outline: none; }
+    .search-input:focus { border-color: var(--accent-primary); box-shadow: 0 0 0 3px rgba(134, 188, 37, 0.12); }
+    .search-results { display: grid; gap: 0.5rem; max-height: 220px; overflow: auto; }
+    .search-result-row { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: 0.75rem; border: 1px solid var(--border-color-light); border-radius: var(--border-radius-sm); background: var(--bg-surface); }
+    .empty-search { padding: 0.75rem; }
     .details-list { display: grid; gap: 0.8rem; max-width: 720px; }
     .detail-row { display: grid; grid-template-columns: 220px 1fr; align-items: start; gap: 2.5rem; color: var(--text-primary); }
     .label { display: block; font-size: 0.95rem; color: var(--text-secondary); font-weight: 700; }
@@ -297,6 +363,8 @@ type ReviewTab = 'General Information' | 'Affected Objects' | 'Workflow';
     td { padding: 0.85rem 0.9rem; color: var(--text-secondary); border-right: 1px solid var(--border-color-light); white-space: nowrap; }
     th:last-child, td:last-child { border-right: 0; }
     tbody tr { background: var(--bg-surface); }
+    .item-link { color: var(--accent-primary-hover); font-weight: 700; }
+    .empty-table-cell { text-align: center; color: var(--text-muted); padding: 2rem; }
     .empty-tab-panel { border: 1px dashed var(--border-color); border-radius: var(--border-radius-md); background: var(--bg-app); padding: 1rem; color: var(--text-secondary); }
     .history-entry { display: grid; gap: 0.25rem; border-left: 3px solid var(--accent-primary); padding-left: 1rem; color: var(--text-secondary); }
     .workflow-stage-strip { display: grid; grid-template-columns: repeat(7, minmax(140px, 1fr)); gap: 0.75rem; overflow-x: auto; padding-bottom: 1rem; border-bottom: 1px solid var(--border-color); }
@@ -345,6 +413,8 @@ type ReviewTab = 'General Information' | 'Affected Objects' | 'Workflow';
       .tab-btn { min-width: 135px; font-size: 0.88rem; }
       .detail-row { grid-template-columns: 1fr; gap: 0.15rem; }
       .tab-panel { padding: 1.25rem 1rem; }
+      .affected-header { flex-direction: column; }
+      .affected-actions { width: 100%; justify-content: flex-start; }
       .workflow-stage-strip { grid-template-columns: repeat(7, minmax(180px, 1fr)); }
       .workflow-board { grid-template-columns: 1fr; }
       .summary-row { grid-template-columns: auto 1fr; }
@@ -354,9 +424,14 @@ type ReviewTab = 'General Information' | 'Affected Objects' | 'Workflow';
 })
 export class ChangesReview {
   router = inject(Router);
+  inventoryService = inject(InventoryService);
+  private changeStorageKey = 'deloitte_plm_change_requests_v1';
   tabs: ReviewTab[] = ['General Information', 'Affected Objects', 'Workflow'];
   activeTab: ReviewTab = 'General Information';
   changeDetails: ChangeRequestDetails | null = null;
+  showAddSearch = false;
+  itemSearchQuery = '';
+  selectedAffectedSku = '';
 
   constructor() {
     const currentNav = this.router.getCurrentNavigation();
@@ -366,6 +441,7 @@ export class ChangesReview {
     if (routeState) {
       this.changeDetails = {
         ...routeState,
+        affectedItemSkus: routeState.affectedItemSkus ?? this.getStoredAffectedItemSkus(routeState.coNumber || ''),
         createdDate: routeState.createdDate ?? this.formatCurrentDate()
       } as ChangeRequestDetails;
     }
@@ -381,5 +457,118 @@ export class ChangesReview {
 
   selectTab(tab: ReviewTab) {
     this.activeTab = tab;
+  }
+
+  toggleAddSearch() {
+    this.showAddSearch = !this.showAddSearch;
+    if (this.showAddSearch) {
+      this.itemSearchQuery = '';
+    }
+  }
+
+  filteredInventoryItems(): Product[] {
+    const query = this.itemSearchQuery.trim().toLowerCase();
+    const items = this.inventoryService.getData();
+
+    if (!query) {
+      return items.slice(0, 8);
+    }
+
+    return items
+      .filter(item =>
+        item.sku.toLowerCase().includes(query) ||
+        item.name.toLowerCase().includes(query)
+      )
+      .slice(0, 8);
+  }
+
+  affectedItems(): Product[] {
+    const affectedSkus = this.changeDetails?.affectedItemSkus || [];
+    return affectedSkus
+      .map(sku => this.inventoryService.getData().find(item => item.sku === sku))
+      .filter(Boolean) as Product[];
+  }
+
+  isAffectedItem(sku: string): boolean {
+    return (this.changeDetails?.affectedItemSkus || []).includes(sku);
+  }
+
+  addAffectedItem(item: Product) {
+    if (!this.changeDetails || this.isAffectedItem(item.sku)) {
+      return;
+    }
+
+    this.changeDetails = {
+      ...this.changeDetails,
+      affectedItemSkus: [...(this.changeDetails.affectedItemSkus || []), item.sku]
+    };
+    this.selectedAffectedSku = item.sku;
+    this.showAddSearch = false;
+    this.itemSearchQuery = '';
+    this.persistAffectedItems();
+  }
+
+  removeAffectedItem() {
+    if (!this.changeDetails || !this.selectedAffectedSku) {
+      return;
+    }
+
+    this.changeDetails = {
+      ...this.changeDetails,
+      affectedItemSkus: (this.changeDetails.affectedItemSkus || []).filter(sku => sku !== this.selectedAffectedSku)
+    };
+    this.selectedAffectedSku = '';
+    this.persistAffectedItems();
+  }
+
+  nextRevision(revision: string) {
+    const numericRevision = Number(revision);
+    if (Number.isFinite(numericRevision)) {
+      return String(numericRevision + 1);
+    }
+
+    return revision || '-';
+  }
+
+  private getStoredAffectedItemSkus(coNumber: string): string[] {
+    const storedChange = this.getStoredChanges().find(change => change.coNumber === coNumber);
+    return storedChange?.affectedItemSkus || [];
+  }
+
+  private persistAffectedItems() {
+    if (!this.changeDetails) {
+      return;
+    }
+
+    const storedChanges = this.getStoredChanges();
+    const updatedChanges = storedChanges.map(change => {
+      if (change.coNumber === this.changeDetails?.coNumber) {
+        return {
+          ...change,
+          affectedItemSkus: this.changeDetails.affectedItemSkus || []
+        };
+      }
+      return change;
+    });
+
+    const hasStoredChange = updatedChanges.some(change => change.coNumber === this.changeDetails?.coNumber);
+    const changesToSave = hasStoredChange
+      ? updatedChanges
+      : [{ ...this.changeDetails, affectedItemSkus: this.changeDetails.affectedItemSkus || [] }, ...updatedChanges];
+
+    localStorage.setItem(this.changeStorageKey, JSON.stringify(changesToSave));
+  }
+
+  private getStoredChanges(): ChangeRequestDetails[] {
+    const saved = localStorage.getItem(this.changeStorageKey);
+    if (!saved) {
+      return [];
+    }
+
+    try {
+      return JSON.parse(saved) as ChangeRequestDetails[];
+    } catch {
+      return [];
+    }
   }
 }
