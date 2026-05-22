@@ -12,12 +12,16 @@ interface ChangeRequestDetails {
   createdDate?: string;
   status?: string;
   requestedBy?: string;
+  reviewer?: string;
+  workflowStatus?: WorkflowStage;
+  workflowMaxVisitedIndex?: number;
   affectedItemSkus?: string[];
   affectedItemUpdates?: Record<string, AffectedItemUpdate>;
 }
 
 type ReviewTab = 'General Information' | 'Affected Objects' | 'Workflow';
 type NewLifecycle = 'Design' | 'Production' | 'Obsolete' | 'Development';
+type WorkflowStage = 'Open' | 'Submit' | 'Review' | 'Released' | 'Completed';
 
 interface AffectedItemUpdate {
   newRevision: string;
@@ -68,7 +72,7 @@ interface AffectedItemUpdate {
               </div>
               <div class="detail-row">
                 <span class="label">Description:</span>
-                <strong>{{ changeDetails.description }}</strong>
+                <strong>{{ changeDetails.description || '-' }}</strong>
               </div>
               <div class="detail-row">
                 <span class="label">Priority:</span>
@@ -76,7 +80,7 @@ interface AffectedItemUpdate {
               </div>
               <div class="detail-row">
                 <span class="label">Status:</span>
-                <strong>Open</strong>
+                <strong>{{ selectedWorkflowStage }}</strong>
               </div>
               <div class="detail-row">
                 <span class="label">Requested By:</span>
@@ -212,12 +216,13 @@ interface AffectedItemUpdate {
           <section *ngIf="activeTab === 'Workflow'" class="tab-panel">
             <div class="workflow-stage-strip" aria-label="Workflow stages">
               <button
-                class="workflow-stage completed"
+                class="workflow-stage"
                 *ngFor="let stage of workflowStages; let last = last"
                 type="button"
                 [class.active]="selectedWorkflowStage === stage"
-                [class.locked]="!canSelectWorkflowStage(stage)"
-                [disabled]="!canSelectWorkflowStage(stage)"
+                [class.previous]="isWorkflowStageVisited(stage) && selectedWorkflowStage !== stage"
+                [class.unvisited]="!isWorkflowStageVisited(stage)"
+                [class.locked]="!canClickWorkflowStage(stage)"
                 (click)="selectWorkflowStage(stage)"
               >
                 <span class="stage-status"></span>
@@ -231,11 +236,11 @@ interface AffectedItemUpdate {
             <div class="workflow-board">
               <div class="approver-panel">
                 <div class="approver-header">
-                  <h2 class="section-title">Approvers: Approval</h2>
+                  <h2 class="section-title">Workflow Approval</h2>
                   <div class="approver-actions">
-                    <button type="button">Action</button>
-                    <button type="button">+</button>
-                    <button type="button">x</button>
+                    <button class="btn btn-secondary btn-sm" type="button" (click)="markAwaitingApproval()">Action</button>
+                    <button class="btn btn-secondary btn-sm" type="button" (click)="assignReviewer()">Add</button>
+                    <button class="btn btn-secondary btn-sm" type="button" (click)="clearReviewer()">Remove</button>
                   </div>
                 </div>
 
@@ -243,29 +248,25 @@ interface AffectedItemUpdate {
                   <table class="workflow-table">
                     <thead>
                       <tr>
-                        <th>Assigned To</th>
-                        <th>Role</th>
-                        <th>Activity Type</th>
-                        <th>Response Required From</th>
-                        <th>Response</th>
-                        <th>Rejection Reason</th>
-                        <th>Comments</th>
+                        <th>Workflow Status</th>
+                        <th>Reviewer</th>
+                        <th>Action</th>
+                        <th>Req'd</th>
                       </tr>
                     </thead>
                     <tbody>
                       <tr>
                         <td>
+                          <span class="status-pill">{{ selectedWorkflowStage }}</span>
+                        </td>
+                        <td>
                           <div class="assignee-row">
                             <span class="person-dot"></span>
-                            <span>Admin_Product</span>
+                            <span>{{ workflowReviewer }}</span>
                           </div>
                         </td>
-                        <td>-</td>
-                        <td>Approval</td>
-                        <td>-</td>
-                        <td><span class="approved-dot"></span>Approved On 4</td>
-                        <td>-</td>
-                        <td>-</td>
+                        <td>{{ workflowAction }}</td>
+                        <td>Yes</td>
                       </tr>
                     </tbody>
                   </table>
@@ -327,16 +328,18 @@ interface AffectedItemUpdate {
     .empty-table-cell { text-align: center; color: var(--text-muted); padding: 2rem; }
     .empty-tab-panel { border: 1px dashed var(--border-color); border-radius: var(--border-radius-md); background: var(--bg-app); padding: 1rem; color: var(--text-secondary); }
     .history-entry { display: grid; gap: 0.25rem; border-left: 3px solid var(--accent-primary); padding-left: 1rem; color: var(--text-secondary); }
-    .workflow-stage-strip { display: grid; grid-template-columns: repeat(7, 150px); gap: 2rem; overflow-x: auto; padding: 2rem 1rem 1.75rem; border-bottom: 1px solid var(--border-color); }
-    .workflow-stage { position: relative; display: grid; place-items: center; min-height: 62px; padding: 0.65rem 0.8rem; border: 2px solid var(--border-color); border-radius: 2px; background: var(--bg-app); color: var(--text-secondary); text-align: center; cursor: pointer; box-shadow: 0 6px 14px rgba(15, 23, 42, 0.08); }
+    .workflow-stage-strip { display: grid; grid-template-columns: repeat(5, minmax(132px, 1fr)); gap: 2rem; overflow-x: auto; padding: 2rem 1rem 1.75rem; border-bottom: 1px solid var(--border-color); }
+    .workflow-stage { position: relative; display: grid; place-items: center; min-height: 62px; padding: 0.65rem 0.8rem; border: 2px solid #2563eb; border-radius: 6px; background: #eff6ff; color: #1d4ed8; text-align: center; cursor: pointer; box-shadow: 0 6px 14px rgba(15, 23, 42, 0.08); }
     .workflow-stage::before { content: ''; position: absolute; left: calc(100% + 1px); top: 50%; width: 2rem; height: 2px; background: var(--text-muted); }
     .workflow-stage::after { content: ''; position: absolute; left: calc(100% + 1.75rem); top: calc(50% - 5px); border-left: 8px solid var(--text-muted); border-top: 5px solid transparent; border-bottom: 5px solid transparent; z-index: 1; }
     .workflow-stage:last-child::before, .workflow-stage:last-child::after { content: ''; display: none; }
-    .workflow-stage strong { display: block; font-size: 0.82rem; line-height: 1.2; color: var(--text-primary); }
-    .workflow-stage small { display: block; margin-top: 0.2rem; font-size: 0.72rem; color: var(--text-secondary); }
+    .workflow-stage strong { display: block; font-size: 0.82rem; line-height: 1.2; color: inherit; }
+    .workflow-stage small { display: block; margin-top: 0.2rem; font-size: 0.72rem; color: inherit; opacity: 0.78; }
     .stage-status { display: none; }
-    .workflow-stage.active { border-color: var(--accent-primary); background: var(--accent-primary-subtle); box-shadow: 0 0 0 1px var(--accent-primary), 0 6px 14px rgba(15, 23, 42, 0.08); }
-    .workflow-stage.locked { opacity: 0.55; cursor: not-allowed; box-shadow: none; }
+    .workflow-stage.previous { border-color: #16a34a; background: #dcfce7; color: #166534; }
+    .workflow-stage.active { border-color: #f97316; background: #ffedd5; color: #9a3412; box-shadow: 0 0 0 1px #f97316, 0 6px 14px rgba(15, 23, 42, 0.08); }
+    .workflow-stage.unvisited { border-color: #2563eb; background: #eff6ff; color: #1d4ed8; }
+    .workflow-stage.locked { cursor: not-allowed; box-shadow: none; }
     .workflow-board { display: grid; grid-template-columns: 1fr; gap: 1rem; padding-top: 1rem; }
     .approver-panel { min-height: 360px; border: 1px solid var(--border-color); border-radius: var(--border-radius-md); background: var(--bg-surface); overflow: hidden; }
     .approver-panel .section-title { margin: 0; padding: 1rem; border-bottom: 1px solid var(--border-color); font-size: 1rem; }
@@ -345,11 +348,10 @@ interface AffectedItemUpdate {
     .person-dot::before { content: ''; position: absolute; top: 3px; left: 6px; width: 4px; height: 4px; border-radius: 50%; background: var(--text-muted); }
     .person-dot::after { content: ''; position: absolute; left: 4px; bottom: 3px; width: 8px; height: 5px; border-radius: 8px 8px 2px 2px; background: var(--text-muted); }
     .approver-header { border-bottom: 1px solid var(--border-color); }
-    .approver-actions { display: flex; align-items: center; gap: 0.35rem; padding: 0.65rem 1rem; border-bottom: 1px solid var(--border-color-light); }
-    .approver-actions button { border: 0; background: transparent; color: var(--text-secondary); font-weight: 600; padding: 0.2rem 0.4rem; }
+    .approver-actions { display: flex; align-items: center; gap: 0.5rem; padding: 0.65rem 1rem; border-bottom: 1px solid var(--border-color-light); }
     .workflow-table-shell { border: 0; border-radius: 0; }
-    .workflow-table { min-width: 760px; }
-    .approved-dot { width: 14px; height: 14px; border-radius: 50%; display: inline-block; margin-right: 0.4rem; vertical-align: -2px; background: var(--accent-primary); box-shadow: 0 0 0 3px var(--accent-primary-subtle); }
+    .workflow-table { min-width: 640px; }
+    .status-pill { display: inline-flex; align-items: center; justify-content: center; min-width: 92px; padding: 0.25rem 0.7rem; border-radius: 999px; color: #9a3412; background: #ffedd5; border: 1px solid #fed7aa; font-weight: 700; }
     .empty-state { background: var(--bg-app); border: 1px dashed var(--border-color); border-radius: var(--border-radius-md); }
     .empty-icon { font-size: 2.5rem; }
     .mb-4 { margin-bottom: 1rem; }
@@ -365,7 +367,7 @@ interface AffectedItemUpdate {
       .tab-panel { padding: 1.25rem 1rem; }
       .affected-header { flex-direction: column; }
       .affected-actions { width: 100%; justify-content: flex-start; }
-      .workflow-stage-strip { grid-template-columns: repeat(7, 150px); }
+      .workflow-stage-strip { grid-template-columns: repeat(5, 132px); }
       .workflow-board { grid-template-columns: 1fr; }
       .summary-row { grid-template-columns: auto 1fr; }
       .summary-row > span:last-child { grid-column: 2; white-space: normal; }
@@ -378,8 +380,11 @@ export class ChangesReview {
   private changeStorageKey = 'deloitte_plm_change_requests_v1';
   tabs: ReviewTab[] = ['General Information', 'Affected Objects', 'Workflow'];
   activeTab: ReviewTab = 'General Information';
-  workflowStages = ['1 Open', '2 Concept & Definition', '3 Engineering Development', '4 Validation & Qualification', '5 Approval', '6 Scheduled', '7 Production'];
-  selectedWorkflowStage = '1 Open';
+  workflowStages: WorkflowStage[] = ['Open', 'Submit', 'Review', 'Released', 'Completed'];
+  selectedWorkflowStage: WorkflowStage = 'Open';
+  workflowMaxVisitedIndex = 0;
+  workflowReviewer = 'Admin_Product';
+  workflowAction = 'awaiting approval';
   changeDetails: ChangeRequestDetails | null = null;
   showAddSearch = false;
   itemSearchQuery = '';
@@ -397,9 +402,19 @@ export class ChangesReview {
         ...routeState,
         affectedItemSkus: routeState.affectedItemSkus ?? this.getStoredAffectedItemSkus(routeState.coNumber || ''),
         affectedItemUpdates: routeState.affectedItemUpdates ?? this.getStoredAffectedItemUpdates(routeState.coNumber || ''),
+        reviewer: routeState.reviewer ?? this.getStoredReviewer(routeState.coNumber || ''),
+        workflowStatus: routeState.workflowStatus ?? this.toWorkflowStage(routeState.status),
+        workflowMaxVisitedIndex: routeState.workflowMaxVisitedIndex ?? this.getStoredWorkflowMaxVisitedIndex(routeState.coNumber || ''),
         createdDate: routeState.createdDate ?? this.formatCurrentDate()
       } as ChangeRequestDetails;
+      this.selectedWorkflowStage = this.changeDetails.workflowStatus || 'Open';
+      this.workflowMaxVisitedIndex = Math.max(
+        this.changeDetails.workflowMaxVisitedIndex || 0,
+        this.workflowStages.indexOf(this.selectedWorkflowStage)
+      );
+      this.workflowReviewer = this.changeDetails.reviewer || 'Admin_Product';
       this.ensureAffectedItemUpdates();
+      this.persistWorkflow();
     }
   }
 
@@ -415,21 +430,27 @@ export class ChangesReview {
     this.activeTab = tab;
   }
 
-  selectWorkflowStage(stage: string) {
-    if (!this.canSelectWorkflowStage(stage)) {
+  selectWorkflowStage(stage: WorkflowStage) {
+    if (!this.canClickWorkflowStage(stage)) {
       return;
     }
 
     this.selectedWorkflowStage = stage;
+    this.workflowMaxVisitedIndex = Math.max(this.workflowMaxVisitedIndex, this.workflowStages.indexOf(stage));
+    this.persistWorkflow();
   }
 
-  canSelectWorkflowStage(stage: string) {
+  canClickWorkflowStage(stage: WorkflowStage) {
     const selectedIndex = this.workflowStages.indexOf(this.selectedWorkflowStage);
     const targetIndex = this.workflowStages.indexOf(stage);
-    return targetIndex <= selectedIndex + 1;
+    return targetIndex <= selectedIndex || targetIndex === selectedIndex + 1;
   }
 
-  getWorkflowStageHint(stage: string) {
+  isWorkflowStageVisited(stage: WorkflowStage) {
+    return this.workflowStages.indexOf(stage) <= this.workflowMaxVisitedIndex;
+  }
+
+  getWorkflowStageHint(stage: WorkflowStage) {
     const selectedIndex = this.workflowStages.indexOf(this.selectedWorkflowStage);
     const targetIndex = this.workflowStages.indexOf(stage);
 
@@ -442,10 +463,25 @@ export class ChangesReview {
     }
 
     if (targetIndex < selectedIndex) {
-      return 'View';
+      return 'Previous';
     }
 
     return 'Locked';
+  }
+
+  markAwaitingApproval() {
+    this.workflowAction = 'awaiting approval';
+    this.persistWorkflow();
+  }
+
+  assignReviewer() {
+    this.workflowReviewer = 'Admin_Product';
+    this.persistWorkflow();
+  }
+
+  clearReviewer() {
+    this.workflowReviewer = '-';
+    this.persistWorkflow();
   }
 
   toggleAddSearch() {
@@ -629,6 +665,17 @@ export class ChangesReview {
     return storedChange?.affectedItemUpdates || {};
   }
 
+  private getStoredReviewer(coNumber: string): string {
+    const storedChange = this.getStoredChanges().find(change => change.coNumber === coNumber);
+    return storedChange?.reviewer || 'Admin_Product';
+  }
+
+  private getStoredWorkflowMaxVisitedIndex(coNumber: string): number {
+    const storedChange = this.getStoredChanges().find(change => change.coNumber === coNumber);
+    const statusIndex = this.workflowStages.indexOf(this.toWorkflowStage(storedChange?.workflowStatus || storedChange?.status));
+    return Math.max(storedChange?.workflowMaxVisitedIndex || 0, statusIndex);
+  }
+
   private persistAffectedItems() {
     if (!this.changeDetails) {
       return;
@@ -640,7 +687,11 @@ export class ChangesReview {
         return {
           ...change,
           affectedItemSkus: this.changeDetails.affectedItemSkus || [],
-          affectedItemUpdates: this.changeDetails.affectedItemUpdates || {}
+          affectedItemUpdates: this.changeDetails.affectedItemUpdates || {},
+          status: this.selectedWorkflowStage,
+          workflowStatus: this.selectedWorkflowStage,
+          workflowMaxVisitedIndex: this.workflowMaxVisitedIndex,
+          reviewer: this.workflowReviewer
         };
       }
       return change;
@@ -652,10 +703,33 @@ export class ChangesReview {
       : [{
         ...this.changeDetails,
         affectedItemSkus: this.changeDetails.affectedItemSkus || [],
-        affectedItemUpdates: this.changeDetails.affectedItemUpdates || {}
+        affectedItemUpdates: this.changeDetails.affectedItemUpdates || {},
+        status: this.selectedWorkflowStage,
+        workflowStatus: this.selectedWorkflowStage,
+        workflowMaxVisitedIndex: this.workflowMaxVisitedIndex,
+        reviewer: this.workflowReviewer
       }, ...updatedChanges];
 
     localStorage.setItem(this.changeStorageKey, JSON.stringify(changesToSave));
+  }
+
+  private persistWorkflow() {
+    if (!this.changeDetails) {
+      return;
+    }
+
+    this.changeDetails = {
+      ...this.changeDetails,
+      status: this.selectedWorkflowStage,
+      workflowStatus: this.selectedWorkflowStage,
+      workflowMaxVisitedIndex: this.workflowMaxVisitedIndex,
+      reviewer: this.workflowReviewer
+    };
+    this.persistAffectedItems();
+  }
+
+  private toWorkflowStage(status?: string): WorkflowStage {
+    return this.workflowStages.includes(status as WorkflowStage) ? status as WorkflowStage : 'Open';
   }
 
   private getStoredChanges(): ChangeRequestDetails[] {

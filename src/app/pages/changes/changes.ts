@@ -11,6 +11,11 @@ interface ChangeRequest {
   createdDate: string;
   status: string;
   requestedBy: string;
+  reviewer?: string;
+  workflowStatus?: string;
+  workflowMaxVisitedIndex?: number;
+  affectedItemSkus?: string[];
+  affectedItemUpdates?: Record<string, unknown>;
 }
 
 @Component({
@@ -84,6 +89,7 @@ interface ChangeRequest {
                   <th>Change Type</th>
                   <th>Priority</th>
                   <th>Status</th>
+                  <th>Reviewer</th>
                   <th>Created Date</th>
                   <th>Requested By</th>
                   <th>Description</th>
@@ -98,9 +104,10 @@ interface ChangeRequest {
                     <span class="priority-pill" [ngClass]="change.priority.toLowerCase()">{{ change.priority }}</span>
                   </td>
                   <td><span class="status-pill">{{ change.status }}</span></td>
+                  <td>{{ change.reviewer || 'Admin_Product' }}</td>
                   <td>{{ change.createdDate }}</td>
                   <td>{{ change.requestedBy }}</td>
-                  <td class="description-cell">{{ change.description }}</td>
+                  <td class="description-cell">{{ change.description || '-' }}</td>
                   <td>
                     <button class="link-button" type="button" (click)="reviewChange(change)">Review</button>
                   </td>
@@ -806,14 +813,24 @@ export class Changes {
       description: this.description.trim(),
       createdDate: formattedDate,
       status: 'Open',
-      requestedBy: 'Admin'
+      requestedBy: 'Admin',
+      reviewer: 'Admin_Product',
+      workflowStatus: 'Open',
+      workflowMaxVisitedIndex: 0,
+      affectedItemSkus: [],
+      affectedItemUpdates: {}
     };
 
     this.saveChangeRequest(changeRequest);
 
-    this.router.navigate(['/changes/review'], {
-      state: { changeRequest }
-    });
+    const shouldShowManageTable = this.isManageView();
+    if (!shouldShowManageTable) {
+      this.router.navigate(['/changes/review'], {
+        state: { changeRequest }
+      });
+    } else {
+      this.submittedChange = changeRequest;
+    }
 
     this.coNumber = '';
     this.changeType = 'Engineering Change Order';
