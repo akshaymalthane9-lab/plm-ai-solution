@@ -13,9 +13,17 @@ interface ChangeRequestDetails {
   status?: string;
   requestedBy?: string;
   affectedItemSkus?: string[];
+  affectedItemUpdates?: Record<string, AffectedItemUpdate>;
 }
 
 type ReviewTab = 'General Information' | 'Affected Objects' | 'Workflow';
+type NewLifecycle = 'Design' | 'Production' | 'Obsolete' | 'Development';
+
+interface AffectedItemUpdate {
+  newRevision: string;
+  newLifecycle: NewLifecycle;
+  effectiveDate: string;
+}
 
 @Component({
   selector: 'app-changes-review',
@@ -165,10 +173,33 @@ type ReviewTab = 'General Information' | 'Affected Objects' | 'Workflow';
                     <td>{{ item.classification || item.partType || item.part || item.type }}</td>
                     <td>{{ item.name }}</td>
                     <td>{{ item.revision }}</td>
-                    <td>{{ nextRevision(item.revision) }}</td>
+                    <td>
+                      <input
+                        class="table-control revision-control"
+                        type="text"
+                        [ngModel]="getAffectedItemUpdate(item).newRevision"
+                        (ngModelChange)="updateAffectedItemField(item.sku, 'newRevision', $event)"
+                      />
+                    </td>
                     <td>{{ item.lifecycle }}</td>
-                    <td>{{ item.lifecycle }}</td>
-                    <td>-</td>
+                    <td>
+                      <select
+                        class="table-control lifecycle-control"
+                        [ngModel]="getAffectedItemUpdate(item).newLifecycle"
+                        (ngModelChange)="updateAffectedItemField(item.sku, 'newLifecycle', $event)"
+                      >
+                        <option *ngFor="let lifecycle of newLifecycleOptions" [value]="lifecycle">{{ lifecycle }}</option>
+                      </select>
+                    </td>
+                    <td>
+                      <input
+                        class="table-control date-control"
+                        type="date"
+                        [min]="todayDate"
+                        [ngModel]="getAffectedItemUpdate(item).effectiveDate"
+                        (ngModelChange)="updateEffectiveDate(item.sku, $event)"
+                      />
+                    </td>
                   </tr>
                   <tr *ngIf="affectedItems().length === 0">
                     <td colspan="10" class="empty-table-cell">No affected items added.</td>
@@ -288,6 +319,11 @@ type ReviewTab = 'General Information' | 'Affected Objects' | 'Workflow';
     th:last-child, td:last-child { border-right: 0; }
     tbody tr { background: var(--bg-surface); }
     .item-link { color: var(--accent-primary-hover); font-weight: 700; }
+    .table-control { width: 100%; min-width: 118px; padding: 0.5rem 0.6rem; border: 1px solid var(--border-color); border-radius: var(--border-radius-sm); background: var(--bg-surface); color: var(--text-primary); font: inherit; }
+    .table-control:focus { outline: none; border-color: var(--accent-primary); box-shadow: 0 0 0 3px rgba(134, 188, 37, 0.12); }
+    .revision-control { min-width: 110px; }
+    .lifecycle-control { min-width: 138px; }
+    .date-control { min-width: 145px; }
     .empty-table-cell { text-align: center; color: var(--text-muted); padding: 2rem; }
     .empty-tab-panel { border: 1px dashed var(--border-color); border-radius: var(--border-radius-md); background: var(--bg-app); padding: 1rem; color: var(--text-secondary); }
     .history-entry { display: grid; gap: 0.25rem; border-left: 3px solid var(--accent-primary); padding-left: 1rem; color: var(--text-secondary); }
@@ -348,6 +384,8 @@ export class ChangesReview {
   showAddSearch = false;
   itemSearchQuery = '';
   selectedAffectedSku = '';
+  newLifecycleOptions: NewLifecycle[] = ['Design', 'Production', 'Obsolete', 'Development'];
+  todayDate = this.formatDateForInput(new Date());
 
   constructor() {
     const currentNav = this.router.getCurrentNavigation();
@@ -358,8 +396,10 @@ export class ChangesReview {
       this.changeDetails = {
         ...routeState,
         affectedItemSkus: routeState.affectedItemSkus ?? this.getStoredAffectedItemSkus(routeState.coNumber || ''),
+        affectedItemUpdates: routeState.affectedItemUpdates ?? this.getStoredAffectedItemUpdates(routeState.coNumber || ''),
         createdDate: routeState.createdDate ?? this.formatCurrentDate()
       } as ChangeRequestDetails;
+      this.ensureAffectedItemUpdates();
     }
   }
 
@@ -449,7 +489,11 @@ export class ChangesReview {
 
     this.changeDetails = {
       ...this.changeDetails,
-      affectedItemSkus: [...(this.changeDetails.affectedItemSkus || []), item.sku]
+      affectedItemSkus: [...(this.changeDetails.affectedItemSkus || []), item.sku],
+      affectedItemUpdates: {
+        ...(this.changeDetails.affectedItemUpdates || {}),
+        [item.sku]: this.createAffectedItemUpdate(item)
+      }
     };
     this.selectedAffectedSku = item.sku;
     this.showAddSearch = false;
@@ -462,9 +506,11 @@ export class ChangesReview {
       return;
     }
 
+    const { [this.selectedAffectedSku]: removedUpdate, ...affectedItemUpdates } = this.changeDetails.affectedItemUpdates || {};
     this.changeDetails = {
       ...this.changeDetails,
-      affectedItemSkus: (this.changeDetails.affectedItemSkus || []).filter(sku => sku !== this.selectedAffectedSku)
+      affectedItemSkus: (this.changeDetails.affectedItemSkus || []).filter(sku => sku !== this.selectedAffectedSku),
+      affectedItemUpdates
     };
     this.selectedAffectedSku = '';
     this.persistAffectedItems();
@@ -479,9 +525,108 @@ export class ChangesReview {
     return revision || '-';
   }
 
+  getAffectedItemUpdate(item: Product): AffectedItemUpdate {
+    if (!this.changeDetails) {
+      return this.createAffectedItemUpdate(item);
+    }
+
+    const existingUpdate = this.changeDetails.affectedItemUpdates?.[item.sku];
+    if (existingUpdate) {
+      return existingUpdate;
+    }
+
+    const newUpdate = this.createAffectedItemUpdate(item);
+    this.changeDetails = {
+      ...this.changeDetails,
+      affectedItemUpdates: {
+        ...(this.changeDetails.affectedItemUpdates || {}),
+        [item.sku]: newUpdate
+      }
+    };
+    this.persistAffectedItems();
+    return newUpdate;
+  }
+
+  updateAffectedItemField<K extends keyof AffectedItemUpdate>(sku: string, field: K, value: AffectedItemUpdate[K]) {
+    if (!this.changeDetails) {
+      return;
+    }
+
+    const item = this.inventoryService.getData().find(product => product.sku === sku);
+    const currentUpdate = this.changeDetails.affectedItemUpdates?.[sku] || this.createAffectedItemUpdate(item);
+
+    this.changeDetails = {
+      ...this.changeDetails,
+      affectedItemUpdates: {
+        ...(this.changeDetails.affectedItemUpdates || {}),
+        [sku]: {
+          ...currentUpdate,
+          [field]: value
+        }
+      }
+    };
+    this.persistAffectedItems();
+  }
+
+  updateEffectiveDate(sku: string, dateValue: string) {
+    const effectiveDate = dateValue < this.todayDate ? this.todayDate : dateValue;
+    this.updateAffectedItemField(sku, 'effectiveDate', effectiveDate);
+  }
+
+  private ensureAffectedItemUpdates() {
+    if (!this.changeDetails) {
+      return;
+    }
+
+    const updates = { ...(this.changeDetails.affectedItemUpdates || {}) };
+    for (const sku of this.changeDetails.affectedItemSkus || []) {
+      const item = this.inventoryService.getData().find(product => product.sku === sku);
+      updates[sku] = updates[sku] || this.createAffectedItemUpdate(item);
+      updates[sku].effectiveDate = this.normalizeEffectiveDate(updates[sku].effectiveDate);
+    }
+
+    this.changeDetails = {
+      ...this.changeDetails,
+      affectedItemUpdates: updates
+    };
+    this.persistAffectedItems();
+  }
+
+  private createAffectedItemUpdate(item?: Product): AffectedItemUpdate {
+    return {
+      newRevision: item ? this.nextRevision(item.revision) : '',
+      newLifecycle: this.toNewLifecycle(item?.lifecycle),
+      effectiveDate: this.todayDate
+    };
+  }
+
+  private normalizeEffectiveDate(dateValue: string) {
+    if (!dateValue || dateValue < this.todayDate) {
+      return this.todayDate;
+    }
+
+    return dateValue;
+  }
+
+  private toNewLifecycle(lifecycle?: string): NewLifecycle {
+    return this.newLifecycleOptions.includes(lifecycle as NewLifecycle) ? lifecycle as NewLifecycle : 'Design';
+  }
+
+  private formatDateForInput(date: Date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
   private getStoredAffectedItemSkus(coNumber: string): string[] {
     const storedChange = this.getStoredChanges().find(change => change.coNumber === coNumber);
     return storedChange?.affectedItemSkus || [];
+  }
+
+  private getStoredAffectedItemUpdates(coNumber: string): Record<string, AffectedItemUpdate> {
+    const storedChange = this.getStoredChanges().find(change => change.coNumber === coNumber);
+    return storedChange?.affectedItemUpdates || {};
   }
 
   private persistAffectedItems() {
@@ -494,7 +639,8 @@ export class ChangesReview {
       if (change.coNumber === this.changeDetails?.coNumber) {
         return {
           ...change,
-          affectedItemSkus: this.changeDetails.affectedItemSkus || []
+          affectedItemSkus: this.changeDetails.affectedItemSkus || [],
+          affectedItemUpdates: this.changeDetails.affectedItemUpdates || {}
         };
       }
       return change;
@@ -503,7 +649,11 @@ export class ChangesReview {
     const hasStoredChange = updatedChanges.some(change => change.coNumber === this.changeDetails?.coNumber);
     const changesToSave = hasStoredChange
       ? updatedChanges
-      : [{ ...this.changeDetails, affectedItemSkus: this.changeDetails.affectedItemSkus || [] }, ...updatedChanges];
+      : [{
+        ...this.changeDetails,
+        affectedItemSkus: this.changeDetails.affectedItemSkus || [],
+        affectedItemUpdates: this.changeDetails.affectedItemUpdates || {}
+      }, ...updatedChanges];
 
     localStorage.setItem(this.changeStorageKey, JSON.stringify(changesToSave));
   }
