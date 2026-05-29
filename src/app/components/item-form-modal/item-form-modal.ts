@@ -49,6 +49,10 @@ import { UserService } from '../../services/user.service';
                   <label class="form-label" for="revision">Active Revision *</label>
                   <input id="revision" type="text" class="form-control" formControlName="revision" placeholder="A.01" />
                 </div>
+                <div class="form-group">
+                  <label class="form-label" for="document">Document</label>
+                  <input id="document" type="text" class="form-control" formControlName="document" placeholder="Enter document reference" />
+                </div>
              </div>
 
              <div class="grid-2">
@@ -61,8 +65,10 @@ import { UserService } from '../../services/user.service';
                   </select>
                 </div>
                 <div class="form-group">
-                  <label class="form-label" for="document">Document</label>
-                  <input id="document" type="text" class="form-control" formControlName="document" placeholder="Enter document reference" />
+                  <label class="form-label" for="partNumberAction">Part Number Action</label>
+                  <select id="partNumberAction" class="form-control" formControlName="partNumberAction" [disabled]="!isPartSelected()">
+                    <option value="Generate part number">Generate part number</option>
+                  </select>
                 </div>
              </div>
 
@@ -78,22 +84,12 @@ import { UserService } from '../../services/user.service';
                   </select>
                 </div>
                 <div class="form-group">
-                  <label class="form-label" for="partNumberAction">Part Number Action</label>
-                  <select id="partNumberAction" class="form-control" formControlName="partNumberAction" [disabled]="!isPartSelected()">
-                    <option value="Generate part number">Generate part number</option>
-                  </select>
-                </div>
-             </div>
-
-             <div class="grid-2" *ngIf="isPartSelected()">
-                <div class="form-group">
                   <label class="form-label" for="partNumber">Part Number *</label>
                   <select id="partNumber" class="form-control" formControlName="partNumber" [disabled]="!partNumberOptions.length">
                     <option value="" disabled>Select part number</option>
                     <option *ngFor="let option of partNumberOptions" [value]="option">{{ option }}</option>
                   </select>
                 </div>
-              
              </div>
 
               <div class="form-group">
