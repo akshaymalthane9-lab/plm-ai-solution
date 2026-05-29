@@ -1,10 +1,13 @@
-import { Component, inject } from '@angular/core';
-import { Router } from '@angular/router';
+import { Component, inject, OnDestroy } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { Router, NavigationEnd } from '@angular/router';
+import { Subscription } from 'rxjs';
 import { UserService } from '../../services/user.service';
 
 @Component({
   selector: 'app-header',
   standalone: true,
+  imports: [CommonModule],
   template: `
     <header class="header flex items-center justify-between">
       <div class="search-bar flex items-center gap-2">
@@ -13,6 +16,7 @@ import { UserService } from '../../services/user.service';
       </div>
 
       <div class="actions flex items-center gap-6">
+        <button *ngIf="showHomeIcon" class="icon-btn" title="Home" (click)="router.navigate(['/dashboard'])">🏠</button>
         <button class="icon-btn">🔔</button>
         <button class="icon-btn">⚙️</button>
         <div class="user-profile flex items-center gap-2" (click)="logout()" title="Click to Sign Out">
@@ -64,9 +68,28 @@ import { UserService } from '../../services/user.service';
     .user-role { font-size: 0.7rem; color: var(--text-muted); }
   `
 })
-export class Header {
+export class Header implements OnDestroy {
   userService = inject(UserService);
   router = inject(Router);
+  showHomeIcon = false;
+  private routerSub?: Subscription;
+
+  constructor() {
+    this.setHomeVisibility(this.router.url || '');
+    this.routerSub = this.router.events.subscribe(event => {
+      if (event instanceof NavigationEnd) {
+        this.setHomeVisibility(event.urlAfterRedirects);
+      }
+    });
+  }
+
+  ngOnDestroy() {
+    this.routerSub?.unsubscribe();
+  }
+
+  setHomeVisibility(path: string) {
+    this.showHomeIcon = !path.startsWith('/dashboard');
+  }
 
   getInitials() {
     const name = this.userService.currentUser() || 'U';

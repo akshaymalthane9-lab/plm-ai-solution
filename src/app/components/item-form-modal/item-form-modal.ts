@@ -14,11 +14,11 @@ import { UserService } from '../../services/user.service';
         
         <div class="modal-header border-b">
           <div class="flex justify-between items-center w-full">
-            <h2 class="title">{{ editItem ? 'Edit Enterprise Record' : 'Create product item' }}</h2>
+            <h2 class="title">{{ editItem ? 'Edit Enterprise Record' : 'Create Item' }}</h2>
             <button class="close-icon-btn flex items-center justify-center" (click)="closeModal()">✕</button>
           </div>
           <p class="text-muted mt-2">
-            {{ editItem ? 'Modify existing baseline attributes for ' + editItem.sku : 'Initialize a new master product entity into the PLM network.' }}
+            {{ editItem ? 'Modify existing baseline attributes for ' + editItem.sku : 'Create a new item record in the PLM network.' }}
           </p>
         </div>
         
@@ -70,14 +70,13 @@ import { UserService } from '../../services/user.service';
 
              <div class="grid-2" *ngIf="isPartSelected()">
                 <div class="form-group">
-                  <label class="form-label" for="partType">Part Types *</label>
+                  <label class="form-label" for="partType">Type *</label>
                   <select id="partType" class="form-control" formControlName="partType" [disabled]="!isPartSelected()" (change)="onPartTypeChange()">
-                    <option value="" disabled>Select part type</option>
-                    <option value="Assembly">Assembly</option>
-                    <option value="Mechanical Part">Mechanical Part</option>
-                    <option value="Electrical Part">Electrical Part</option>
-                    <option value="Raw Material">Raw Material</option>
-                    <option value="Packaging Material">Packaging Material</option>
+                    <option value="" disabled>Select type</option>
+                    <option value="Type A">Type A</option>
+                    <option value="Type B">Type B</option>
+                    <option value="Type C">Type C</option>
+                    <option value="Type D">Type D</option>
                   </select>
                 </div>
                 <div class="form-group">

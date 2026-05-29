@@ -14,11 +14,11 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
 
       <nav class="nav-links flex-col">
         <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" class="nav-item flex items-center gap-4">
-          <span class="icon">📊</span> <span class="label">Overview</span>
+          <span class="icon">🏠</span> <span class="label">Dashboard</span>
         </a>
-        <div class="nav-section">SCM (Supply Chain)</div>
+        <div class="nav-section">Create objects</div>
         <a routerLink="/inventory" routerLinkActive="active" class="nav-item flex items-center gap-4">
-          <span class="icon">📦</span> <span class="label">My dashboard</span>
+          <span class="icon">📦</span> <span class="label">Items</span>
         </a>
         <a routerLink="/changes" routerLinkActive="active" class="nav-item flex items-center gap-4">
           <span class="icon">📝</span> <span class="label">Changes</span>

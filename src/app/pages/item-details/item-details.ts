@@ -86,7 +86,7 @@ import { UserService } from '../../services/user.service';
                      <th>Item Name</th>
                      <th>Revision</th>
                      <th>Item Type</th>
-                     <th>Part Types</th>
+                     <th>Type</th>
                      <th>Classification</th>
                    </tr>
                  </thead>

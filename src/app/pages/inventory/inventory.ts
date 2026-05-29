@@ -18,7 +18,7 @@ import { ItemFormModal } from '../../components/item-form-modal/item-form-modal'
           <p class="text-muted">Manage your supply chain products and stock levels.</p>
         </div>
         <button class="btn btn-primary" (click)="showCreateModal = true" *ngIf="!userService.isReadOnly()">
-          <span>+</span> Add Product
+          <span>+</span> Add Item
         </button>
       </div>
 
@@ -30,7 +30,7 @@ import { ItemFormModal } from '../../components/item-form-modal/item-form-modal'
               <th>Common Name </th>
               <th>Active Revision</th>
               <th>Item Type </th>
-              <th>Part Types</th>
+              <th>Type</th>
               <th>Classification</th>
               <th>Actions</th>
             </tr>

@@ -36,7 +36,6 @@ interface ChangeRequest {
         <div>Priority: {{ submittedChange.priority }}</div>
       </div>
 
-      <ng-container *ngIf="!isManageView(); else manageChangesView">
       <div class="options-grid grid">
         <!-- Create Changes Option -->
         <div class="option-card card flex-col gap-6">
@@ -51,80 +50,7 @@ interface ChangeRequest {
             <button class="btn btn-primary" type="button" (click)="openCreateForm()">Create Changes</button>
           </div>
         </div>
-
-        <!-- Manage Changes Option -->
-        <div class="option-card card flex-col gap-6" (click)="navigateToManageChanges()">
-          <div class="icon-container">
-            <span class="option-icon">⚙️</span>
-          </div>
-          <div class="content flex-col gap-2">
-            <h3 class="option-title">Manage Changes</h3>
-            <p class="option-description">Review, approve, or modify existing changes and track their lifecycle status.</p>
-          </div>
-          <div class="action-footer">
-            <span class="action-text">Start Managing →</span>
-          </div>
-        </div>
       </div>
-      </ng-container>
-
-      <ng-template #manageChangesView>
-        <section class="manage-panel card">
-          <div class="manage-header">
-            <div>
-              <h2 class="section-title">Manage Changes</h2>
-              <p class="text-muted">Track submitted change requests and open them for review.</p>
-            </div>
-            <div class="manage-actions">
-              <button class="btn btn-secondary" type="button" (click)="router.navigate(['/changes'])">Back</button>
-              <button class="btn btn-primary" type="button" (click)="openCreateForm()">Create Change</button>
-            </div>
-          </div>
-
-          <div class="table-shell" *ngIf="changeRequests.length; else noChanges">
-            <table>
-              <thead>
-                <tr>
-                  <th>CO Number</th>
-                  <th>Change Type</th>
-                  <th>Priority</th>
-                  <th>Status</th>
-                  <th>Reviewer</th>
-                  <th>Created Date</th>
-                  <th>Requested By</th>
-                  <th>Description</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr *ngFor="let change of changeRequests">
-                  <td><strong class="co-number">{{ change.coNumber }}</strong></td>
-                  <td>{{ change.changeType }}</td>
-                  <td>
-                    <span class="priority-pill" [ngClass]="change.priority.toLowerCase()">{{ change.priority }}</span>
-                  </td>
-                  <td><span class="status-pill">{{ change.status }}</span></td>
-                  <td>{{ change.reviewer || 'Admin_Product' }}</td>
-                  <td>{{ change.createdDate }}</td>
-                  <td>{{ change.requestedBy }}</td>
-                  <td class="description-cell">{{ change.description || '-' }}</td>
-                  <td>
-                    <button class="link-button" type="button" (click)="reviewChange(change)">Review</button>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-
-          <ng-template #noChanges>
-            <div class="empty-state">
-              <h3>No changes created yet</h3>
-              <p class="text-muted">Create a change request to see it listed here.</p>
-              <button class="btn btn-primary" type="button" (click)="openCreateForm()">Create Change</button>
-            </div>
-          </ng-template>
-        </section>
-      </ng-template>
 
       <div class="modal-overlay" *ngIf="showCreateForm" (click)="closeForm()">
         <div class="modal-card flex-col" (click)="$event.stopPropagation()">
@@ -158,7 +84,10 @@ interface ChangeRequest {
               <div class="field-group">
                 <label class="field-label" for="changeType">Change Type *</label>
                 <select id="changeType" class="field-input" name="changeType" [(ngModel)]="changeType" required>
-                  <option value="Engineering Change Order">Engineering Change Order</option>
+                  <option value="ECO">ECO</option>
+                  <option value="MCO">MCO</option>
+                  <option value="Deviation">Deviation</option>
+                  <option value="Change Request">Change Request</option>
                 </select>
               </div>
 
@@ -740,7 +669,7 @@ export class Changes {
   private changeStorageKey = 'deloitte_plm_change_requests_v1';
   showCreateForm = false;
   coNumber = '';
-  changeType = 'Engineering Change Order';
+  changeType = 'ECO';
   priority = 'High';
   description = '';
   submittedChange: { coNumber: string; changeType: string; priority: string; description: string } | null = null;
@@ -823,28 +752,15 @@ export class Changes {
 
     this.saveChangeRequest(changeRequest);
 
-    const shouldShowManageTable = this.isManageView();
-    if (!shouldShowManageTable) {
-      this.router.navigate(['/changes/review'], {
-        state: { changeRequest }
-      });
-    } else {
-      this.submittedChange = changeRequest;
-    }
+    this.router.navigate(['/changes/review'], {
+      state: { changeRequest }
+    });
 
     this.coNumber = '';
-    this.changeType = 'Engineering Change Order';
+    this.changeType = 'ECO';
     this.priority = 'High';
     this.description = '';
     this.showCreateForm = false;
-  }
-
-  navigateToManageChanges() {
-    this.router.navigate(['/changes/manage']);
-  }
-
-  isManageView() {
-    return this.router.url.includes('/changes/manage');
   }
 
   reviewChange(changeRequest: ChangeRequest) {

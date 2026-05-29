@@ -16,9 +16,12 @@ import { ItemFormModal } from '../../components/item-form-modal/item-form-modal'
           <h1 class="page-title">Deloitte AI PLM Launchpad</h1>
           <p class="text-muted">Global Search and Organization Management</p>
         </div>
-        <button class="btn btn-primary shadow-glow" (click)="showCreateModal = true" style="padding: 0.75rem 1.5rem; border-radius: 40px;">
-           <span style="margin-right: 4px;">+</span> Create Product Record
-        </button>
+        <div class="header-actions flex items-center gap-3">
+          <button class="btn btn-secondary" type="button" (click)="generateReport()">Generate Report</button>
+          <button class="btn btn-primary shadow-glow" type="button" (click)="showCreateModal = true" style="padding: 0.75rem 1.5rem; border-radius: 40px;">
+             <span style="margin-right: 4px;">+</span> Create Item
+          </button>
+        </div>
       </div>
 
       <!-- Overview Cards -->
@@ -36,43 +39,75 @@ import { ItemFormModal } from '../../components/item-form-modal/item-form-modal'
         </div>
       </div>
 
-      <!-- Detailed PLM Search Entry Point -->
-      <!-- <div class="search-container mt-6">
-         <div class="search-box flex items-center gap-4">
-           <span class="ext-icon">🔍</span>
-           <input 
-             type="text" 
-             class="global-search-input" 
-             placeholder="Search Master Organization Database by SKU, Name, or Hierarchy..." 
-             [(ngModel)]="searchQuery"
-           />
-           <button class="btn btn-primary shadow-glow text-sm" (click)="searchQuery = ''" *ngIf="searchQuery">Clear Search</button>
-         </div>
-
-
-         <div class="results-grid mt-6" *ngIf="getSearchResults().length > 0">
-            <div class="result-card card flex-col" *ngFor="let item of getSearchResults()" (click)="openItem(item)">
-               <div class="flex justify-between items-start mb-3">
-                 <span class="font-mono text-sm tracking-tight sku-label">{{ item.sku }}</span>
-                 <span class="rev-badge">{{ item.revision }}</span>
-               </div>
-               <h3 class="name-limit">{{ item.name }}</h3>
-               
-               <hr class="card-divider mt-auto" />
-               
-               <div class="details pt-4 flex justify-between items-center text-xs text-muted">
-                 <span class="lifecycle-text">State: <strong class="text-primary">{{ item.lifecycle }}</strong></span>
-                 <span class="status-badge" [class]="item.status">{{ item.status.replace('-', ' ') }}</span>
-               </div>
+      <div class="chart-grid grid">
+        <div class="chart-card card">
+          <div class="chart-card-header flex justify-between items-center">
+            <div>
+              <h3 class="chart-title">Items created last 1 month</h3>
+              <p class="text-muted text-sm">By you</p>
             </div>
-         </div>
-         
-         <div class="empty-results card" *ngIf="searchQuery && getSearchResults().length === 0">
-            <div class="empty-icon text-4xl mb-4">📭</div>
-            <h4 class="text-secondary font-medium">No entities matched your query.</h4>
-            <p class="text-muted text-center" style="margin:0;">Try adjusting your search criteria across SKU or descriptions.</p>
-         </div>
-      </div> -->
+            <span class="chart-value">{{ itemsCreatedByMe.length }}</span>
+          </div>
+          <div class="chart-pie">
+            <div class="pie-ring"></div>
+            <div class="pie-legend">
+              <div><span class="dot dot-primary"></span>Created by me</div>
+              <div><span class="dot dot-secondary"></span>Other items</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="chart-card card">
+          <div class="chart-card-header flex justify-between items-center">
+            <div>
+              <h3 class="chart-title">Changes created last 1 month</h3>
+              <p class="text-muted text-sm">Recent change activity</p>
+            </div>
+            <span class="chart-value">{{ changesCreatedThisMonth }}</span>
+          </div>
+          <div class="chart-bar">
+            <div class="bar-row">
+              <span>Week 1</span>
+              <span class="bar" style="width: 52%"></span>
+            </div>
+            <div class="bar-row">
+              <span>Week 2</span>
+              <span class="bar" style="width: 68%"></span>
+            </div>
+            <div class="bar-row">
+              <span>Week 3</span>
+              <span class="bar" style="width: 40%"></span>
+            </div>
+            <div class="bar-row">
+              <span>Week 4</span>
+              <span class="bar" style="width: 75%"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="report-summary card" *ngIf="reportVisible">
+        <div class="report-header flex justify-between items-center">
+          <div>
+            <h3 class="report-title">Report Summary</h3>
+            <p class="text-muted text-sm">Pending approvals, completed change orders, and owned parts.</p>
+          </div>
+        </div>
+        <div class="report-grid grid">
+          <div class="report-card">
+            <span class="report-label">Pending approvals for me</span>
+            <span class="report-number">{{ reportSummary.pendingApprovals }}</span>
+          </div>
+          <div class="report-card">
+            <span class="report-label">Completed change orders (owner)</span>
+            <span class="report-number">{{ reportSummary.completedChanges }}</span>
+          </div>
+          <div class="report-card">
+            <span class="report-label">Parts created by me</span>
+            <span class="report-number">{{ reportSummary.partsCreatedByMe }}</span>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- The PLM Modals Inject -->
@@ -96,6 +131,28 @@ import { ItemFormModal } from '../../components/item-form-modal/item-form-modal'
     .icon { background: var(--bg-app); padding: 0.5rem; border-radius: 8px;}
     .tile-value { font-size: 2.2rem; font-weight: 700; margin-bottom: 0.75rem; font-family: var(--font-heading); color: var(--text-primary); letter-spacing: -0.03em;}
     .tile-footer { font-size: 0.8rem; }
+
+    .header-actions { align-items: center; }
+    .chart-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; }
+    .chart-card { padding: 1.5rem; border-radius: var(--border-radius-md); border: 1px solid var(--border-color); background: var(--bg-surface); }
+    .chart-card-header { margin-bottom: 1.5rem; }
+    .chart-title { margin: 0 0 0.35rem; font-size: 1rem; color: var(--text-secondary); font-weight: 700; }
+    .chart-value { font-size: 2rem; font-weight: 700; color: var(--text-primary); }
+    .chart-pie { display: grid; gap: 1rem; align-items: center; justify-items: center; }
+    .pie-ring { width: 160px; height: 160px; border-radius: 50%; background: conic-gradient(var(--accent-primary) 0 42%, var(--bg-app) 0 100%); position: relative; }
+    .pie-ring::after { content: ''; position: absolute; inset: 18px; background: var(--bg-surface); border-radius: 50%; }
+    .pie-legend { display: grid; gap: 0.75rem; width: 100%; }
+    .dot { display: inline-block; width: 10px; height: 10px; border-radius: 999px; margin-right: 0.65rem; }
+    .dot-primary { background: var(--accent-primary); }
+    .dot-secondary { background: var(--text-secondary); }
+    .chart-bar { display: grid; gap: 0.85rem; }
+    .bar-row { display: grid; grid-template-columns: 1fr 2fr; align-items: center; gap: 1rem; }
+    .bar { height: 14px; border-radius: 999px; background: var(--accent-primary); display: block; }
+    .report-summary { padding: 1.5rem; border-radius: var(--border-radius-md); border: 1px solid var(--border-color); background: var(--bg-surface); }
+    .report-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-top: 1rem; }
+    .report-card { padding: 1rem; border-radius: var(--border-radius-lg); background: var(--bg-app); display: flex; flex-direction: column; gap: 0.35rem; }
+    .report-label { font-size: 0.95rem; color: var(--text-secondary); font-weight: 600; }
+    .report-number { font-size: 1.85rem; font-weight: 700; color: var(--text-primary); }
     
     .mt-6 { margin-top: 2.5rem; }
     .search-box { background: var(--bg-surface); padding: 1.25rem 2rem; border-radius: 100px; box-shadow: 0 10px 35px -10px rgba(0,0,0,0.1); border: 1px solid var(--border-color); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
@@ -135,12 +192,46 @@ export class Dashboard {
   searchQuery = '';
   selectedItem: Product | null = null;
   showCreateModal = false;
+  reportVisible = false;
+  reportSummary = { pendingApprovals: 0, completedChanges: 0, partsCreatedByMe: 0 };
 
-  tiles = [
-    { title: 'My Favourite', icon: '📝', value: '14', trend: 5 },
-    { title: 'My Worklist', icon: '✅', value: '3', trend: -2 },
-    { title: 'My Changes', icon: '📦', value: '1,402', trend: 14 }
-  ];
+  get tiles() {
+    return [
+      { title: 'Items Created', icon: '📝', value: this.itemsCreatedByMe.length, trend: 5 },
+      { title: 'Changes Created', icon: '✅', value: this.changesCreatedThisMonth, trend: -2 },
+      { title: 'Pending Approvals', icon: '⏳', value: this.pendingApprovalsForMe, trend: 14 }
+    ];
+  }
+
+  get currentUserName() {
+    return this.inventorySvc.getData().length ? 'Current User' : 'Current User';
+  }
+
+  get itemsCreatedByMe(): Product[] {
+    const user = 'Current User';
+    return this.inventorySvc.getData().filter(product =>
+      product.history.some(entry => entry.user === user)
+    );
+  }
+
+  get changesCreatedThisMonth(): number {
+    return this.inventorySvc.getData().flatMap(product => product.changes).length;
+  }
+
+  get pendingApprovalsForMe(): number {
+    return this.inventorySvc.getData()
+      .flatMap(product => product.changes)
+      .filter(change => change.status !== 'Released').length;
+  }
+
+  generateReport() {
+    this.reportSummary = {
+      pendingApprovals: this.pendingApprovalsForMe,
+      completedChanges: this.inventorySvc.getData().flatMap(product => product.changes).filter(change => change.status === 'Released').length,
+      partsCreatedByMe: this.itemsCreatedByMe.length
+    };
+    this.reportVisible = true;
+  }
 
   getSearchResults(): Product[] {
     if (!this.searchQuery.trim()) return [];
