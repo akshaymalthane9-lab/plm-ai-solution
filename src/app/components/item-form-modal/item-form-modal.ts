@@ -17,9 +17,7 @@ import { UserService } from '../../services/user.service';
             <h2 class="title">{{ editItem ? 'Edit Enterprise Record' : 'Create Item' }}</h2>
             <button class="close-icon-btn flex items-center justify-center" (click)="closeModal()">✕</button>
           </div>
-          <p class="text-muted mt-2">
-            {{ editItem ? 'Modify existing baseline attributes for ' + editItem.sku : 'Create a new item record in the PLM network.' }}
-          </p>
+       
         </div>
         
         <div class="modal-body p-6">
@@ -70,7 +68,7 @@ import { UserService } from '../../services/user.service';
 
              <div class="grid-2" *ngIf="isPartSelected()">
                 <div class="form-group">
-                  <label class="form-label" for="partType">Type *</label>
+                  <label class="form-label" for="partType">Part Type *</label>
                   <select id="partType" class="form-control" formControlName="partType" [disabled]="!isPartSelected()" (change)="onPartTypeChange()">
                     <option value="" disabled>Select type</option>
                     <option value="Type A">Type A</option>
@@ -80,48 +78,22 @@ import { UserService } from '../../services/user.service';
                   </select>
                 </div>
                 <div class="form-group">
-                  <label class="form-label" for="classification">Classification *</label>
-                  <select id="classification" class="form-control" formControlName="classification" [disabled]="!isPartSelected()">
-                    <option value="" disabled>Select classification</option>
-                    <!-- Assembly options -->
-                    <ng-container *ngIf="isAssemblySelected()">
-                      <option value="Top Assembly">Top Assembly</option>
-                      <option value="Sub Assembly">Sub Assembly</option>
-                      <option value="Kit Assembly">Kit Assembly</option>
-                    </ng-container>
-                    <!-- Mechanical Part options -->
-                    <ng-container *ngIf="isMechanicalPartSelected()">
-                      <option value="Fasteners">Fasteners</option>
-                      <option value="Sheet Metal Parts">Sheet Metal Parts</option>
-                      <option value="Machined Components">Machined Components</option>
-                      <option value="Castings">Castings</option>
-                    </ng-container>
-                    <!-- Electrical Part options -->
-                    <ng-container *ngIf="isElectricalPartSelected()">
-                      <option value="PCB">PCB</option>
-                      <option value="Connector">Connector</option>
-                      <option value="Cable Assembly">Cable Assembly</option>
-                      <option value="Semiconductor">Semiconductor</option>
-                      <option value="Resistor">Resistor</option>
-                    </ng-container>
-                    <!-- Raw Material options -->
-                    <ng-container *ngIf="isRawMaterialSelected()">
-                      <option value="Steel">Steel</option>
-                      <option value="Aluminum">Aluminum</option>
-                      <option value="Plastic Resin">Plastic Resin</option>
-                      <option value="Rubber">Rubber</option>
-                      <option value="Chemical Compound">Chemical Compound</option>
-                    </ng-container>
-                    <!-- Packaging Material options -->
-                    <ng-container *ngIf="isPackagingMaterialSelected()">
-                      <option value="Carton Box">Carton Box</option>
-                      <option value="Label">Label</option>
-                      <option value="Pallet">Pallet</option>
-                      <option value="Foam Insert">Foam Insert</option>
-                      <option value="User Manual">User Manual</option>
-                    </ng-container>
+                  <label class="form-label" for="partNumberAction">Part Number Action</label>
+                  <select id="partNumberAction" class="form-control" formControlName="partNumberAction" [disabled]="!isPartSelected()">
+                    <option value="Generate part number">Generate part number</option>
                   </select>
                 </div>
+             </div>
+
+             <div class="grid-2" *ngIf="isPartSelected()">
+                <div class="form-group">
+                  <label class="form-label" for="partNumber">Part Number *</label>
+                  <select id="partNumber" class="form-control" formControlName="partNumber" [disabled]="!partNumberOptions.length">
+                    <option value="" disabled>Select part number</option>
+                    <option *ngFor="let option of partNumberOptions" [value]="option">{{ option }}</option>
+                  </select>
+                </div>
+              
              </div>
 
               <div class="form-group">
@@ -189,6 +161,8 @@ export class ItemFormModal implements OnInit {
     partDescription: ['', Validators.maxLength(1000)],
     document: [''],
     partType: [''],
+    partNumberAction: ['Generate part number'],
+    partNumber: [''],
     classification: [''],
     quantity: [0]
   });
@@ -207,10 +181,12 @@ export class ItemFormModal implements OnInit {
         document: (this.editItem as any)?.document || '',
         partType: normalizedPartType || '',
         classification: (this.editItem as any)?.classification || '',
-        quantity: this.editItem.quantity
+        quantity: this.editItem.quantity,
+        partNumber: this.partNumberOptions[0] || ''
       });
       this.onPartChange();
     }
+
     this.updateDescriptionCount();
   }
 
@@ -220,26 +196,6 @@ export class ItemFormModal implements OnInit {
 
   isPartSelected(): boolean {
     return this.itemForm.get('part')?.value === 'Part';
-  }
-
-  isAssemblySelected(): boolean {
-    return this.itemForm.get('partType')?.value === 'Assembly';
-  }
-
-  isMechanicalPartSelected(): boolean {
-    return this.itemForm.get('partType')?.value === 'Mechanical Part';
-  }
-
-  isElectricalPartSelected(): boolean {
-    return this.itemForm.get('partType')?.value === 'Electrical Part';
-  }
-
-  isRawMaterialSelected(): boolean {
-    return this.itemForm.get('partType')?.value === 'Raw Material';
-  }
-
-  isPackagingMaterialSelected(): boolean {
-    return this.itemForm.get('partType')?.value === 'Packaging Material';
   }
 
   normalizePartType(partType?: string): string {
@@ -258,27 +214,51 @@ export class ItemFormModal implements OnInit {
     return mapping[partType] || partType;
   }
 
+  get partNumberOptions(): string[] {
+    const partType = this.itemForm.get('partType')?.value;
+    if (!partType) {
+      return [];
+    }
+
+    const prefix = partType.replace('Type ', 'PRT');
+    return [`${prefix}-1000`];
+  }
+
   onPartTypeChange() {
-    // Reset classification when part type changes
     this.itemForm.get('classification')?.reset();
+    const partNumberControl = this.itemForm.get('partNumber');
+    const options = this.partNumberOptions;
+    if (options.length) {
+      partNumberControl?.setValue(options[0]);
+      partNumberControl?.setValidators([Validators.required]);
+    } else {
+      partNumberControl?.clearValidators();
+      partNumberControl?.reset();
+    }
+    partNumberControl?.updateValueAndValidity();
   }
 
   onPartChange() {
     const partTypeControl = this.itemForm.get('partType');
     const classificationControl = this.itemForm.get('classification');
+    const partNumberControl = this.itemForm.get('partNumber');
     
     if (this.isPartSelected()) {
       partTypeControl?.setValidators([Validators.required]);
       classificationControl?.setValidators([Validators.required]);
+      partNumberControl?.setValidators([Validators.required]);
     } else {
       partTypeControl?.clearValidators();
       classificationControl?.clearValidators();
+      partNumberControl?.clearValidators();
       partTypeControl?.reset();
       classificationControl?.reset();
+      partNumberControl?.reset();
     }
     
     partTypeControl?.updateValueAndValidity();
     classificationControl?.updateValueAndValidity();
+    partNumberControl?.updateValueAndValidity();
   }
 
   updateDescriptionCount() {

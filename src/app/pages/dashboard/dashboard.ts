@@ -13,14 +13,12 @@ import { ItemFormModal } from '../../components/item-form-modal/item-form-modal'
     <div class="dashboard flex-col gap-6">
       <div class="page-header flex justify-between items-center">
         <div>
-          <h1 class="page-title">Deloitte AI PLM Launchpad</h1>
-          <p class="text-muted">Global Search and Organization Management</p>
+          <h1 class="page-title">Deloitte PLM - My Dashboard</h1>
+     
         </div>
         <div class="header-actions flex items-center gap-3">
-          <button class="btn btn-secondary" type="button" (click)="generateReport()">Generate Report</button>
-          <button class="btn btn-primary shadow-glow" type="button" (click)="showCreateModal = true" style="padding: 0.75rem 1.5rem; border-radius: 40px;">
-             <span style="margin-right: 4px;">+</span> Create Item
-          </button>
+          <button class="btn btn-primary shadow-glow" type="button" (click)="generateReport()">Generate Report</button>
+         
         </div>
       </div>
 
