@@ -13,11 +13,14 @@ import { UserService } from '../../services/user.service';
         
         <!-- Header -->
         <div class="modal-header border-b">
-          <div class="flex justify-between items-center w-full">
-            <div class="item-id-block flex items-center gap-4">
-              <div class="sku-badge font-mono">{{ item.sku }}</div>
-              <div class="type-badge">{{ item.type }}</div>
-              <h2 class="title">{{ item.name }}</h2>
+          <div class="flex justify-between items-start w-full">
+            <div class="item-heading">
+              <div class="item-title-row flex items-center gap-4">
+                <h2 class="title font-mono">{{ item.sku }}</h2>
+                <span class="type-badge">{{ item.lifecycle }}</span>
+                <span class="revision-pill">Revision {{ item.revision }}</span>
+              </div>
+              <div class="item-subtitle">{{ getPartTypeLabel() }}</div>
             </div>
             
             <div class="flex items-center gap-6">
@@ -37,11 +40,11 @@ import { UserService } from '../../services/user.service';
           
           <!-- Tabs -->
           <div class="tabs flex mt-8 border-b w-full">
-            <button class="tab-btn" [class.active]="activeTab === 'Overview'" (click)="activeTab = 'Overview'">Overview</button>
-            <button class="tab-btn" [class.active]="activeTab === 'Details'" (click)="activeTab = 'Details'">Details</button>
+            <button class="tab-btn" [class.active]="activeTab === 'Overview'" (click)="activeTab = 'Overview'">Item Overview</button>
             <button class="tab-btn" [class.active]="activeTab === 'Changes'" (click)="activeTab = 'Changes'">Changes</button>
-            <button class="tab-btn" [class.active]="activeTab === 'Attachments'" (click)="activeTab = 'Attachments'">Attachments ({{item.attachments.length}})</button>
-            <button class="tab-btn" [class.active]="activeTab === 'History'" (click)="activeTab = 'History'">History Log</button>
+            <button class="tab-btn" [class.active]="activeTab === 'Relationship'" (click)="activeTab = 'Relationship'">Relationship</button>
+            <button class="tab-btn" [class.active]="activeTab === 'WhereUsed'" (click)="activeTab = 'WhereUsed'">Where Used</button>
+            <button class="tab-btn" [class.active]="activeTab === 'History'" (click)="activeTab = 'History'">History</button>
           </div>
         </div>
         
@@ -49,7 +52,93 @@ import { UserService } from '../../services/user.service';
         <div class="modal-body">
         
           <ng-container *ngIf="activeTab === 'Overview'">
-            <div class="grid-2 attributes-board mb-8">
+            <section class="overview-panel">
+              <button class="btn overview-edit" type="button" [disabled]="userService.isReadOnly()">Edit</button>
+
+              <div class="overview-grid">
+                <div class="overview-field">
+                  <span class="field-label">Part Number:</span>
+                  <span class="field-value link-value font-mono">{{ item.sku }}</span>
+                </div>
+                <div class="overview-field">
+                  <span class="field-label">Unit of Measure:</span>
+                  <span class="field-value">{{ getUnitOfMeasure() }}</span>
+                </div>
+
+                <div class="overview-field">
+                  <span class="field-label">Part Name:</span>
+                  <span class="field-value">{{ item.name }}</span>
+                </div>
+                <div class="overview-field">
+                  <span class="field-label">Part Classification:</span>
+                  <span class="field-value">{{ getPartTypeLabel() }} | {{ getClassificationLabel() }}</span>
+                </div>
+
+                <div class="overview-field">
+                  <span class="field-label">Part Type:</span>
+                  <span class="field-value">{{ getPartTypeLabel() }}</span>
+                </div>
+                <div class="overview-field">
+                  <span class="field-label">Material:</span>
+                  <span class="field-value">{{ getMaterialLabel() }}</span>
+                </div>
+
+                <div class="overview-field description-field">
+                  <span class="field-label">Part Description:</span>
+                  <div class="description-box">{{ getPartDescription() }}</div>
+                  <span class="character-count">{{ getPartDescription().length }}/1000</span>
+                </div>
+                <div class="overview-field">
+                  <span class="field-label">Color/Finish:</span>
+                  <span class="field-value">{{ getColorFinishLabel() }}</span>
+                </div>
+
+                <div class="overview-field">
+                  <span class="field-label">Lifecycle Status:</span>
+                  <span class="field-value">{{ item.lifecycle }}</span>
+                </div>
+              </div>
+            </section>
+
+            <div class="bom-divider"></div>
+
+            <section class="bom-section">
+              <h3 class="bom-title">BOM</h3>
+              <div class="bom-actions" *ngIf="!userService.isReadOnly()">
+                <button class="btn bom-btn" type="button">Add</button>
+                <button class="btn bom-btn" type="button">Remove</button>
+                <button class="btn bom-btn" type="button">Compare</button>
+              </div>
+              <div class="table-container border rounded bom-table-container">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Item Number</th>
+                      <th>Description</th>
+                      <th>Revision</th>
+                      <th>Lifecycle Phase</th>
+                      <th>Qty</th>
+                      <th>BOM Level</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr *ngFor="let child of getResolvedBom(); let i = index" class="hover-row cursor-pointer" (click)="selectChild(child)">
+                      <td class="font-mono font-medium"><span [class.bom-child-indent]="i > 0">{{ child.sku }}</span></td>
+                      <td>{{ getBomDescription(child) }}</td>
+                      <td>{{ child.revision }}</td>
+                      <td>{{ child.lifecycle }}</td>
+                      <td>{{ i + 1 }}</td>
+                      <td>{{ i + 1 }}</td>
+                    </tr>
+                    <tr *ngIf="getResolvedBom().length === 0">
+                      <td colspan="6" class="text-center py-12 text-muted">No BOM components attached to this item.</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </section>
+
+            <div class="grid-2 attributes-board mb-8 legacy-overview">
               <div class="attr-group card p-6 flex-col justify-between">
                 <span class="attr-label mb-3 text-secondary">Revision Level</span>
                 <span class="attr-val font-mono text-2xl" style="font-size: 1.5rem;">{{ item.revision }}</span>
@@ -64,7 +153,7 @@ import { UserService } from '../../services/user.service';
             </div>
 
             <!-- Visual Toggle & Structure Map -->
-            <div class="hierarchy-section card mb-8 p-6">
+            <div class="hierarchy-section card mb-8 p-6 legacy-overview">
                <div class="flex justify-between items-center mb-6">
                   <h3 class="section-title">Product Structure Map</h3>
                   <div class="toggle-group select-none">
@@ -125,7 +214,7 @@ import { UserService } from '../../services/user.service';
                </div>
             </div>
             
-            <div class="flex justify-between items-end mt-8 mb-4 w-full">
+            <div class="flex justify-between items-end mt-8 mb-4 w-full legacy-overview">
                <h3 class="section-title">Bill of Materials (Flat List)</h3>
                <div class="flex items-center gap-6">
                   <span class="text-xs text-muted">{{ getResolvedBom().length }} assemblies connected</span>
@@ -142,7 +231,7 @@ import { UserService } from '../../services/user.service';
                </div>
             </div>
             
-            <div class="table-container border rounded">
+            <div class="table-container border rounded legacy-overview">
                <table class="data-table">
                  <thead>
                    <tr>
@@ -167,7 +256,7 @@ import { UserService } from '../../services/user.service';
             </div>
           </ng-container>
 
-          <ng-container *ngIf="activeTab === 'Details'">
+          <ng-container *ngIf="activeTab === 'Relationship'">
              <div class="grid-2 gap-y-6">
                 <div class="attr-group outline-group">
                   <span class="attr-label">Primary Category</span>
@@ -340,11 +429,39 @@ export class PlmItemModal {
   @Input() item: Product | null = null;
   @Output() close = new EventEmitter<void>();
   
-  activeTab: 'Overview' | 'Details' | 'Changes' | 'Attachments' | 'History' = 'Overview';
+  activeTab: 'Overview' | 'Relationship' | 'WhereUsed' | 'Changes' | 'Attachments' | 'History' = 'Overview';
   bomViewMode: 'Tree' | 'Graph' = 'Graph'; // Default to Graph for "WOW" factor
   
   inventorySvc = inject(InventoryService);
   userService = inject(UserService);
+
+  getPartTypeLabel(): string {
+    return this.item?.partType || this.item?.part || this.item?.type || 'Part';
+  }
+
+  getUnitOfMeasure(): string {
+    return this.item?.type === 'Document' ? 'File' : 'Each';
+  }
+
+  getClassificationLabel(): string {
+    return this.item?.classification || this.item?.category || 'Unclassified';
+  }
+
+  getMaterialLabel(): string {
+    return this.item?.category === 'Hardware' ? 'Standard component material' : 'Not applicable';
+  }
+
+  getPartDescription(): string {
+    return this.item?.partDescription || this.item?.name || '';
+  }
+
+  getColorFinishLabel(): string {
+    return 'Not specified';
+  }
+
+  getBomDescription(child: Product): string {
+    return child.partDescription || child.name;
+  }
 
   getResolvedBom(): Product[] {
     if (!this.item) return [];
