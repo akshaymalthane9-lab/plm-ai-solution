@@ -172,7 +172,7 @@ interface AffectedItemUpdate {
                     </td>
                     <td>{{ index + 1 }}</td>
                     <td>
-                      <a class="item-link font-mono" [routerLink]="['/inventory', item.sku]">{{ item.sku }}</a>
+                      <a class="item-link font-mono" [routerLink]="['/items', item.sku]">{{ item.sku }}</a>
                     </td>
                     <td>{{ item.classification || item.partType || item.part || item.type }}</td>
                     <td>{{ item.name }}</td>

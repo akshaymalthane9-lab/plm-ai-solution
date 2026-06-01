@@ -24,7 +24,7 @@ type ChangeDetailTab = 'ChangeOrders' | 'ChangeRequests' | 'Deviation';
         </div>
 
         <div class="flex items-center gap-4">
-          <button class="btn btn-secondary" routerLink="/inventory">Back to Items</button>
+          <button class="btn btn-secondary" routerLink="/items">Back to Items</button>
       
         </div>
       </div>
@@ -419,13 +419,13 @@ export class ItemDetails implements OnInit {
 
   ngOnInit() {
     const sku = this.route.snapshot.paramMap.get('sku');
-    if (sku) {
+      if (sku) {
       this.item = this.inventoryService.getData().find(p => p.sku === sku) || null;
       if (!this.item) {
-        this.router.navigate(['/inventory']);
+        this.router.navigate(['/items']);
       }
     } else {
-      this.router.navigate(['/inventory']);
+      this.router.navigate(['/items']);
     }
   }
 
@@ -461,7 +461,7 @@ export class ItemDetails implements OnInit {
   }
 
   navigateToItem(sku: string) {
-    this.router.navigate(['/inventory', sku]);
+    this.router.navigate(['/items', sku]);
   }
 
   getPartTypeLabel(): string {

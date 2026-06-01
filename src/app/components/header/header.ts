@@ -34,6 +34,7 @@ import { UserService } from '../../services/user.service';
       height: 64px; padding: 0 2rem; position: sticky; top: 0; z-index: 10;
       background-color: var(--bg-surface);
       border-bottom: 1px solid var(--border-color);
+      margin-top: 1rem;
     }
     .search-bar {
       background-color: var(--bg-app); border: 1px solid transparent;

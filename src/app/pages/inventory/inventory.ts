@@ -45,9 +45,9 @@ import { ItemFormModal } from '../../components/item-form-modal/item-form-modal'
               <td>{{ item.classification || '—' }}</td>
               
               <td>
-                <div class="flex gap-2" *ngIf="!userService.isReadOnly()" (click)="$event.stopPropagation()">
+                <div class="item-actions" *ngIf="!userService.isReadOnly()" (click)="$event.stopPropagation()">
                   <button class="btn btn-secondary btn-sm" (click)="openEdit(item)">Edit</button>
-                  <button class="btn btn-danger btn-sm" (click)="deleteItem(item.sku)">Delete</button>
+                  <button class="btn btn-danger btn-sm" (click)="openDeleteConfirm(item)">Delete</button>
                 </div>
                 <div *ngIf="userService.isReadOnly()" class="text-muted text-sm" style="font-size: 0.75rem;">View Only</div>
               </td>
@@ -70,6 +70,18 @@ import { ItemFormModal } from '../../components/item-form-modal/item-form-modal'
         *ngIf="showCreateModal" 
         (close)="showCreateModal = false">
       </app-item-form-modal>
+
+      <div *ngIf="showDeleteConfirm" class="confirm-modal-overlay">
+        <div class="confirm-modal card">
+          <h2>Confirm Delete</h2>
+          <p>Are you sure you want to delete <strong>{{ deleteCandidate?.sku }}</strong>?</p>
+          <p class="confirm-subtitle">This action cannot be undone.</p>
+          <div class="confirm-actions flex gap-2">
+            <button class="btn btn-secondary" type="button" (click)="cancelDelete()">Cancel</button>
+            <button class="btn btn-danger" type="button" (click)="confirmDelete()">Delete</button>
+          </div>
+        </div>
+      </div>
     </div>
   `,
   styles: `
@@ -99,10 +111,59 @@ import { ItemFormModal } from '../../components/item-form-modal/item-form-modal'
     .data-table td { padding: 1rem 1.5rem; border-bottom: 1px solid var(--border-color); font-size: 0.875rem;}
     .hover-row { transition: background var(--transition-fast); background: var(--bg-surface); }
     .hover-row:hover { background: #fdfdfd; }
+
+    .item-actions { display: inline-flex; gap: 0.75rem; }
+    .item-actions button { min-width: 72px; }
     
     .btn-sm { padding: 0.3rem 0.6rem; font-size: 0.75rem; }
     .btn-danger { background: white; border: 1px solid var(--color-danger); color: var(--color-danger); }
     .btn-danger:hover { background: #fee2e2; }
+
+    .confirm-modal-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 50;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(15, 23, 42, 0.65);
+      padding: 1.5rem;
+    }
+
+    .confirm-modal {
+      max-width: 420px;
+      width: 100%;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 1.75rem;
+      text-align: center;
+      box-shadow: 0 18px 60px rgba(15, 23, 42, 0.18);
+    }
+
+    .confirm-modal h2 {
+      margin: 0;
+      margin-bottom: 0.75rem;
+      font-size: 1.25rem;
+    }
+
+    .confirm-modal p {
+      margin: 0.5rem 0;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+
+    .confirm-subtitle {
+      margin-top: 0.75rem;
+      font-size: 0.9rem;
+      color: var(--text-muted);
+    }
+
+    .confirm-actions {
+      justify-content: center;
+      margin-top: 1.5rem;
+      gap: 1rem;
+    }
 
     @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
   `
@@ -115,9 +176,11 @@ export class Items {
   itemToEdit: Product | null = null;
   showFormModal = false;
   showCreateModal = false;
+  showDeleteConfirm = false;
+  deleteCandidate: Product | null = null;
 
   navigateToItem(sku: string) {
-    this.router.navigate(['/inventory', sku]);
+    this.router.navigate(['/items', sku]);
   }
 
   openEdit(item: Product) {
@@ -130,9 +193,20 @@ export class Items {
     this.itemToEdit = null;
   }
 
-  deleteItem(sku: string) {
-    if (confirm(`SECURITY PROTOCOL: Are you sure you want to permanently purge SKU ${sku} from the Deloitte AI PLM database?`)) {
-      this.inventoryService.deleteProduct(sku);
+  openDeleteConfirm(item: Product) {
+    this.deleteCandidate = item;
+    this.showDeleteConfirm = true;
+  }
+
+  cancelDelete() {
+    this.showDeleteConfirm = false;
+    this.deleteCandidate = null;
+  }
+
+  confirmDelete() {
+    if (this.deleteCandidate) {
+      this.inventoryService.deleteProduct(this.deleteCandidate.sku);
     }
+    this.cancelDelete();
   }
 }

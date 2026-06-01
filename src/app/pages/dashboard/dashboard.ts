@@ -10,7 +10,7 @@ import { ItemFormModal } from '../../components/item-form-modal/item-form-modal'
   standalone: true,
   imports: [CommonModule, FormsModule, PlmItemModal, ItemFormModal],
   template: `
-    <div class="dashboard flex-col gap-6">
+    <div class="dashboard flex-col gap-6 ">
       <div class="page-header flex justify-between items-center">
         <div>
           <h1 class="page-title">Deloitte PLM - My Dashboard</h1>
@@ -120,7 +120,12 @@ import { ItemFormModal } from '../../components/item-form-modal/item-form-modal'
     <app-item-form-modal *ngIf="showCreateModal" (close)="showCreateModal = false"></app-item-form-modal>
   `,
   styles: `
-    .dashboard { animation: fadeIn var(--transition-fast); max-width: 1200px; margin: 0 auto; width: 100%;}
+   .dashboard {
+    animation: fadeIn var(--transition-fast);
+    max-width: 1200px;
+    margin: 1rem auto 0 auto;
+    width: 100%;
+}
     .page-title { font-size: 1.8rem; margin-bottom: 0.35rem; color: var(--text-primary); font-weight: 700; letter-spacing: -0.03em;}
     .text-muted { color: var(--text-muted); font-size: 0.95rem; }
     

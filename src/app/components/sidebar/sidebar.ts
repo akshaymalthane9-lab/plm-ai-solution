@@ -17,7 +17,7 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
           <span class="icon">🏠</span> <span class="label">Dashboard</span>
         </a>
         <div class="nav-section">Create objects</div>
-        <a routerLink="/inventory" routerLinkActive="active" class="nav-item flex items-center gap-4">
+        <a routerLink="/items" routerLinkActive="active" class="nav-item flex items-center gap-4">
           <span class="icon">📦</span> <span class="label">Items</span>
         </a>
         <a routerLink="/changes" routerLinkActive="active" class="nav-item flex items-center gap-4">
