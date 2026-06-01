@@ -181,8 +181,9 @@ type ItemDetailTab = 'Overview' | 'Changes' | 'Relationship' | 'WhereUsed' | 'Hi
     </div>
   `,
   styles: `
-    .page-container { animation: fadeIn var(--transition-fast); max-width: 1200px; margin: 0 auto; }
-    .page-title { font-size: 1.7rem; margin: 0; color: var(--text-primary); }
+    .page-container { animation: fadeIn var(--transition-fast); max-width: 1200px; margin: 0 auto; width: 100%; color: var(--text-primary); }
+    .page-header { padding: 0.25rem 0 0.75rem; }
+    .page-title { font-size: 1.7rem; margin: 0; color: var(--text-primary); letter-spacing: 0; }
     .item-subtitle { margin-top: 0.45rem; color: var(--text-secondary); }
     .type-badge { background: var(--accent-primary-subtle); color: var(--accent-primary); padding: 0.25rem 0.75rem; border-radius: 4px; font-size: 0.75rem; font-weight: 700; }
     .revision-pill { color: var(--text-secondary); border: 1px solid var(--border-color); padding: 0.25rem 0.7rem; border-radius: 999px; font-size: 0.75rem; }
@@ -194,26 +195,30 @@ type ItemDetailTab = 'Overview' | 'Changes' | 'Relationship' | 'WhereUsed' | 'Hi
     .tab-btn:focus { outline: none; }
     .tab-btn.active { color: var(--accent-primary); border-bottom-color: var(--accent-primary); }
 
-    .tab-content { min-height: 400px; }
-    .item-overview-panel { position: relative; padding-top: 1.5rem; }
-    .overview-edit { position: absolute; top: 1.5rem; right: 0; padding: 0.55rem 1rem; border-radius: 4px; background: var(--text-secondary); color: #fff; border: 0; font-size: 0.75rem; text-transform: uppercase; }
-    .overview-details { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 0.9fr); column-gap: 4rem; row-gap: 1.35rem; padding: 2rem 5rem 1rem 0; }
+    .tab-content { min-height: 400px; background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--border-radius-md); box-shadow: var(--shadow-sm); padding: 1.5rem; }
+    .item-overview-panel { position: relative; padding-top: 0.25rem; }
+    .overview-edit { position: absolute; top: 0; right: 0; padding: 0.55rem 1rem; border-radius: var(--border-radius-sm); background: var(--bg-surface); color: var(--text-secondary); border: 1px solid var(--border-color); box-shadow: var(--shadow-sm); font-size: 0.75rem; text-transform: uppercase; font-weight: 700; }
+    .overview-edit:hover:not(:disabled) { color: var(--text-primary); border-color: #cbd5e1; background: var(--bg-surface-hover); }
+    .overview-edit:disabled { opacity: 0.55; cursor: not-allowed; }
+    .overview-details { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 0.9fr); column-gap: 4rem; row-gap: 1.35rem; padding: 1.25rem 5rem 0 0; }
     .overview-row { display: grid; grid-template-columns: 145px minmax(0, 1fr); align-items: start; gap: 1.25rem; }
     .overview-row:nth-child(2n) { grid-template-columns: 165px minmax(0, 1fr); }
     .overview-label { font-weight: 700; color: var(--text-secondary); line-height: 1.4; }
     .overview-value { color: var(--text-primary); line-height: 1.4; }
     .description-row { grid-row: span 2; }
-    .description-box { min-height: 70px; padding: 0.85rem 1rem; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-surface); color: var(--text-primary); line-height: 1.45; }
+    .description-box { min-height: 70px; padding: 0.85rem 1rem; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-surface-hover); color: var(--text-primary); line-height: 1.45; }
     .character-count { margin-top: 0.35rem; font-size: 0.75rem; color: var(--text-muted); }
-    .overview-divider { height: 2px; background: var(--text-primary); opacity: 0.8; margin: 1.5rem 0 1.25rem; }
+    .overview-divider { height: 1px; background: var(--border-color); margin: 1.75rem 0 1.25rem; }
     .bom-title { margin: 0 0 1rem; font-size: 1.35rem; color: var(--text-primary); font-weight: 700; }
     .bom-actions { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
-    .bom-btn { padding: 0.5rem 0.85rem; border-radius: 4px; background: var(--text-secondary); color: #fff; border: 0; font-size: 0.75rem; text-transform: uppercase; }
+    .bom-btn { padding: 0.5rem 0.85rem; border-radius: var(--border-radius-sm); background: var(--bg-surface); color: var(--text-secondary); border: 1px solid var(--border-color); box-shadow: var(--shadow-sm); font-size: 0.75rem; text-transform: uppercase; font-weight: 700; }
+    .bom-btn:hover { color: var(--text-primary); border-color: #cbd5e1; background: var(--bg-surface-hover); }
 
     .table-container { overflow-x: auto; background: var(--bg-surface); box-shadow: 0 1px 3px rgba(0,0,0,0.05); border-radius: 4px; }
     .data-table { width: 100%; min-width: 800px; border-collapse: collapse; }
-    .data-table th { background: var(--bg-surface-hover); color: var(--text-primary); font-weight: 700; font-size: 0.82rem; padding: 1rem 1.25rem; border-bottom: 2px solid var(--border-color); text-align: left; }
+    .data-table th { background: var(--bg-surface-hover); color: var(--text-secondary); font-weight: 700; font-size: 0.82rem; padding: 1rem 1.25rem; border-bottom: 2px solid var(--border-color); text-align: left; text-transform: uppercase; }
     .data-table td { padding: 1rem 1.25rem; border-bottom: 1px solid var(--border-color); font-size: 0.875rem; color: var(--text-secondary); }
+    .data-table tbody tr { background: var(--bg-surface); }
     .hover-row { transition: background var(--transition-fast); }
     .hover-row:hover { background: var(--bg-surface-hover); }
     .cursor-pointer { cursor: pointer; }
@@ -232,7 +237,7 @@ type ItemDetailTab = 'Overview' | 'Changes' | 'Relationship' | 'WhereUsed' | 'Hi
     .status-badge { padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 500; }
     .status-badge.released { background: #dcfce7; color: #166534; }
     .empty-state { text-align: center; color: var(--text-muted); }
-    .change-card, .history-entry { background: var(--bg-surface); }
+    .change-card, .history-entry { background: var(--bg-surface); color: var(--text-primary); }
     .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
     .gap-y-6 { row-gap: 1.5rem; }
     .outline-group { border: 1px solid var(--border-color); padding: 1rem; border-radius: 4px; }
@@ -250,6 +255,7 @@ type ItemDetailTab = 'Overview' | 'Changes' | 'Relationship' | 'WhereUsed' | 'Hi
 
     @media (max-width: 840px) {
       .page-header { align-items: flex-start; flex-direction: column; gap: 1rem; }
+      .tab-content { padding: 1rem; }
       .overview-details { grid-template-columns: 1fr; padding-right: 0; }
       .overview-row, .overview-row:nth-child(2n) { grid-template-columns: 1fr; gap: 0.3rem; }
       .overview-edit { position: static; margin-left: auto; display: block; width: fit-content; }
