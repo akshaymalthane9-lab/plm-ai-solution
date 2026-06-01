@@ -7,7 +7,7 @@ import { UserService } from '../../services/user.service';
 import { ItemFormModal } from '../../components/item-form-modal/item-form-modal';
 
 @Component({
-  selector: 'app-inventory',
+  selector: 'app-items',
   standalone: true,
   imports: [CommonModule, FormsModule, ItemFormModal],
   template: `
@@ -107,7 +107,7 @@ import { ItemFormModal } from '../../components/item-form-modal/item-form-modal'
     @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
   `
 })
-export class Inventory {
+export class Items {
   inventoryService = inject(InventoryService);
   userService = inject(UserService);
   router = inject(Router);

@@ -2,7 +2,7 @@ import { Routes, CanActivateFn, Router } from '@angular/router';
 import { inject } from '@angular/core';
 import { UserService } from './services/user.service';
 import { Dashboard } from './pages/dashboard/dashboard';
-import { Inventory } from './pages/inventory/inventory';
+import { Items } from './pages/inventory/inventory';
 import { ItemDetails } from './pages/item-details/item-details';
 import { Login } from './pages/login/login';
 import { Changes } from './pages/changes/changes';
@@ -18,7 +18,7 @@ export const routes: Routes = [
   { path: 'login', component: Login },
   { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
   { path: 'dashboard', component: Dashboard, canActivate: [authGuard] },
-  { path: 'inventory', component: Inventory, canActivate: [authGuard] },
+  { path: 'inventory', component: Items, canActivate: [authGuard] },
   { path: 'inventory/:sku', component: ItemDetails, canActivate: [authGuard] },
   { path: 'changes', component: Changes, canActivate: [authGuard] },
   { path: 'changes/create', component: Changes, canActivate: [authGuard] },

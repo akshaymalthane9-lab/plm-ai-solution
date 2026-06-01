@@ -221,8 +221,10 @@ export class ItemFormModal implements OnInit {
   }
 
   onPartTypeChange() {
-    this.itemForm.get('classification')?.reset();
+    const classificationControl = this.itemForm.get('classification');
     const partNumberControl = this.itemForm.get('partNumber');
+    const selectedPartType = this.itemForm.get('partType')?.value || '';
+    classificationControl?.setValue(selectedPartType);
     const options = this.partNumberOptions;
     if (options.length) {
       partNumberControl?.setValue(options[0]);
@@ -241,7 +243,6 @@ export class ItemFormModal implements OnInit {
     
     if (this.isPartSelected()) {
       partTypeControl?.setValidators([Validators.required]);
-      classificationControl?.setValidators([Validators.required]);
       partNumberControl?.setValidators([Validators.required]);
     } else {
       partTypeControl?.clearValidators();
