@@ -136,7 +136,7 @@ type ChangeDetailTab = 'ChangeOrders' | 'ChangeRequests' | 'Deviation';
             </div>
 
             <div class="relationship-actions">
-              <button class="btn relation-add" type="button" [disabled]="userService.isReadOnly()">+ Add</button>
+              <button class="btn btn-primary" type="button" [disabled]="userService.isReadOnly()">+ Add</button>
               <button class="btn relation-action" type="button" [disabled]="userService.isReadOnly()">- Remove</button>
               <button class="btn relation-action" type="button" [disabled]="userService.isReadOnly()">Edit Rule</button>
             </div>
@@ -182,7 +182,7 @@ type ChangeDetailTab = 'ChangeOrders' | 'ChangeRequests' | 'Deviation';
 
             <div class="attachment-toolbar">
               <div class="relationship-actions">
-                <button class="btn relation-add" type="button" [disabled]="userService.isReadOnly()">+ Add</button>
+                <button class="btn btn-primary" type="button" [disabled]="userService.isReadOnly()">+ Add</button>
                 <button class="btn relation-action" type="button" [disabled]="userService.isReadOnly()">- Remove</button>
                 <button class="btn relation-action" type="button">Download</button>
                 <button class="btn relation-action" type="button" [disabled]="userService.isReadOnly()">Check-In</button>
@@ -347,9 +347,8 @@ type ChangeDetailTab = 'ChangeOrders' | 'ChangeRequests' | 'Deviation';
     .relationship-summary { margin-bottom: 1.25rem; color: var(--text-secondary); font-size: 1rem; font-weight: 700; }
     .relationship-count { font-weight: 500; }
     .relationship-actions { display: flex; gap: 0.9rem; margin-bottom: 1.25rem; flex-wrap: wrap; }
-    .relation-add { background: #1479bd; color: #fff; border-color: #1479bd; box-shadow: var(--shadow-sm); }
     .relation-action { min-width: 118px; background: #e5e7eb; color: var(--text-secondary); border: 1px solid #d1d5db; box-shadow: var(--shadow-sm); }
-    .relation-add:disabled, .relation-action:disabled { opacity: 0.6; cursor: not-allowed; }
+    .relation-action:disabled { opacity: 0.6; cursor: not-allowed; }
     .relationship-table { min-width: 860px; }
     .relationship-link { color: #1479bd; font-weight: 500; }
     .attachment-subtitle { margin: -0.75rem 0 1rem; color: var(--text-secondary); font-size: 0.9rem; }
