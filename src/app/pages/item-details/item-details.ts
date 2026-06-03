@@ -309,6 +309,7 @@ type BomTreeNode = {
                     <th>Modified On</th>
                     <th>Modified By</th>
                     <th>Checked Out User</th>
+                    <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -319,14 +320,16 @@ type BomTreeNode = {
                     <td>{{ getAttachmentSize(attachment, i) }}</td>
                     <td>{{ getAttachmentModifiedOn(attachment) }}</td>
                     <td>{{ getAttachmentModifiedBy(attachment, i) }}</td>
+                    <td>{{ i === 0 ? '-' : 'Rahul Mehta' }}</td>
                     <td>
-                      <span>{{ i === 0 ? '-' : 'Rahul Mehta' }}</span>
-                      <button class="btn relation-action" type="button" style="margin-left:.75rem" (click)="downloadAttachment(attachment, i)">Download</button>
-                      <button *ngIf="!userService.isReadOnly()" class="btn relation-action" type="button" style="margin-left:.5rem;background:#dc2626;color:#fff;border-color:#dc2626" (click)="removeAttachment(attachment, i)">Remove</button>
+                      <div class="table-actions">
+                        <button class="btn relation-action" type="button" (click)="downloadAttachment(attachment, i)">Download</button>
+                        <button *ngIf="!userService.isReadOnly()" class="btn relation-action" type="button" style="background:#dc2626;color:#fff;border-color:#dc2626" (click)="removeAttachment(attachment, i)">Remove</button>
+                      </div>
                     </td>
                   </tr>
                   <tr *ngIf="getVisibleAttachments().length === 0">
-                    <td colspan="7" class="change-empty">No attachments available</td>
+                    <td colspan="8" class="change-empty">No attachments available</td>
                   </tr>
                 </tbody>
               </table>
@@ -449,6 +452,7 @@ type BomTreeNode = {
     .relationship-actions { display: flex; gap: 0.9rem; margin-bottom: 1.25rem; flex-wrap: wrap; }
     .relation-action { min-width: 118px; background: #e5e7eb; color: var(--text-secondary); border: 1px solid #d1d5db; box-shadow: var(--shadow-sm); }
     .relation-action:disabled { opacity: 0.6; cursor: not-allowed; }
+    .table-actions { display: flex; gap: 0.5rem; align-items: center; }
     .relationship-table { min-width: 860px; }
     .relationship-link { color: #1479bd; font-weight: 500; }
     .attachment-subtitle { margin: -0.75rem 0 1rem; color: var(--text-secondary); font-size: 0.9rem; }
