@@ -38,20 +38,9 @@ import { UserService } from '../../services/user.service';
              </div>
 
              <div class="grid-2">
-                <!-- <div class="form-group">
-                  <label class="form-label" for="type">Item Type *</label>
-                  <select id="type" class="form-control" formControlName="type">
-                    <option value="Part">Part (Hardware)</option>
-                    <option value="Document">Document (Software/Spec)</option>
-                  </select>
-                </div> -->
                 <div class="form-group">
                   <label class="form-label" for="revision">Active Revision *</label>
                   <input id="revision" type="text" class="form-control" formControlName="revision" placeholder="A.01" />
-                </div>
-                <div class="form-group">
-                  <label class="form-label" for="document">Document</label>
-                  <input id="document" type="text" class="form-control" formControlName="document" placeholder="Enter document reference" />
                 </div>
              </div>
 
@@ -64,11 +53,18 @@ import { UserService } from '../../services/user.service';
                     <option value="Document">Document</option>
                   </select>
                 </div>
-                <div class="form-group">
+                <div class="form-group" *ngIf="isPartSelected()">
                   <label class="form-label" for="partNumberAction">Part Number Action</label>
-                  <select id="partNumberAction" class="form-control" formControlName="partNumberAction" [disabled]="!isPartSelected()">
+                  <select id="partNumberAction" class="form-control" formControlName="partNumberAction">
                     <option value="Generate part number">Generate part number</option>
                   </select>
+                </div>
+             </div>
+
+             <div class="grid-2" *ngIf="isPartSelected()">
+                <div class="form-group">
+                  <label class="form-label" for="document">Document</label>
+                  <input id="document" type="text" class="form-control" formControlName="document" placeholder="Enter document reference" />
                 </div>
              </div>
 
@@ -178,7 +174,7 @@ export class ItemFormModal implements OnInit {
         partType: normalizedPartType || '',
         classification: (this.editItem as any)?.classification || '',
         quantity: this.editItem.quantity,
-        partNumber: this.partNumberOptions[0] || ''
+        partNumber: (this.editItem as any)?.partNumber || this.partNumberOptions[0] || ''
       });
       this.onPartChange();
     }
@@ -240,6 +236,7 @@ export class ItemFormModal implements OnInit {
     const partTypeControl = this.itemForm.get('partType');
     const classificationControl = this.itemForm.get('classification');
     const partNumberControl = this.itemForm.get('partNumber');
+    const documentControl = this.itemForm.get('document');
     
     if (this.isPartSelected()) {
       partTypeControl?.setValidators([Validators.required]);
@@ -251,6 +248,7 @@ export class ItemFormModal implements OnInit {
       partTypeControl?.reset();
       classificationControl?.reset();
       partNumberControl?.reset();
+      documentControl?.reset();
     }
     
     partTypeControl?.updateValueAndValidity();

@@ -28,6 +28,7 @@ export interface Product {
   partDescription?: string;
   document?: string;
   partType?: string;
+  partNumber?: string;
   classification?: string;
   bom: string[]; 
   relationships?: string[];
@@ -90,6 +91,7 @@ export class InventoryService {
         type: p.type || (p.category === 'Software' ? 'Document' : 'Part'),
         part: p.part || p.type || (p.category === 'Software' ? 'Document' : 'Part'),
         partType: p.partType ? this.normalizePartType(p.partType) : p.partType,
+        partNumber: p.partNumber || '',
         relationships: p.relationships || [],
         history: p.history || [],
         status: p.status || this.calculateStatus(p.quantity || 0)
@@ -134,6 +136,7 @@ export class InventoryService {
       type: productDef.type || (productDef.category === 'Software' ? 'Document' : 'Part'),
       part: productDef.part || productDef.type || (productDef.category === 'Software' ? 'Document' : 'Part'),
       partType: normalizedPartType,
+      partNumber: productDef.partNumber || '',
       classification: productDef.classification || '',
       document: productDef.document || '',
       revision: productDef.revision || 'A.00',
@@ -395,6 +398,7 @@ export class InventoryService {
       partDescription: 'Part Description',
       document: 'Document',
       partType: 'Part Type',
+      partNumber: 'Part Number',
       classification: 'Classification'
     };
 

@@ -30,8 +30,8 @@ import { ItemFormModal } from '../../components/item-form-modal/item-form-modal'
               <th>Common Name </th>
               <th>Active Revision</th>
               <th>Item Type </th>
-              <th>Type</th>
-              <th>Classification</th>
+              <th>Part Type</th>
+              <th>Part Number</th>
               <th>Actions</th>
             </tr>
           </thead>
@@ -42,7 +42,7 @@ import { ItemFormModal } from '../../components/item-form-modal/item-form-modal'
               <td>{{ item.revision }}</td>
               <td>{{ item.part || item.type }}</td>
               <td>{{ item.partType || '—' }}</td>
-              <td>{{ item.classification || '—' }}</td>
+              <td>{{ getPartNumber(item) }}</td>
               
               <td>
                 <div class="item-actions" *ngIf="!userService.isReadOnly()" (click)="$event.stopPropagation()">
@@ -181,6 +181,10 @@ export class Items {
 
   navigateToItem(sku: string) {
     this.router.navigate(['/items', sku]);
+  }
+
+  getPartNumber(item: Product): string {
+    return item.partNumber || 'â€”';
   }
 
   openEdit(item: Product) {
