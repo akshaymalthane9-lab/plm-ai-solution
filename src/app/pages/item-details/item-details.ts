@@ -47,12 +47,12 @@ type BomTreeNode = {
       <div class="tab-content" *ngIf="item">
         <ng-container *ngIf="activeTab === 'Overview'">
           <section class="item-overview-panel">
-            <button class="btn overview-edit" type="button" [disabled]="userService.isReadOnly()">Edit</button>
+            <button class="btn btn-primary overview-edit" type="button" [disabled]="userService.isReadOnly()" [routerLink]="['/items', item.sku, 'edit']">Edit</button>
 
             <div class="overview-details">
               <div class="overview-row">
                 <span class="overview-label">Part Number:</span>
-                <span class="overview-value text-primary font-mono">{{ item.sku }}</span>
+                <span class="overview-value">{{ item.sku }}</span>
               </div>
               <div class="overview-row">
                 <span class="overview-label">Unit of Measure:</span>
@@ -78,7 +78,7 @@ type BomTreeNode = {
                 <span class="overview-label">Part Description:</span>
                 <div>
                   <div class="description-box">{{ getPartDescription() }}</div>
-                  <div class="character-count">{{ getPartDescription().length }}/1000</div>
+                
                 </div>
               </div>
               <div class="overview-row">
@@ -104,10 +104,10 @@ type BomTreeNode = {
 
             <div class="bom-add-panel" *ngIf="isBomAddOpen && !userService.isReadOnly()">
               <div class="bom-add-context">
-                Adding under <strong class="font-mono">{{ selectedBomParentSku }}</strong>
+                Adding under <strong>{{ selectedBomParentSku }}</strong>
               </div>
               <select class="bom-select" [(ngModel)]="selectedBomChildSku" aria-label="Select item to add to BOM">
-                <option value="">Select item</option>
+                <option value="">Select part</option>
                 <option *ngFor="let product of getAvailableBomItems()" [value]="product.sku">
                   {{ product.sku }} - {{ product.name }}
                 </option>
@@ -417,7 +417,7 @@ type BomTreeNode = {
 
     .tab-content { min-height: 400px; background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--border-radius-md); box-shadow: var(--shadow-sm); padding: 1.5rem; }
     .item-overview-panel { position: relative; padding-top: 0.25rem; }
-    .overview-edit { position: absolute; top: 0; right: 0; padding: 0.55rem 1rem; border-radius: var(--border-radius-sm); background: var(--bg-surface); color: var(--text-secondary); border: 1px solid var(--border-color); box-shadow: var(--shadow-sm); font-size: 0.75rem; text-transform: uppercase; font-weight: 700; }
+    .overview-edit { position: absolute; top: 0; right: 0; padding: 0.55rem 1rem; border-radius: var(--border-radius-sm); box-shadow: var(--shadow-sm); font-size: 0.75rem; text-transform: uppercase; font-weight: 700; }
     .overview-edit:disabled { opacity: 0.55; cursor: not-allowed; }
     .overview-details { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 0.9fr); column-gap: 4rem; row-gap: 1.35rem; padding: 1.25rem 5rem 0 0; }
     .overview-row { display: grid; grid-template-columns: 145px minmax(0, 1fr); align-items: start; gap: 1.25rem; }
@@ -425,12 +425,12 @@ type BomTreeNode = {
     .overview-label { font-weight: 700; color: var(--text-secondary); line-height: 1.4; }
     .overview-value { color: var(--text-primary); line-height: 1.4; }
     .description-row { grid-row: span 2; }
-    .description-box { min-height: 70px; padding: 0.85rem 1rem; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-surface-hover); color: var(--text-primary); line-height: 1.45; }
+    .description-box { min-height: 70px; border-radius: 4px; color: var(--text-primary); line-height: 1.45; }
     .character-count { margin-top: 0.35rem; font-size: 0.75rem; color: var(--text-muted); }
     .overview-divider { height: 1px; background: var(--border-color); margin: 1.75rem 0 1.25rem; }
     .bom-title { margin: 0 0 1rem; font-size: 1.35rem; color: var(--text-primary); font-weight: 700; }
     .bom-actions { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
-    .bom-btn { padding: 0.5rem 0.85rem; border-radius: var(--border-radius-sm); background: var(--bg-surface); color: var(--text-secondary); border: 1px solid var(--border-color); box-shadow: var(--shadow-sm); font-size: 0.75rem; text-transform: uppercase; font-weight: 700; }
+    .bom-btn { padding: 0.5rem 0.85rem; border-radius: var(--border-radius-sm); border: 1px solid var(--border-color); box-shadow: var(--shadow-sm); font-size: 0.75rem; text-transform: uppercase; font-weight: 700; }
     .bom-add-panel { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem; padding: 1rem; margin-bottom: 1rem; border: 1px solid var(--border-color); background: var(--bg-surface-hover); }
     .bom-select { min-width: min(100%, 320px); min-height: 38px; border: 1px solid var(--border-color); }
     .bom-tree { overflow-x: auto; }

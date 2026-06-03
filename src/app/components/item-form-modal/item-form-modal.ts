@@ -9,13 +9,13 @@ import { UserService } from '../../services/user.service';
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule],
   template: `
-    <div class="modal-overlay" (click)="closeModal()">
-      <div class="modal-card flex-col" (click)="$event.stopPropagation()">
+    <div [class.modal-overlay]="!pageMode" [class.edit-page-shell]="pageMode" (click)="!pageMode && closeModal()">
+      <div [class.modal-card]="!pageMode" [class.edit-page-card]="pageMode" class="flex-col" (click)="$event.stopPropagation()">
         
         <div class="modal-header border-b">
           <div class="flex justify-between items-center w-full">
             <h2 class="title">{{ editItem ? 'Edit Enterprise Record' : 'Create Item' }}</h2>
-            <button class="close-icon-btn flex items-center justify-center" (click)="closeModal()">✕</button>
+            <button *ngIf="!pageMode" class="close-icon-btn flex items-center justify-center" (click)="closeModal()">✕</button>
           </div>
        
         </div>
@@ -105,7 +105,7 @@ import { UserService } from '../../services/user.service';
           <div class="flex justify-end items-center w-full gap-4">
              <button type="button" class="btn btn-secondary" (click)="closeModal()">Cancel</button>
              <button type="button" class="btn btn-primary" (click)="onSubmit()" [disabled]="!itemForm.valid || userService.isReadOnly()">
-               {{ editItem ? 'Update Record' : 'Add Record' }}
+               {{ editItem ? 'Update Item' : 'Create Item' }}
              </button>
           </div>
         </div>
@@ -115,6 +115,8 @@ import { UserService } from '../../services/user.service';
   styles: `
     .modal-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.4); z-index: 1000; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(2px); animation: fadeIn var(--transition-fast); }
     .modal-card { width: 700px; max-width: 95vw; background: var(--bg-surface); border-radius: var(--border-radius-lg); box-shadow: var(--shadow-float); overflow: hidden; display: flex; flex-direction: column; }
+    .edit-page-shell { width: 100%; margin-top: 1rem; }
+    .edit-page-card { width: 100%; background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--border-radius-md); box-shadow: var(--shadow-sm); overflow: hidden; display: flex; flex-direction: column; }
     
     .modal-header { padding: 1.5rem 2rem 1rem; background: var(--bg-surface); }
     .title { font-size: 1.5rem; margin: 0; color: var(--text-primary); font-weight: 600; letter-spacing:-0.03em;}
@@ -135,7 +137,9 @@ import { UserService } from '../../services/user.service';
 })
 export class ItemFormModal implements OnInit {
   @Input() editItem: Product | null = null;
+  @Input() pageMode = false;
   @Output() close = new EventEmitter<void>();
+  @Output() saved = new EventEmitter<string>();
   
   fb = inject(FormBuilder);
   inventoryService = inject(InventoryService);
@@ -274,6 +278,7 @@ export class ItemFormModal implements OnInit {
         this.inventoryService.addProduct(formValue as Partial<Product>);
       }
       
+      this.saved.emit(formValue.sku || this.editItem?.sku || '');
       this.closeModal();
     }
   }

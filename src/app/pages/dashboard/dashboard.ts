@@ -1,6 +1,7 @@
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { InventoryService, Product } from '../../services/inventory.service';
 import { UserService } from '../../services/user.service';
 import { PlmItemModal } from '../../components/plm-item-modal/plm-item-modal';
@@ -72,7 +73,11 @@ import { ItemFormModal } from '../../components/item-form-modal/item-form-modal'
       (close)="selectedItem = null">
     </app-plm-item-modal>
     
-    <app-item-form-modal *ngIf="showCreateModal" (close)="showCreateModal = false"></app-item-form-modal>
+    <app-item-form-modal
+      *ngIf="showCreateModal"
+      (saved)="openCreatedItem()"
+      (close)="showCreateModal = false">
+    </app-item-form-modal>
   `,
   styles: `
    .dashboard {
@@ -135,6 +140,7 @@ import { ItemFormModal } from '../../components/item-form-modal/item-form-modal'
 export class Dashboard {
   inventorySvc = inject(InventoryService);
   userService = inject(UserService);
+  router = inject(Router);
   searchQuery = '';
   selectedItem: Product | null = null;
   showCreateModal = false;
@@ -191,5 +197,10 @@ export class Dashboard {
 
   openItem(item: Product) {
     this.selectedItem = item;
+  }
+
+  openCreatedItem() {
+    this.showCreateModal = false;
+    this.router.navigate(['/items']);
   }
 }

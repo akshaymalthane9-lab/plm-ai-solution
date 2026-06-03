@@ -75,7 +75,7 @@ import { ItemFormModal } from '../../components/item-form-modal/item-form-modal'
         <div class="confirm-modal card">
           <h2>Confirm Delete</h2>
           <p>Are you sure you want to delete <strong>{{ deleteCandidate?.sku }}</strong>?</p>
-          <p class="confirm-subtitle">This action cannot be undone.</p>
+     
           <div class="confirm-actions flex gap-2">
             <button class="btn btn-secondary" type="button" (click)="cancelDelete()">Cancel</button>
             <button class="btn btn-danger" type="button" (click)="confirmDelete()">Delete</button>
