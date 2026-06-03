@@ -121,7 +121,7 @@ interface AffectedItemUpdate {
                 class="search-input"
                 type="search"
                 [(ngModel)]="itemSearchQuery"
-                placeholder="Search by item number or common name"
+                placeholder="Search by item number or part name"
               />
               <div class="search-results" *ngIf="filteredInventoryItems().length; else noSearchResults">
                 <div class="search-result-row" *ngFor="let item of filteredInventoryItems()">

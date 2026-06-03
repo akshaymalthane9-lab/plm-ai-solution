@@ -27,7 +27,7 @@ import { ItemFormModal } from '../../components/item-form-modal/item-form-modal'
           <thead>
             <tr>
               <th>Item Number</th>
-              <th>Common Name </th>
+              <th>Part Name </th>
               <th>Active Revision</th>
               <th>Item Type </th>
               <th>Part Type</th>

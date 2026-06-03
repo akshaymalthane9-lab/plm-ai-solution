@@ -32,7 +32,7 @@ import { UserService } from '../../services/user.service';
                   <input id="sku" type="text" class="form-control" formControlName="sku" placeholder="e.g. ASM-990" />
                 </div>
                 <div class="form-group">
-                  <label class="form-label" for="name">Common Name *</label>
+                  <label class="form-label" for="name">Part Name *</label>
                   <input id="name" type="text" class="form-control" formControlName="name" placeholder="Item Name" />
                 </div>
              </div>

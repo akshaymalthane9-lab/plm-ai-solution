@@ -387,7 +387,7 @@ export class InventoryService {
   private describeProductUpdates(previous: Product, updated: Product, updates: Partial<Product>): string {
     const labels: Partial<Record<keyof Product, string>> = {
       sku: 'Item Number',
-      name: 'Common Name',
+      name: 'Part Name',
       quantity: 'Quantity',
       category: 'Category',
       status: 'Status',

@@ -155,14 +155,11 @@ export class Dashboard {
   }
 
   get currentUserName() {
-    return this.inventorySvc.getData().length ? 'Current User' : 'Current User';
+    return this.userService.currentUser() || 'Current User';
   }
 
   get itemsCreatedByMe(): Product[] {
-    const user = 'Current User';
-    return this.inventorySvc.getData().filter(product =>
-      product.history.some(entry => entry.user === user)
-    );
+    return this.inventorySvc.getData();
   }
 
   get changesCreatedThisMonth(): number {
