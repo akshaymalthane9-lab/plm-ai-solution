@@ -1,5 +1,17 @@
 import { Injectable, signal } from '@angular/core';
 
+export interface AttachmentFile {
+  id: string;
+  name: string;
+  type: string;
+  size: number;
+  modifiedOn: string;
+  modifiedBy: string;
+  dataUrl?: string;
+}
+
+export type ProductAttachment = string | AttachmentFile;
+
 export interface Product {
   id: string;
   sku: string;
@@ -20,7 +32,7 @@ export interface Product {
   relationships?: string[];
   history: Array<{ date: string; action: string; user: string; details?: string }>;
   changes: Array<{ id: string; description: string; status: string; date?: string }>;
-  attachments: string[];
+  attachments: ProductAttachment[];
 }
 
 @Injectable({
@@ -254,6 +266,47 @@ export class InventoryService {
           return p;
       }));
       this.persist();
+  }
+
+  addAttachment(sku: string, attachment: AttachmentFile) {
+      this.inventory.update(current => current.map(p => {
+          if (p.sku === sku) {
+              return { ...p, attachments: [attachment, ...(p.attachments || [])] };
+          }
+          return p;
+      }));
+      this.persist();
+  }
+
+  updateAttachmentData(sku: string, attachmentId: string, dataUrl: string) {
+      this.inventory.update(current => current.map(p => {
+          if (p.sku === sku) {
+              return {
+                  ...p,
+                  attachments: (p.attachments || []).map(attachment =>
+                      typeof attachment !== 'string' && attachment.id === attachmentId
+                          ? { ...attachment, dataUrl }
+                          : attachment
+                  )
+              };
+          }
+          return p;
+      }));
+      this.persist();
+  }
+
+  removeAttachment(sku: string, attachmentId: string) {
+      this.inventory.update(current => current.map(p => {
+          if (p.sku === sku) {
+              return { ...p, attachments: (p.attachments || []).filter((attachment, index) => this.getAttachmentId(attachment, index) !== attachmentId) };
+          }
+          return p;
+      }));
+      this.persist();
+  }
+
+  private getAttachmentId(attachment: ProductAttachment, index: number): string {
+      return typeof attachment === 'string' ? `${attachment}-${index}` : attachment.id;
   }
 
   private calculateStatus(quantity: number): Product['status'] {

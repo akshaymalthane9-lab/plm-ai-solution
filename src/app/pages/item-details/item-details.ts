@@ -2,7 +2,7 @@ import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { Product, InventoryService } from '../../services/inventory.service';
+import { AttachmentFile, Product, ProductAttachment, InventoryService } from '../../services/inventory.service';
 import { UserService } from '../../services/user.service';
 
 type ItemDetailTab = 'Overview' | 'Changes' | 'Relationship' | 'WhereUsed' | 'Attachments' | 'History';
@@ -256,9 +256,10 @@ type BomTreeNode = {
 
             <div class="attachment-toolbar">
               <div class="relationship-actions">
-                <button class="btn btn-primary" type="button" [disabled]="userService.isReadOnly()">+ Add</button>
-                <button class="btn relation-action" type="button" [disabled]="userService.isReadOnly()">- Remove</button>
-                <button class="btn relation-action" type="button">Download</button>
+                <button class="btn btn-primary" type="button" [disabled]="userService.isReadOnly()" (click)="attachmentUpload.click()">+ Add</button>
+                <input #attachmentUpload type="file" multiple style="display:none" (change)="uploadAttachments($event)">
+                <button class="btn relation-action" type="button" style="background:#dc2626;color:#fff;border-color:#dc2626" [disabled]="userService.isReadOnly() || getVisibleAttachments().length === 0" (click)="openAttachmentRemove()">- Remove</button>
+                <button class="btn relation-action" type="button" [disabled]="getVisibleAttachments().length === 0" (click)="openAttachmentDownload()">Download</button>
                 <button class="btn relation-action" type="button" [disabled]="userService.isReadOnly()">Check-In</button>
                 <button class="btn relation-action" type="button" [disabled]="userService.isReadOnly()">Check Out</button>
                 <button class="btn relation-action" type="button" [disabled]="userService.isReadOnly()">Cancel Check Out</button>
@@ -271,6 +272,30 @@ type BomTreeNode = {
                   (input)="attachmentSearchQuery = $any($event.target).value"
                 >
               </label>
+            </div>
+
+            <div class="bom-add-panel" *ngIf="isAttachmentRemoveOpen && !userService.isReadOnly()">
+              <div>Remove attachment</div>
+              <select class="bom-select" [(ngModel)]="selectedAttachmentId" aria-label="Select attachment to remove">
+                <option value="">Select file</option>
+                <option *ngFor="let attachment of getVisibleAttachments(); let i = index" [value]="getAttachmentId(attachment, i)">
+                  {{ getAttachmentName(attachment, i) }}
+                </option>
+              </select>
+              <button class="btn relation-action" type="button" style="background:#dc2626;color:#fff;border-color:#dc2626" [disabled]="!selectedAttachmentId" (click)="removeSelectedAttachment()">Remove File</button>
+              <button class="btn relation-action" type="button" (click)="closeAttachmentRemove()">Cancel</button>
+            </div>
+
+            <div class="bom-add-panel" *ngIf="isAttachmentDownloadOpen">
+              <div>Download attachment</div>
+              <select class="bom-select" [(ngModel)]="selectedAttachmentId" aria-label="Select attachment to download">
+                <option value="">Select file</option>
+                <option *ngFor="let attachment of getVisibleAttachments(); let i = index" [value]="getAttachmentId(attachment, i)">
+                  {{ getAttachmentName(attachment, i) }}
+                </option>
+              </select>
+              <button class="btn relation-action" type="button" [disabled]="!selectedAttachmentId" (click)="downloadSelectedAttachment()">Download File</button>
+              <button class="btn relation-action" type="button" (click)="closeAttachmentDownload()">Cancel</button>
             </div>
 
             <div class="change-table-wrap">
@@ -290,11 +315,15 @@ type BomTreeNode = {
                   <tr *ngFor="let attachment of getVisibleAttachments(); let i = index">
                     <td class="relationship-link">{{ getAttachmentName(attachment, i) }}</td>
                     <td>{{ getAttachmentType(attachment) }}</td>
-                    <td>{{ i === 0 ? 'A.3' : 'B.1' }}</td>
-                    <td>{{ i === 0 ? '2.4 MB' : '348 KB' }}</td>
-                    <td>{{ getTodayLabel() }}</td>
-                    <td>{{ i === 0 ? 'Alex Johnson' : 'Priya Sharma' }}</td>
-                    <td>{{ i === 0 ? '-' : 'Rahul Mehta' }}</td>
+                    <td>{{ getAttachmentVersion(attachment, i) }}</td>
+                    <td>{{ getAttachmentSize(attachment, i) }}</td>
+                    <td>{{ getAttachmentModifiedOn(attachment) }}</td>
+                    <td>{{ getAttachmentModifiedBy(attachment, i) }}</td>
+                    <td>
+                      <span>{{ i === 0 ? '-' : 'Rahul Mehta' }}</span>
+                      <button class="btn relation-action" type="button" style="margin-left:.75rem" (click)="downloadAttachment(attachment, i)">Download</button>
+                      <button *ngIf="!userService.isReadOnly()" class="btn relation-action" type="button" style="margin-left:.5rem;background:#dc2626;color:#fff;border-color:#dc2626" (click)="removeAttachment(attachment, i)">Remove</button>
+                    </td>
                   </tr>
                   <tr *ngIf="getVisibleAttachments().length === 0">
                     <td colspan="7" class="change-empty">No attachments available</td>
@@ -303,10 +332,7 @@ type BomTreeNode = {
               </table>
             </div>
 
-            <div class="attachment-details">
-              <strong>Attachment Details</strong>
-              <p>{{ getAttachmentDetails() }}</p>
-            </div>
+          
           </section>
         </ng-container>
 
@@ -498,6 +524,9 @@ export class ItemDetails implements OnInit {
   isRelationshipAddOpen = false;
   isRelationshipRemoveOpen = false;
   selectedRelationshipSku = '';
+  isAttachmentRemoveOpen = false;
+  isAttachmentDownloadOpen = false;
+  selectedAttachmentId = '';
 
   ngOnInit() {
     const sku = this.route.snapshot.paramMap.get('sku');
@@ -764,26 +793,156 @@ export class ItemDetails implements OnInit {
     return 'No change orders available';
   }
 
-  getVisibleAttachments(): string[] {
+  getVisibleAttachments(): ProductAttachment[] {
     if (!this.item) return [];
     const query = this.attachmentSearchQuery.trim().toLowerCase();
     if (!query) return this.item.attachments;
-    return this.item.attachments.filter(file =>
-      file.toLowerCase().includes(query) ||
-      this.getAttachmentType(file).toLowerCase().includes(query)
+    return this.item.attachments.filter((attachment, index) =>
+      this.getAttachmentName(attachment, index).toLowerCase().includes(query) ||
+      this.getAttachmentType(attachment).toLowerCase().includes(query)
     );
   }
 
-  getAttachmentName(file: string, index: number): string {
+  uploadAttachments(event: Event) {
+    if (!this.item || this.userService.isReadOnly()) return;
+
+    const input = event.target as HTMLInputElement;
+    const files = Array.from(input.files || []);
+
+    files.forEach(file => {
+      if (!this.item) return;
+
+      const attachment: AttachmentFile = {
+        id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+        name: file.name,
+        type: file.type || 'application/octet-stream',
+        size: file.size,
+        modifiedOn: new Date().toISOString(),
+        modifiedBy: 'Current User'
+      };
+
+      this.inventoryService.addAttachment(this.item.sku, attachment);
+      this.refreshCurrentItem();
+
+      const reader = new FileReader();
+      reader.onload = () => {
+        if (!this.item) return;
+        this.inventoryService.updateAttachmentData(this.item.sku, attachment.id, String(reader.result || ''));
+        this.refreshCurrentItem();
+      };
+      reader.readAsDataURL(file);
+    });
+
+    input.value = '';
+  }
+
+  openAttachmentRemove() {
+    if (this.userService.isReadOnly()) return;
+    this.selectedAttachmentId = '';
+    this.isAttachmentRemoveOpen = true;
+    this.closeAttachmentDownload();
+  }
+
+  closeAttachmentRemove() {
+    this.isAttachmentRemoveOpen = false;
+    this.selectedAttachmentId = '';
+  }
+
+  openAttachmentDownload() {
+    this.selectedAttachmentId = '';
+    this.isAttachmentDownloadOpen = true;
+    this.closeAttachmentRemove();
+  }
+
+  closeAttachmentDownload() {
+    this.isAttachmentDownloadOpen = false;
+    this.selectedAttachmentId = '';
+  }
+
+  removeSelectedAttachment() {
+    if (!this.selectedAttachmentId) return;
+    this.removeAttachmentById(this.selectedAttachmentId);
+    this.closeAttachmentRemove();
+  }
+
+  downloadSelectedAttachment() {
+    const attachment = this.getVisibleAttachments().find((file, index) => this.getAttachmentId(file, index) === this.selectedAttachmentId);
+    if (!attachment) return;
+    const index = this.getVisibleAttachments().indexOf(attachment);
+    this.downloadAttachment(attachment, index);
+    this.closeAttachmentDownload();
+  }
+
+  removeAttachment(attachment: ProductAttachment, index: number) {
+    this.removeAttachmentById(this.getAttachmentId(attachment, index));
+  }
+
+  downloadAttachment(attachment: ProductAttachment, index: number) {
+    const name = this.getAttachmentName(attachment, index);
+    const link = document.createElement('a');
+
+    if (typeof attachment !== 'string' && attachment.dataUrl) {
+      link.href = attachment.dataUrl;
+    } else {
+      link.href = URL.createObjectURL(new Blob([''], { type: this.getAttachmentType(attachment) }));
+    }
+
+    link.download = name;
+    link.click();
+
+    if (typeof attachment === 'string' || !attachment.dataUrl) {
+      URL.revokeObjectURL(link.href);
+    }
+  }
+
+  getAttachmentId(attachment: ProductAttachment, index: number): string {
+    return typeof attachment === 'string' ? `${attachment}-${index}` : attachment.id;
+  }
+
+  getAttachmentName(file: ProductAttachment, index: number): string {
+    if (typeof file !== 'string') return file.name;
     return file || (index === 0 ? 'drawing_main_assembly.dwg' : 'installation_notes.docx');
   }
 
-  getAttachmentType(file: string): string {
-    const ext = file.split('.').pop()?.toLowerCase();
+  getAttachmentType(file: ProductAttachment): string {
+    if (typeof file !== 'string' && file.type) return file.type;
+
+    const name = typeof file === 'string' ? file : file.name;
+    const ext = name.split('.').pop()?.toLowerCase();
     if (ext === 'dwg' || ext === 'step') return 'DWG Drawing';
     if (ext === 'doc' || ext === 'docx') return 'Word Document';
     if (ext === 'pdf') return 'PDF Document';
     return 'Document';
+  }
+
+  getAttachmentVersion(attachment: ProductAttachment, index: number): string {
+    return typeof attachment === 'string' ? (index === 0 ? 'A.3' : 'B.1') : 'A.1';
+  }
+
+  getAttachmentSize(attachment: ProductAttachment, index: number): string {
+    if (typeof attachment === 'string') return index === 0 ? '2.4 MB' : '348 KB';
+    if (attachment.size < 1024) return `${attachment.size} B`;
+    if (attachment.size < 1024 * 1024) return `${(attachment.size / 1024).toFixed(1)} KB`;
+    return `${(attachment.size / (1024 * 1024)).toFixed(1)} MB`;
+  }
+
+  getAttachmentModifiedOn(attachment: ProductAttachment): string {
+    if (typeof attachment === 'string') return this.getTodayLabel();
+    return new Date(attachment.modifiedOn).toLocaleDateString('en-GB', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric'
+    });
+  }
+
+  getAttachmentModifiedBy(attachment: ProductAttachment, index: number): string {
+    return typeof attachment === 'string' ? (index === 0 ? 'Alex Johnson' : 'Priya Sharma') : attachment.modifiedBy;
+  }
+
+  private removeAttachmentById(attachmentId: string) {
+    if (!this.item || this.userService.isReadOnly()) return;
+    this.inventoryService.removeAttachment(this.item.sku, attachmentId);
+    this.refreshCurrentItem();
   }
 
   getAttachmentDetails(): string {
