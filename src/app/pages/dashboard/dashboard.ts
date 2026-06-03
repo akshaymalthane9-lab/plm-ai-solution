@@ -2,6 +2,7 @@ import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { InventoryService, Product } from '../../services/inventory.service';
+import { UserService } from '../../services/user.service';
 import { PlmItemModal } from '../../components/plm-item-modal/plm-item-modal';
 import { ItemFormModal } from '../../components/item-form-modal/item-form-modal';
 
@@ -13,10 +14,13 @@ import { ItemFormModal } from '../../components/item-form-modal/item-form-modal'
     <div class="dashboard flex-col gap-6 ">
       <div class="page-header flex justify-between items-center">
         <div>
-          <h1 class="page-title">Deloitte PLM - My Dashboard</h1>
+          <h1 class="page-title">Deloitte PLM - Dashboard</h1>
      
         </div>
         <div class="header-actions flex items-center gap-3">
+          <button class="btn btn-primary" (click)="showCreateModal = true" *ngIf="!userService.isReadOnly()">
+            <span>+</span> Create Item
+          </button>
           <button class="btn btn-primary shadow-glow" type="button" (click)="generateReport()">Generate Report</button>
          
         </div>
@@ -88,7 +92,7 @@ import { ItemFormModal } from '../../components/item-form-modal/item-form-modal'
     .tile-value { font-size: 2.2rem; font-weight: 700; margin-bottom: 0.75rem; font-family: var(--font-heading); color: var(--text-primary); letter-spacing: -0.03em;}
     .tile-footer { font-size: 0.8rem; }
 
-    .header-actions { align-items: center; }
+    .header-actions { align-items: center; gap:1rem}
     .report-summary { padding: 1.5rem; border-radius: var(--border-radius-md); border: 1px solid var(--border-color); background: var(--bg-surface); }
     .report-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-top: 1rem; }
     .report-card { padding: 1rem; border-radius: var(--border-radius-lg); background: var(--bg-app); display: flex; flex-direction: column; gap: 0.35rem; }
@@ -130,6 +134,7 @@ import { ItemFormModal } from '../../components/item-form-modal/item-form-modal'
 })
 export class Dashboard {
   inventorySvc = inject(InventoryService);
+  userService = inject(UserService);
   searchQuery = '';
   selectedItem: Product | null = null;
   showCreateModal = false;

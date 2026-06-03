@@ -945,11 +945,7 @@ export class ItemDetails implements OnInit {
     this.refreshCurrentItem();
   }
 
-  getAttachmentDetails(): string {
-    return this.item?.attachments.length
-      ? 'Attached files include engineering documents and supporting product files.'
-      : 'No files are currently attached to this item.';
-  }
+
 
   getTodayLabel(): string {
     return new Date().toLocaleDateString('en-GB', {

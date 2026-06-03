@@ -1,4 +1,5 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable, inject, signal } from '@angular/core';
+import { UserService } from './user.service';
 
 export interface AttachmentFile {
   id: string;
@@ -39,6 +40,7 @@ export interface Product {
   providedIn: 'root'
 })
 export class InventoryService {
+  private userService = inject(UserService);
   private storageKey = 'deloitte_plm_db_v1';
   
   private initialProducts: Product[] = [
@@ -89,6 +91,7 @@ export class InventoryService {
         part: p.part || p.type || (p.category === 'Software' ? 'Document' : 'Part'),
         partType: p.partType ? this.normalizePartType(p.partType) : p.partType,
         relationships: p.relationships || [],
+        history: p.history || [],
         status: p.status || this.calculateStatus(p.quantity || 0)
       })) as Product[];
       this.inventory.set(data);
@@ -138,7 +141,7 @@ export class InventoryService {
       partDescription: productDef.partDescription || '',
       bom: productDef.bom || [],
       relationships: productDef.relationships || [],
-      history: [{date: new Date().toISOString(), action: 'Created item record', user: 'Current User'}],
+      history: [this.createHistoryEntry('Created item record', 'Item was created.')],
       changes: [],
       attachments: productDef.attachments || []
     };
@@ -162,6 +165,13 @@ export class InventoryService {
         const updated = { ...p, ...updates };
         if (updates.quantity !== undefined) {
            updated.status = this.calculateStatus(updates.quantity);
+        }
+        const details = this.describeProductUpdates(p, updated, updates);
+        if (details) {
+          updated.history = [
+            this.createHistoryEntry('Updated item record', details),
+            ...(p.history || [])
+          ];
         }
         return updated;
       }
@@ -187,11 +197,10 @@ export class InventoryService {
         const currentIndex = states.indexOf(p.lifecycle);
         if (currentIndex < states.length - 1) {
           const nextState = states[currentIndex + 1];
-          const historyEntry = { 
-            date: new Date().toISOString(), 
-            action: `Promoted Lifecycle Stage to ${nextState}`, 
-            user: 'Workflow Engine' 
-          };
+          const historyEntry = this.createHistoryEntry(
+            `Promoted Lifecycle Stage to ${nextState}`,
+            `Lifecycle changed from ${p.lifecycle} to ${nextState}.`
+          );
           return { ...p, lifecycle: nextState, history: [historyEntry, ...p.history] };
         }
       }
@@ -213,7 +222,17 @@ export class InventoryService {
           }
           return c;
         });
-        return { ...p, changes };
+        const updatedChange = changes.find(change => change.id === changeId);
+        return {
+          ...p,
+          changes,
+          history: updatedChange
+            ? [
+                this.createHistoryEntry('Updated change status', `${changeId} moved to ${updatedChange.status}.`),
+                ...(p.history || [])
+              ]
+            : p.history
+        };
       }
       return p;
     }));
@@ -226,7 +245,14 @@ export class InventoryService {
           if (p.sku === parentSku) {
               const currentBom = p.bom || [];
               if (!currentBom.includes(childSku)) {
-                  return { ...p, bom: [...currentBom, childSku] };
+                  return {
+                      ...p,
+                      bom: [...currentBom, childSku],
+                      history: [
+                          this.createHistoryEntry('Added BOM component', `${childSku} was added to the BOM.`),
+                          ...(p.history || [])
+                      ]
+                  };
               }
           }
           return p;
@@ -237,7 +263,14 @@ export class InventoryService {
   detachBomComponent(parentSku: string, childSku: string) {
       this.inventory.update(current => current.map(p => {
           if (p.sku === parentSku) {
-              return { ...p, bom: (p.bom || []).filter(sku => sku !== childSku) };
+              return {
+                  ...p,
+                  bom: (p.bom || []).filter(sku => sku !== childSku),
+                  history: [
+                      this.createHistoryEntry('Removed BOM component', `${childSku} was removed from the BOM.`),
+                      ...(p.history || [])
+                  ]
+              };
           }
           return p;
       }));
@@ -250,7 +283,14 @@ export class InventoryService {
           if (p.sku === parentSku) {
               const currentRelationships = p.relationships || [];
               if (!currentRelationships.includes(relatedSku)) {
-                  return { ...p, relationships: [...currentRelationships, relatedSku] };
+                  return {
+                      ...p,
+                      relationships: [...currentRelationships, relatedSku],
+                      history: [
+                          this.createHistoryEntry('Added relationship', `${relatedSku} was added as a related object.`),
+                          ...(p.history || [])
+                      ]
+                  };
               }
           }
           return p;
@@ -261,7 +301,14 @@ export class InventoryService {
   detachRelationship(parentSku: string, relatedSku: string) {
       this.inventory.update(current => current.map(p => {
           if (p.sku === parentSku) {
-              return { ...p, relationships: (p.relationships || []).filter(sku => sku !== relatedSku) };
+              return {
+                  ...p,
+                  relationships: (p.relationships || []).filter(sku => sku !== relatedSku),
+                  history: [
+                      this.createHistoryEntry('Removed relationship', `${relatedSku} was removed from related objects.`),
+                      ...(p.history || [])
+                  ]
+              };
           }
           return p;
       }));
@@ -271,7 +318,14 @@ export class InventoryService {
   addAttachment(sku: string, attachment: AttachmentFile) {
       this.inventory.update(current => current.map(p => {
           if (p.sku === sku) {
-              return { ...p, attachments: [attachment, ...(p.attachments || [])] };
+              return {
+                  ...p,
+                  attachments: [attachment, ...(p.attachments || [])],
+                  history: [
+                      this.createHistoryEntry('Uploaded attachment', `${attachment.name} was uploaded.`),
+                      ...(p.history || [])
+                  ]
+              };
           }
           return p;
       }));
@@ -298,7 +352,16 @@ export class InventoryService {
   removeAttachment(sku: string, attachmentId: string) {
       this.inventory.update(current => current.map(p => {
           if (p.sku === sku) {
-              return { ...p, attachments: (p.attachments || []).filter((attachment, index) => this.getAttachmentId(attachment, index) !== attachmentId) };
+              const attachment = (p.attachments || []).find((currentAttachment, index) => this.getAttachmentId(currentAttachment, index) === attachmentId);
+              const attachmentName = typeof attachment === 'string' ? attachment : attachment?.name || 'Attachment';
+              return {
+                  ...p,
+                  attachments: (p.attachments || []).filter((attachment, index) => this.getAttachmentId(attachment, index) !== attachmentId),
+                  history: [
+                      this.createHistoryEntry('Removed attachment', `${attachmentName} was removed.`),
+                      ...(p.history || [])
+                  ]
+              };
           }
           return p;
       }));
@@ -307,6 +370,46 @@ export class InventoryService {
 
   private getAttachmentId(attachment: ProductAttachment, index: number): string {
       return typeof attachment === 'string' ? `${attachment}-${index}` : attachment.id;
+  }
+
+  private createHistoryEntry(action: string, details?: string): Product['history'][number] {
+    return {
+      date: new Date().toISOString(),
+      action,
+      user: this.userService.currentUser() || 'Current User',
+      details
+    };
+  }
+
+  private describeProductUpdates(previous: Product, updated: Product, updates: Partial<Product>): string {
+    const labels: Partial<Record<keyof Product, string>> = {
+      sku: 'Item Number',
+      name: 'Common Name',
+      quantity: 'Quantity',
+      category: 'Category',
+      status: 'Status',
+      type: 'Type',
+      revision: 'Revision',
+      lifecycle: 'Lifecycle Status',
+      part: 'Item Type',
+      partDescription: 'Part Description',
+      document: 'Document',
+      partType: 'Part Type',
+      classification: 'Classification'
+    };
+
+    return (Object.keys(labels) as Array<keyof Product>)
+      .filter(key => Object.prototype.hasOwnProperty.call(updates, key))
+      .filter(key => previous[key] !== updated[key])
+      .map(key => `${labels[key]} changed from "${this.formatHistoryValue(previous[key])}" to "${this.formatHistoryValue(updated[key])}"`)
+      .join('; ');
+  }
+
+  private formatHistoryValue(value: unknown): string {
+    if (value === undefined || value === null || value === '') {
+      return 'blank';
+    }
+    return String(value);
   }
 
   private calculateStatus(quantity: number): Product['status'] {
