@@ -17,6 +17,7 @@ export interface Product {
   partType?: string;
   classification?: string;
   bom: string[]; 
+  relationships?: string[];
   history: Array<{ date: string; action: string; user: string; details?: string }>;
   changes: Array<{ id: string; description: string; status: string; date?: string }>;
   attachments: string[];
@@ -75,6 +76,7 @@ export class InventoryService {
         type: p.type || (p.category === 'Software' ? 'Document' : 'Part'),
         part: p.part || p.type || (p.category === 'Software' ? 'Document' : 'Part'),
         partType: p.partType ? this.normalizePartType(p.partType) : p.partType,
+        relationships: p.relationships || [],
         status: p.status || this.calculateStatus(p.quantity || 0)
       })) as Product[];
       this.inventory.set(data);
@@ -123,6 +125,7 @@ export class InventoryService {
       lifecycle: productDef.lifecycle || 'Design',
       partDescription: productDef.partDescription || '',
       bom: productDef.bom || [],
+      relationships: productDef.relationships || [],
       history: [{date: new Date().toISOString(), action: 'Created item record', user: 'Current User'}],
       changes: [],
       attachments: productDef.attachments || []
@@ -223,6 +226,30 @@ export class InventoryService {
       this.inventory.update(current => current.map(p => {
           if (p.sku === parentSku) {
               return { ...p, bom: (p.bom || []).filter(sku => sku !== childSku) };
+          }
+          return p;
+      }));
+      this.persist();
+  }
+
+  attachRelationship(parentSku: string, relatedSku: string) {
+      if (parentSku === relatedSku) return;
+      this.inventory.update(current => current.map(p => {
+          if (p.sku === parentSku) {
+              const currentRelationships = p.relationships || [];
+              if (!currentRelationships.includes(relatedSku)) {
+                  return { ...p, relationships: [...currentRelationships, relatedSku] };
+              }
+          }
+          return p;
+      }));
+      this.persist();
+  }
+
+  detachRelationship(parentSku: string, relatedSku: string) {
+      this.inventory.update(current => current.map(p => {
+          if (p.sku === parentSku) {
+              return { ...p, relationships: (p.relationships || []).filter(sku => sku !== relatedSku) };
           }
           return p;
       }));

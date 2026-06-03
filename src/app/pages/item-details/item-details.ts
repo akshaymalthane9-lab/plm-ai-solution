@@ -175,9 +175,33 @@ type BomTreeNode = {
             </div>
 
             <div class="relationship-actions">
-              <button class="btn btn-primary" type="button" [disabled]="userService.isReadOnly()">+ Add</button>
-              <button class="btn relation-action" type="button" [disabled]="userService.isReadOnly()">- Remove</button>
+              <button class="btn btn-primary" type="button" [disabled]="userService.isReadOnly()" (click)="openRelationshipAdd()">+ Add</button>
+              <button class="btn relation-action" type="button" style="background:#dc2626;color:#fff;border-color:#dc2626" [disabled]="userService.isReadOnly() || getRelationshipObjects().length === 0" (click)="openRelationshipRemove()">- Remove</button>
               <button class="btn relation-action" type="button" [disabled]="userService.isReadOnly()">Edit Rule</button>
+            </div>
+
+            <div class="bom-add-panel" *ngIf="isRelationshipAddOpen && !userService.isReadOnly()">
+              <div>Add relationship</div>
+              <select class="bom-select" [(ngModel)]="selectedRelationshipSku" aria-label="Select related item">
+                <option value="">Select item</option>
+                <option *ngFor="let product of getAvailableRelationshipItems()" [value]="product.sku">
+                  {{ product.sku }} - {{ product.name }}
+                </option>
+              </select>
+              <button class="btn btn-primary" type="button" [disabled]="!selectedRelationshipSku" (click)="addRelationshipItem()">Add Item</button>
+              <button class="btn relation-action" type="button" (click)="closeRelationshipAdd()">Cancel</button>
+            </div>
+
+            <div class="bom-add-panel" *ngIf="isRelationshipRemoveOpen && !userService.isReadOnly()">
+              <div>Remove relationship</div>
+              <select class="bom-select" [(ngModel)]="selectedRelationshipSku" aria-label="Select relationship to remove">
+                <option value="">Select item</option>
+                <option *ngFor="let product of getRelationshipObjects()" [value]="product.sku">
+                  {{ product.sku }} - {{ product.name }}
+                </option>
+              </select>
+              <button class="btn relation-action" type="button" style="background:#dc2626;color:#fff;border-color:#dc2626" [disabled]="!selectedRelationshipSku" (click)="removeRelationshipItem()">Remove Item</button>
+              <button class="btn relation-action" type="button" (click)="closeRelationshipRemove()">Cancel</button>
             </div>
 
             <div class="change-table-wrap">
@@ -192,12 +216,23 @@ type BomTreeNode = {
                   </tr>
                 </thead>
                 <tbody>
-                  <tr *ngFor="let related of getRelationshipObjects()" class="hover-row cursor-pointer" (click)="navigateToItem(related.sku)">
+                  <tr *ngFor="let related of getRelationshipObjects()" class="hover-row">
                     <td class="font-mono">{{ related.sku }}</td>
-                    <td class="relationship-link">{{ related.name }}</td>
+                    <td><button class="relationship-link" type="button" (click)="navigateToItem(related.sku)">{{ related.name }}</button></td>
                     <td>{{ getBomDescription(related) }}</td>
                     <td>{{ related.revision }}</td>
-                    <td>Fulfill</td>
+                    <td>
+                      <span>Fulfill</span>
+                      <button
+                        *ngIf="!userService.isReadOnly()"
+                        class="btn relation-action"
+                        type="button"
+                        style="margin-left:.75rem;background:#dc2626;color:#fff;border-color:#dc2626"
+                        (click)="removeRelationshipItem(related.sku)"
+                      >
+                        Remove
+                      </button>
+                    </td>
                   </tr>
                   <tr *ngIf="getRelationshipObjects().length === 0">
                     <td colspan="5" class="change-empty">No related objects available</td>
@@ -460,6 +495,9 @@ export class ItemDetails implements OnInit {
   selectedBomParentSku = '';
   selectedBomChildSku = '';
   selectedBomRemovePath = '';
+  isRelationshipAddOpen = false;
+  isRelationshipRemoveOpen = false;
+  selectedRelationshipSku = '';
 
   ngOnInit() {
     const sku = this.route.snapshot.paramMap.get('sku');
@@ -567,7 +605,58 @@ export class ItemDetails implements OnInit {
   }
 
   getRelationshipObjects(): Product[] {
-    return this.getResolvedBom();
+    if (!this.item?.relationships) return [];
+    return this.item.relationships
+      .map(sku => this.inventoryService.getData().find(product => product.sku === sku))
+      .filter(Boolean) as Product[];
+  }
+
+  openRelationshipAdd() {
+    if (this.userService.isReadOnly()) return;
+    this.selectedRelationshipSku = '';
+    this.isRelationshipAddOpen = true;
+    this.closeRelationshipRemove();
+  }
+
+  closeRelationshipAdd() {
+    this.isRelationshipAddOpen = false;
+    this.selectedRelationshipSku = '';
+  }
+
+  openRelationshipRemove() {
+    if (this.userService.isReadOnly()) return;
+    this.selectedRelationshipSku = '';
+    this.isRelationshipRemoveOpen = true;
+    this.closeRelationshipAdd();
+  }
+
+  closeRelationshipRemove() {
+    this.isRelationshipRemoveOpen = false;
+    this.selectedRelationshipSku = '';
+  }
+
+  getAvailableRelationshipItems(): Product[] {
+    if (!this.item) return [];
+    const existingRelationships = new Set(this.item.relationships || []);
+
+    return this.inventoryService.getData().filter(product =>
+      product.sku !== this.item?.sku &&
+      !existingRelationships.has(product.sku)
+    );
+  }
+
+  addRelationshipItem() {
+    if (!this.item || !this.selectedRelationshipSku || this.userService.isReadOnly()) return;
+    this.inventoryService.attachRelationship(this.item.sku, this.selectedRelationshipSku);
+    this.refreshCurrentItem();
+    this.closeRelationshipAdd();
+  }
+
+  removeRelationshipItem(sku = this.selectedRelationshipSku) {
+    if (!this.item || !sku || this.userService.isReadOnly()) return;
+    this.inventoryService.detachRelationship(this.item.sku, sku);
+    this.refreshCurrentItem();
+    this.closeRelationshipRemove();
   }
 
   navigateToItem(sku: string) {
@@ -626,6 +715,10 @@ export class ItemDetails implements OnInit {
 
   private removeBomLink(parentSku: string, childSku: string) {
     this.inventoryService.detachBomComponent(parentSku, childSku);
+    this.refreshCurrentItem();
+  }
+
+  private refreshCurrentItem() {
     if (this.item) {
       this.item = this.inventoryService.getData().find(product => product.sku === this.item?.sku) || this.item;
     }
