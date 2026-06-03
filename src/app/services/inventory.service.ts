@@ -219,6 +219,16 @@ export class InventoryService {
       this.persist();
   }
 
+  detachBomComponent(parentSku: string, childSku: string) {
+      this.inventory.update(current => current.map(p => {
+          if (p.sku === parentSku) {
+              return { ...p, bom: (p.bom || []).filter(sku => sku !== childSku) };
+          }
+          return p;
+      }));
+      this.persist();
+  }
+
   private calculateStatus(quantity: number): Product['status'] {
     if (quantity === 0) return 'out-of-stock';
     if (quantity < 15) return 'low-stock';

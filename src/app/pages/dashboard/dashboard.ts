@@ -37,55 +37,6 @@ import { ItemFormModal } from '../../components/item-form-modal/item-form-modal'
         </div>
       </div>
 
-      <div class="chart-grid grid">
-        <div class="chart-card card">
-          <div class="chart-card-header">
-            <div>
-              <h3 class="chart-title">Items Created in Last 1 Month</h3>
-            </div>
-          </div>
-          <div class="chart-pie">
-            <div class="pie-plot" aria-label="Items created by category">
-              <div class="pie-chart"></div>
-              <span class="pie-label electronics">Electronics 36%</span>
-              <span class="pie-label automotive">Automotive 24%</span>
-              <span class="pie-label consumer">Consumer Goods 19%</span>
-              <span class="pie-label industrial">Industrial 13%</span>
-              <span class="pie-label healthcare">Healthcare 8%</span>
-            </div>
-            <div class="pie-legend" aria-hidden="true">
-              <div *ngFor="let item of itemCategoryBreakdown">
-                <span class="legend-square" [style.background]="item.color"></span>{{ item.name }}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="chart-card card">
-          <div class="chart-card-header">
-            <div>
-              <h3 class="chart-title">Changes Created in Last 1 Month</h3>
-            </div>
-          </div>
-          <div class="bar-chart" aria-label="Changes created by week">
-            <div class="bar-y-axis">
-              <span>400</span>
-              <span>300</span>
-              <span>200</span>
-              <span>100</span>
-              <span>0</span>
-            </div>
-            <div class="bar-plot">
-              <div class="bar-column" *ngFor="let week of weeklyChanges">
-                <div class="bar-fill" [style.height.%]="week.height"></div>
-                <span class="bar-label">{{ week.label }}</span>
-              </div>
-            </div>
-            <div class="bar-legend"><span class="legend-square"></span>changes</div>
-          </div>
-        </div>
-      </div>
-
       <div class="report-summary card" *ngIf="reportVisible">
         <div class="report-header flex justify-between items-center">
           <div>
@@ -138,46 +89,6 @@ import { ItemFormModal } from '../../components/item-form-modal/item-form-modal'
     .tile-footer { font-size: 0.8rem; }
 
     .header-actions { align-items: center; }
-    .chart-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; }
-    .chart-card { padding: 1.5rem; border-radius: var(--border-radius-md); border: 1px solid var(--border-color); background: var(--bg-surface); min-height: 320px; }
-    .chart-card-header { margin-bottom: 1.25rem; }
-    .chart-title { margin: 0; font-size: 1rem; color: var(--text-secondary); font-weight: 700; }
-    .chart-pie { display: grid; gap: 0.75rem; align-items: center; justify-items: center; }
-    .pie-plot { position: relative; width: min(100%, 430px); min-height: 225px; }
-    .pie-chart {
-      position: absolute;
-      left: 50%;
-      top: 42%;
-      width: 160px;
-      height: 160px;
-      border-radius: 50%;
-      transform: translate(-50%, -50%);
-      background:
-        conic-gradient(
-          #65b82f 0 36%,
-          #2f95d8 36% 60%,
-          #e5a629 60% 79%,
-          #7a55c7 79% 92%,
-          #cf3d91 92% 100%
-        );
-      box-shadow: 0 1px 3px rgba(15, 23, 42, 0.18);
-    }
-    .pie-label { position: absolute; font-size: 0.9rem; font-weight: 600; white-space: nowrap; }
-    .pie-label.electronics { color: #65b82f; left: 58%; top: 4%; }
-    .pie-label.automotive { color: #2f95d8; right: 74%; top: 43%; }
-    .pie-label.consumer { color: #c9942b; right: 62%; top: 84%; }
-    .pie-label.industrial { color: #7a55c7; left: 66%; top: 78%; }
-    .pie-label.healthcare { color: #cf3d91; left: 77%; top: 61%; }
-    .pie-legend { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.45rem 0.9rem; width: 100%; color: var(--text-secondary); font-size: 0.9rem; }
-    .pie-legend div, .bar-legend { display: inline-flex; align-items: center; gap: 0.35rem; }
-    .legend-square { display: inline-block; width: 11px; height: 11px; background: #65b82f; border-radius: 2px; flex: 0 0 auto; }
-    .bar-chart { display: grid; grid-template-columns: 42px 1fr; grid-template-rows: 230px auto; align-items: end; width: min(100%, 470px); margin: 0 auto; }
-    .bar-y-axis { height: 230px; display: flex; flex-direction: column; justify-content: space-between; align-items: flex-end; padding-right: 0.5rem; color: var(--text-secondary); font-size: 0.9rem; }
-    .bar-plot { position: relative; height: 230px; display: grid; grid-template-columns: repeat(4, minmax(58px, 1fr)); gap: 1.25rem; align-items: end; border-left: 2px solid #9ca3af; border-bottom: 2px solid #9ca3af; padding: 0 0.5rem; }
-    .bar-column { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 0.45rem; min-width: 0; }
-    .bar-fill { width: 100%; max-width: 82px; border-radius: 7px 7px 0 0; background: #65b82f; box-shadow: inset -8px 0 0 rgba(87, 158, 42, 0.18), 0 1px 3px rgba(15, 23, 42, 0.14); }
-    .bar-label { color: var(--text-secondary); font-size: 0.9rem; white-space: nowrap; }
-    .bar-legend { grid-column: 2; justify-content: center; margin-top: 0.7rem; color: #65b82f; font-size: 0.9rem; }
     .report-summary { padding: 1.5rem; border-radius: var(--border-radius-md); border: 1px solid var(--border-color); background: var(--bg-surface); }
     .report-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-top: 1rem; }
     .report-card { padding: 1rem; border-radius: var(--border-radius-lg); background: var(--bg-app); display: flex; flex-direction: column; gap: 0.35rem; }
@@ -214,21 +125,6 @@ import { ItemFormModal } from '../../components/item-form-modal/item-form-modal'
     .btn-primary { background: var(--accent-primary); color: white; }
     .btn-primary:hover { background: var(--accent-primary-dark, #76ba1b); transform: translateY(-2px); }
 
-    @media (max-width: 640px) {
-      .pie-plot { width: 100%; min-height: 260px; }
-      .pie-chart { width: 140px; height: 140px; top: 45%; }
-      .pie-label { font-size: 0.78rem; }
-      .pie-label.electronics { left: 52%; top: 6%; }
-      .pie-label.automotive { right: 62%; top: 38%; }
-      .pie-label.consumer { right: 45%; top: 82%; }
-      .pie-label.industrial { left: 58%; top: 78%; }
-      .pie-label.healthcare { left: 63%; top: 55%; }
-      .bar-chart { grid-template-columns: 34px 1fr; grid-template-rows: 210px auto; }
-      .bar-y-axis, .bar-plot { height: 210px; }
-      .bar-plot { gap: 0.6rem; grid-template-columns: repeat(4, minmax(42px, 1fr)); }
-      .bar-label { font-size: 0.78rem; }
-    }
-
     @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
   `
 })
@@ -239,20 +135,6 @@ export class Dashboard {
   showCreateModal = false;
   reportVisible = false;
   reportSummary = { pendingApprovals: 0, completedChanges: 0, partsCreatedByMe: 0 };
-  itemCategoryBreakdown = [
-    { name: 'Electronics', color: '#65b82f' },
-    { name: 'Automotive', color: '#2f95d8' },
-    { name: 'Consumer Goods', color: '#e5a629' },
-    { name: 'Industrial', color: '#7a55c7' },
-    { name: 'Healthcare', color: '#cf3d91' }
-  ];
-  weeklyChanges = [
-    { label: 'Week 1', height: 70 },
-    { label: 'Week 2', height: 85 },
-    { label: 'Week 3', height: 100 },
-    { label: 'Week 4', height: 94 }
-  ];
-
   get tiles() {
     return [
       { title: 'Items Created', icon: '📝', value: this.itemsCreatedByMe.length, trend: 5 },

@@ -1,16 +1,22 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Product, InventoryService } from '../../services/inventory.service';
 import { UserService } from '../../services/user.service';
 
 type ItemDetailTab = 'Overview' | 'Changes' | 'Relationship' | 'WhereUsed' | 'Attachments' | 'History';
 type ChangeDetailTab = 'ChangeOrders' | 'ChangeRequests' | 'Deviation';
+type BomTreeNode = {
+  product: Product;
+  level: number;
+  path: string[];
+};
 
 @Component({
   selector: 'app-item-details',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, FormsModule, RouterLink],
   template: `
     <div class="page-container flex-col gap-6">
       <div class="page-header flex justify-between items-center mt-4" *ngIf="item">
@@ -91,37 +97,70 @@ type ChangeDetailTab = 'ChangeOrders' | 'ChangeRequests' | 'Deviation';
           <section class="bom-overview">
             <h3 class="bom-title">BOM</h3>
             <div class="bom-actions" *ngIf="!userService.isReadOnly()">
-              <button class="btn bom-btn" type="button">Add</button>
-              <button class="btn bom-btn" type="button">Remove</button>
-              <button class="btn bom-btn" type="button">Compare</button>
+              <button class="btn btn-primary bom-btn" type="button" (click)="openBomAdd(item.sku)">Add</button>
+              <button class="btn bom-btn" type="button" style="background:#dc2626;color:#fff;border-color:#dc2626" [disabled]="getBomTree().length === 0" (click)="openBomRemove()">Remove</button>
+              <button class="btn bom-btn" type="button" style="background:#1479bd;color:#fff;border-color:#1479bd">Compare</button>
             </div>
 
-            <div class="table-container border rounded">
-               <table class="data-table bom-table">
-                 <thead>
-                   <tr>
-                     <th>Item Number</th>
-                     <th>Description</th>
-                     <th>Revision</th>
-                     <th>Lifecycle Phase</th>
-                     <th>Qty</th>
-                     <th>BOM Level</th>
-                   </tr>
-                 </thead>
-                 <tbody>
-                   <tr *ngFor="let child of getResolvedBom(); let i = index" class="hover-row cursor-pointer" (click)="navigateToItem(child.sku)">
-                      <td class="font-mono font-medium"><span [class.bom-child-indent]="i > 0">{{ child.sku }}</span></td>
-                      <td>{{ getBomDescription(child) }}</td>
-                      <td>{{ child.revision }}</td>
-                      <td>{{ child.lifecycle }}</td>
-                      <td>{{ getBomQuantity(i) }}</td>
-                      <td>{{ getBomLevel(i) }}</td>
-                   </tr>
-                   <tr *ngIf="getResolvedBom().length === 0">
-                      <td colspan="6" class="text-center py-12 text-muted">No BOM components attached to this item.</td>
-                   </tr>
-                 </tbody>
-               </table>
+            <div class="bom-add-panel" *ngIf="isBomAddOpen && !userService.isReadOnly()">
+              <div class="bom-add-context">
+                Adding under <strong class="font-mono">{{ selectedBomParentSku }}</strong>
+              </div>
+              <select class="bom-select" [(ngModel)]="selectedBomChildSku" aria-label="Select item to add to BOM">
+                <option value="">Select item</option>
+                <option *ngFor="let product of getAvailableBomItems()" [value]="product.sku">
+                  {{ product.sku }} - {{ product.name }}
+                </option>
+              </select>
+              <button class="btn btn-primary bom-add-confirm" type="button" [disabled]="!selectedBomChildSku" (click)="addBomItem()">Add Item</button>
+              <button class="btn bom-btn" type="button" (click)="closeBomAdd()">Cancel</button>
+            </div>
+
+            <div class="bom-add-panel" *ngIf="isBomRemoveOpen && !userService.isReadOnly()">
+              <div>Remove BOM item</div>
+              <select class="bom-select" [(ngModel)]="selectedBomRemovePath" aria-label="Select BOM item to remove">
+                <option value="">Select item</option>
+                <option *ngFor="let node of getBomTree()" [value]="node.path.join('>')">
+                  {{ node.product.sku }} - {{ node.product.name }}
+                </option>
+              </select>
+              <button class="btn bom-btn" type="button" style="background:#dc2626;color:#fff;border-color:#dc2626" [disabled]="!selectedBomRemovePath" (click)="removeSelectedBomItem()">Remove Item</button>
+              <button class="btn bom-btn" type="button" (click)="closeBomRemove()">Cancel</button>
+            </div>
+
+            <div class="bom-tree border rounded">
+              <div class="bom-tree-header">
+                <span>Item Number</span>
+                <span>Description</span>
+                <span>Revision</span>
+                <span>Lifecycle Phase</span>
+                <span>Qty</span>
+                <span>BOM Level</span>
+                <span *ngIf="!userService.isReadOnly()">Actions</span>
+              </div>
+
+              <div
+                *ngFor="let node of getBomTree()"
+                class="bom-tree-row hover-row"
+                [style.--bom-level]="node.level"
+              >
+                <button class="bom-item-link font-mono font-medium" type="button" (click)="navigateToItem(node.product.sku)">
+                  <span aria-hidden="true">L-</span>{{ node.product.sku }}
+                </button>
+                <span>{{ getBomDescription(node.product) }}</span>
+                <span>{{ node.product.revision }}</span>
+                <span>{{ node.product.lifecycle }}</span>
+                <span>{{ getBomQuantity(node.level) }}</span>
+                <span>{{ node.level }}</span>
+                <span *ngIf="!userService.isReadOnly()" style="display:flex;gap:.5rem">
+                  <button class="btn btn-primary bom-btn" type="button" (click)="openBomAdd(node.product.sku)">Add child</button>
+                  <button class="btn bom-btn" type="button" style="background:#dc2626;color:#fff;border-color:#dc2626" (click)="removeBomItem(node)">Remove</button>
+                </span>
+              </div>
+
+              <div *ngIf="getBomTree().length === 0" class="bom-empty text-center py-12 text-muted">
+                No BOM components attached to this item.
+              </div>
             </div>
           </section>
         </ng-container>
@@ -331,17 +370,17 @@ type ChangeDetailTab = 'ChangeOrders' | 'ChangeRequests' | 'Deviation';
     .bom-title { margin: 0 0 1rem; font-size: 1.35rem; color: var(--text-primary); font-weight: 700; }
     .bom-actions { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
     .bom-btn { padding: 0.5rem 0.85rem; border-radius: var(--border-radius-sm); background: var(--bg-surface); color: var(--text-secondary); border: 1px solid var(--border-color); box-shadow: var(--shadow-sm); font-size: 0.75rem; text-transform: uppercase; font-weight: 700; }
+    .bom-add-panel { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem; padding: 1rem; margin-bottom: 1rem; border: 1px solid var(--border-color); background: var(--bg-surface-hover); }
+    .bom-select { min-width: min(100%, 320px); min-height: 38px; border: 1px solid var(--border-color); }
+    .bom-tree { overflow-x: auto; }
+    .bom-tree-header, .bom-tree-row { display: grid; grid-template-columns: minmax(190px, 1.15fr) minmax(220px, 1.25fr) 110px 160px 80px 110px 180px; min-width: 980px; align-items: center; }
+    .bom-tree-header { background: var(--bg-surface-hover); color: var(--text-secondary); font-weight: 700; font-size: 0.82rem; text-transform: uppercase; border-bottom: 2px solid var(--border-color); }
+    .bom-tree-header span, .bom-tree-row > span, .bom-item-link { padding: 1rem 1.25rem; }
+    .bom-tree-row { border-bottom: 1px solid var(--border-color); color: var(--text-secondary); font-size: 0.875rem; }
+    .bom-item-link { display: flex; align-items: center; gap: 0.35rem; border: 0; background: transparent; color: var(--accent-primary); text-align: left; cursor: pointer; padding-left: calc(1.25rem + (var(--bom-level) - 1) * 1.6rem); }
 
-    .table-container { overflow-x: auto; background: var(--bg-surface); box-shadow: 0 1px 3px rgba(0,0,0,0.05); border-radius: 4px; }
-    .data-table { width: 100%; min-width: 800px; border-collapse: collapse; }
-    .data-table th { background: var(--bg-surface-hover); color: var(--text-secondary); font-weight: 700; font-size: 0.82rem; padding: 1rem 1.25rem; border-bottom: 2px solid var(--border-color); text-align: left; text-transform: uppercase; }
-    .data-table td { padding: 1rem 1.25rem; border-bottom: 1px solid var(--border-color); font-size: 0.875rem; color: var(--text-secondary); }
-    .data-table tbody tr { background: var(--bg-surface); }
     .hover-row { transition: background var(--transition-fast); }
     .hover-row:hover { background: var(--bg-surface-hover); }
-    .cursor-pointer { cursor: pointer; }
-    .bom-child-indent { display: inline-block; padding-left: 1.5rem; position: relative; }
-    .bom-child-indent::before { content: 'L-'; position: absolute; left: 0; color: var(--text-muted); }
 
     .relationship-title { margin: 0 0 1.5rem; font-size: 1.45rem; font-weight: 700; letter-spacing: 0; }
     .relationship-summary { margin-bottom: 1.25rem; color: var(--text-secondary); font-size: 1rem; font-weight: 700; }
@@ -416,6 +455,11 @@ export class ItemDetails implements OnInit {
   activeChangeTab: ChangeDetailTab = 'ChangeOrders';
   changeSearchQuery = '';
   attachmentSearchQuery = '';
+  isBomAddOpen = false;
+  isBomRemoveOpen = false;
+  selectedBomParentSku = '';
+  selectedBomChildSku = '';
+  selectedBomRemovePath = '';
 
   ngOnInit() {
     const sku = this.route.snapshot.paramMap.get('sku');
@@ -456,6 +500,72 @@ export class ItemDetails implements OnInit {
       .filter(Boolean) as Product[];
   }
 
+  getBomTree(): BomTreeNode[] {
+    if (!this.item) return [];
+    return this.buildBomTree(this.item.sku, 1, [this.item.sku]);
+  }
+
+  openBomAdd(parentSku: string) {
+    if (this.userService.isReadOnly()) return;
+    this.selectedBomParentSku = parentSku;
+    this.selectedBomChildSku = '';
+    this.isBomAddOpen = true;
+    this.closeBomRemove();
+  }
+
+  closeBomAdd() {
+    this.isBomAddOpen = false;
+    this.selectedBomParentSku = '';
+    this.selectedBomChildSku = '';
+  }
+
+  openBomRemove() {
+    if (this.userService.isReadOnly()) return;
+    this.selectedBomRemovePath = '';
+    this.isBomRemoveOpen = true;
+    this.closeBomAdd();
+  }
+
+  closeBomRemove() {
+    this.isBomRemoveOpen = false;
+    this.selectedBomRemovePath = '';
+  }
+
+  getAvailableBomItems(): Product[] {
+    if (!this.item || !this.selectedBomParentSku) return [];
+
+    const parent = this.inventoryService.getData().find(product => product.sku === this.selectedBomParentSku);
+    const existingChildren = new Set(parent?.bom || []);
+
+    return this.inventoryService.getData().filter(product =>
+      product.sku !== this.selectedBomParentSku &&
+      !existingChildren.has(product.sku) &&
+      !this.isAncestorOrSelf(product.sku, this.selectedBomParentSku)
+    );
+  }
+
+  addBomItem() {
+    if (!this.selectedBomParentSku || !this.selectedBomChildSku || this.userService.isReadOnly()) return;
+
+    this.inventoryService.attachBomComponent(this.selectedBomParentSku, this.selectedBomChildSku);
+    if (this.item) {
+      this.item = this.inventoryService.getData().find(product => product.sku === this.item?.sku) || this.item;
+    }
+    this.closeBomAdd();
+  }
+
+  removeSelectedBomItem() {
+    const path = this.selectedBomRemovePath.split('>').filter(Boolean);
+    if (path.length < 2) return;
+    this.removeBomLink(path[path.length - 2], path[path.length - 1]);
+    this.closeBomRemove();
+  }
+
+  removeBomItem(node: BomTreeNode) {
+    if (node.path.length < 2 || this.userService.isReadOnly()) return;
+    this.removeBomLink(node.path[node.path.length - 2], node.product.sku);
+  }
+
   getRelationshipObjects(): Product[] {
     return this.getResolvedBom();
   }
@@ -493,11 +603,42 @@ export class ItemDetails implements OnInit {
   }
 
   getBomQuantity(index: number): number {
-    return index === 0 ? 2 : 1;
+    return index === 1 ? 2 : 1;
   }
 
-  getBomLevel(index: number): number {
-    return index + 1;
+  private buildBomTree(parentSku: string, level: number, path: string[]): BomTreeNode[] {
+    const parent = this.inventoryService.getData().find(product => product.sku === parentSku);
+    if (!parent?.bom?.length) return [];
+
+    return parent.bom.flatMap(childSku => {
+      if (path.includes(childSku)) return [];
+
+      const child = this.inventoryService.getData().find(product => product.sku === childSku);
+      if (!child) return [];
+
+      const childPath = [...path, childSku];
+      return [
+        { product: child, level, path: childPath },
+        ...this.buildBomTree(childSku, level + 1, childPath)
+      ];
+    });
+  }
+
+  private removeBomLink(parentSku: string, childSku: string) {
+    this.inventoryService.detachBomComponent(parentSku, childSku);
+    if (this.item) {
+      this.item = this.inventoryService.getData().find(product => product.sku === this.item?.sku) || this.item;
+    }
+  }
+
+  private isAncestorOrSelf(candidateSku: string, parentSku: string): boolean {
+    if (candidateSku === parentSku) return true;
+
+    const candidate = this.inventoryService.getData().find(product => product.sku === candidateSku);
+    if (!candidate?.bom?.length) return false;
+    if (candidate.bom.includes(parentSku)) return true;
+
+    return candidate.bom.some(childSku => this.isAncestorOrSelf(childSku, parentSku));
   }
 
   getActiveChangeLabel(): string {

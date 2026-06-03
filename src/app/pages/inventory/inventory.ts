@@ -18,7 +18,7 @@ import { ItemFormModal } from '../../components/item-form-modal/item-form-modal'
          
         </div>
         <button class="btn btn-primary" (click)="showCreateModal = true" *ngIf="!userService.isReadOnly()">
-          <span>+</span> Add Item
+          <span>+</span> Create Item
         </button>
       </div>
 
