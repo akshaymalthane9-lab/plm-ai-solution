@@ -99,7 +99,7 @@ import { UserService } from '../../services/user.service';
         <div class="dashboard-layout">
           <aside class="recent-panel">
             <h2>Recently Accessed</h2>
-            <div class="empty-recent">No recently accessed items</div>
+            <div class="empty-recent">No recently accessed {{ recentEntityLabel }}</div>
           </aside>
 
           <section class="workspace-panel" *ngIf="activeView === 'workspace'">
@@ -186,7 +186,33 @@ import { UserService } from '../../services/user.service';
             <p class="status-text">Current view: ITEMS</p>
           </section>
 
-          <section class="empty-view-panel" *ngIf="activeView === 'changes'">
+          <section class="items-panel" *ngIf="activeView === 'changes'">
+            <div class="items-grid">
+              <article class="item-action-card">
+                <div class="item-action-content">
+                  <strong>Create Change</strong>
+                  <p>Create a new change request and define the required product updates.</p>
+                  <button type="button" (click)="openChangeCreate()">Create</button>
+                </div>
+              </article>
+
+              <article class="item-action-card">
+                <div class="item-action-content">
+                  <strong>Show Changes Created By Me</strong>
+                  <p>View and manage change requests created by you across the system.</p>
+                  <button type="button" (click)="openMyChanges()">Open</button>
+                </div>
+              </article>
+
+              <article class="item-action-card">
+                <div class="item-action-content">
+                  <strong>Browse Released Changes</strong>
+                  <p>Quickly browse released changes available for review and reference.</p>
+                  <button type="button" (click)="browseReleasedChanges()">Browse</button>
+                </div>
+              </article>
+            </div>
+
             <p class="status-text">Current view: CHANGES</p>
           </section>
 
@@ -705,16 +731,32 @@ export class Dashboard {
     return this.userService.currentUser() || 'User1';
   }
 
+  get recentEntityLabel(): string {
+    return this.activeView === 'changes' ? 'changes' : 'items';
+  }
+
   handleItemCreated() {
     this.showCreateModal = false;
     this.router.navigate(['/items']);
   }
 
+  openChangeCreate() {
+    this.router.navigate(['/changes/create']);
+  }
+
+  openMyChanges() {
+    this.router.navigate(['/changes/manage']);
+  }
+
+  browseReleasedChanges() {
+    this.router.navigate(['/changes/manage'], { queryParams: { status: 'released' } });
+  }
+
   setActiveViewFromUrl(url: string) {
     const query = url.split('?')[1] || '';
     const requestedTab = new URLSearchParams(query).get('tab');
-    if (requestedTab === 'items') {
-      this.activeView = 'items';
+    if (requestedTab === 'items' || requestedTab === 'changes' || requestedTab === 'reports') {
+      this.activeView = requestedTab;
     }
   }
 

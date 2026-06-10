@@ -36,4 +36,29 @@ describe('Dashboard', () => {
 
     expect(component.activeView).toBe('items');
   });
+
+  it('opens the Changes tab when requested in the URL', () => {
+    component.setActiveViewFromUrl('/dashboard?tab=changes');
+
+    expect(component.activeView).toBe('changes');
+  });
+
+  it('opens the create change workflow', () => {
+    const navigateSpy = vi.spyOn(component.router, 'navigate').mockResolvedValue(true);
+
+    component.openChangeCreate();
+
+    expect(navigateSpy).toHaveBeenCalledWith(['/changes/create']);
+  });
+
+  it('opens released changes with the released filter', () => {
+    const navigateSpy = vi.spyOn(component.router, 'navigate').mockResolvedValue(true);
+
+    component.browseReleasedChanges();
+
+    expect(navigateSpy).toHaveBeenCalledWith(
+      ['/changes/manage'],
+      { queryParams: { status: 'released' } }
+    );
+  });
 });

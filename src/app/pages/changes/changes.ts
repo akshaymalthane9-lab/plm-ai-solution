@@ -1,7 +1,7 @@
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 
 interface ChangeRequest {
   coNumber: string;
@@ -36,7 +36,7 @@ interface ChangeRequest {
         <div>Priority: {{ submittedChange.priority }}</div>
       </div>
 
-      <div class="options-grid grid">
+      <div class="options-grid grid" *ngIf="!isManageView">
         <!-- Create Changes Option -->
         <div class="option-card card flex-col gap-6">
           <div class="icon-container">
@@ -51,6 +51,63 @@ interface ChangeRequest {
           </div>
         </div>
       </div>
+
+      <section class="manage-panel" *ngIf="isManageView">
+        <div class="manage-header">
+          <div>
+            <h2 class="section-title">{{ releasedOnly ? 'Released Changes' : 'Changes Created By Me' }}</h2>
+            <p class="text-muted">
+              {{ releasedOnly ? 'Browse released change requests.' : 'Review and manage your change requests.' }}
+            </p>
+          </div>
+          <div class="manage-actions">
+            <button class="btn btn-secondary" type="button" (click)="returnToChangesTab()">Return to Changes</button>
+            <button class="btn btn-primary" type="button" (click)="openCreateForm()">Create Change</button>
+          </div>
+        </div>
+
+        <div class="table-shell" *ngIf="visibleChangeRequests.length; else noChanges">
+          <table>
+            <thead>
+              <tr>
+                <th>CO Number</th>
+                <th>Change Type</th>
+                <th>Priority</th>
+                <th>Description</th>
+                <th>Created Date</th>
+                <th>Status</th>
+                <th>Requested By</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let change of visibleChangeRequests">
+                <td><strong class="co-number">{{ change.coNumber }}</strong></td>
+                <td>{{ change.changeType }}</td>
+                <td>
+                  <span class="priority-pill" [ngClass]="change.priority.toLowerCase()">
+                    {{ change.priority }}
+                  </span>
+                </td>
+                <td class="description-cell" [title]="change.description">{{ change.description || '-' }}</td>
+                <td>{{ change.createdDate }}</td>
+                <td><span class="status-pill">{{ change.workflowStatus || change.status }}</span></td>
+                <td>{{ change.requestedBy }}</td>
+                <td><button class="link-button" type="button" (click)="reviewChange(change)">Review</button></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <ng-template #noChanges>
+          <div class="empty-state">
+            <h3>{{ releasedOnly ? 'No released changes' : 'No changes created yet' }}</h3>
+            <p class="text-muted">
+              {{ releasedOnly ? 'Released change requests will appear here.' : 'Create a change request to get started.' }}
+            </p>
+          </div>
+        </ng-template>
+      </section>
 
       <div class="modal-overlay" *ngIf="showCreateForm" (click)="closeForm()">
         <div class="modal-card flex-col" (click)="$event.stopPropagation()">
@@ -666,8 +723,11 @@ interface ChangeRequest {
 })
 export class Changes {
   router = inject(Router);
+  private route = inject(ActivatedRoute);
   private changeStorageKey = 'deloitte_plm_change_requests_v1';
   showCreateForm = false;
+  isManageView = false;
+  releasedOnly = false;
   coNumber = '';
   changeType = 'ECO';
   priority = 'High';
@@ -677,6 +737,19 @@ export class Changes {
 
   constructor() {
     this.changeRequests = this.loadChangeRequests();
+    this.isManageView = this.router.url.startsWith('/changes/manage');
+    this.showCreateForm = this.router.url.startsWith('/changes/create');
+    this.releasedOnly = this.route.snapshot.queryParamMap.get('status')?.toLowerCase() === 'released';
+  }
+
+  get visibleChangeRequests(): ChangeRequest[] {
+    if (!this.releasedOnly) {
+      return this.changeRequests;
+    }
+
+    return this.changeRequests.filter(change =>
+      (change.workflowStatus || change.status).toLowerCase() === 'released'
+    );
   }
 
   openCreateForm() {
@@ -767,6 +840,10 @@ export class Changes {
     this.router.navigate(['/changes/review'], {
       state: { changeRequest }
     });
+  }
+
+  returnToChangesTab() {
+    this.router.navigate(['/dashboard'], { queryParams: { tab: 'changes' } });
   }
 
   private loadChangeRequests(): ChangeRequest[] {
