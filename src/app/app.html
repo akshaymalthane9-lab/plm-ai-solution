@@ -1,5 +1,7 @@
 <ng-container *ngIf="userService.isLoggedIn()">
-  <div class="deloitte-layout">
+  <router-outlet *ngIf="isDashboard()"></router-outlet>
+
+  <div class="deloitte-layout" *ngIf="!isDashboard()">
     <app-sidebar></app-sidebar>
     <div class="main-wrapper">
       <app-header></app-header>
