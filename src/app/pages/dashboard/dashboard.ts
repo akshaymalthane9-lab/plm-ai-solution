@@ -1,12 +1,13 @@
 import { CommonModule } from '@angular/common';
 import { Component, inject } from '@angular/core';
 import { Router } from '@angular/router';
+import { ItemFormModal } from '../../components/item-form-modal/item-form-modal';
 import { UserService } from '../../services/user.service';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, ItemFormModal],
   template: `
     <div class="dashboard-page">
       <header class="topbar">
@@ -69,10 +70,30 @@ import { UserService } from '../../services/user.service';
         <h1>Welcome, {{ userName }}</h1>
 
         <nav class="dashboard-toolbar" aria-label="Dashboard navigation">
-          <button class="active" type="button">Workspace</button>
-          <button type="button">Items</button>
-          <button type="button">Changes</button>
-          <button type="button">Reports &amp; Analytics</button>
+          <button
+            type="button"
+            [class.active]="activeView === 'workspace'"
+            (click)="activeView = 'workspace'">
+            Workspace
+          </button>
+          <button
+            type="button"
+            [class.active]="activeView === 'items'"
+            (click)="activeView = 'items'">
+            Items
+          </button>
+          <button
+            type="button"
+            [class.active]="activeView === 'changes'"
+            (click)="activeView = 'changes'">
+            Changes
+          </button>
+          <button
+            type="button"
+            [class.active]="activeView === 'reports'"
+            (click)="activeView = 'reports'">
+            Reports &amp; Analytics
+          </button>
         </nav>
 
         <div class="dashboard-layout">
@@ -81,7 +102,7 @@ import { UserService } from '../../services/user.service';
             <div class="empty-recent">No recently accessed items</div>
           </aside>
 
-          <section class="workspace-panel">
+          <section class="workspace-panel" *ngIf="activeView === 'workspace'">
             <h2>Workspace Overview</h2>
 
             <div class="summary-row">
@@ -129,9 +150,58 @@ import { UserService } from '../../services/user.service';
 
             <p class="status-text">Current view: WORKSPACE</p>
           </section>
+
+          <section class="items-panel" *ngIf="activeView === 'items'">
+            <div class="items-grid">
+              <article class="item-action-card">
+                <div class="item-action-content">
+                  <strong>Create Item</strong>
+                  <p>Create a new item with attributes, lifecycle, BOM, and relationships.</p>
+                  <button
+                    type="button"
+                    [disabled]="userService.isReadOnly()"
+                    (click)="showCreateModal = true">
+                    Create
+                  </button>
+                </div>
+              </article>
+
+              <article class="item-action-card">
+                <div class="item-action-content">
+                  <strong>Show Items Created By Me</strong>
+                  <p>View and manage items created by you across the system.</p>
+                  <button type="button" (click)="router.navigate(['/items'])">Open</button>
+                </div>
+              </article>
+
+              <article class="item-action-card">
+                <div class="item-action-content">
+                  <strong>Browse Released Items</strong>
+                  <p>Quickly browse released items available for reuse and reference.</p>
+                  <button type="button" (click)="router.navigate(['/items'])">Browse</button>
+                </div>
+              </article>
+            </div>
+
+            <p class="status-text">Current view: ITEMS</p>
+          </section>
+
+          <section class="empty-view-panel" *ngIf="activeView === 'changes'">
+            <p class="status-text">Current view: CHANGES</p>
+          </section>
+
+          <section class="empty-view-panel" *ngIf="activeView === 'reports'">
+            <p class="status-text">Current view: REPORTS &amp; ANALYTICS</p>
+          </section>
         </div>
       </main>
     </div>
+
+    <app-item-form-modal
+      *ngIf="showCreateModal"
+      (saved)="showCreateModal = false"
+      (close)="showCreateModal = false">
+    </app-item-form-modal>
   `,
   styles: `
     :host {
@@ -353,7 +423,9 @@ import { UserService } from '../../services/user.service';
     }
 
     .recent-panel,
-    .workspace-panel {
+    .workspace-panel,
+    .items-panel,
+    .empty-view-panel {
       border: 1px solid #e2e5ec;
       border-radius: 26px;
       background: rgba(250, 250, 251, .88);
@@ -478,6 +550,76 @@ import { UserService } from '../../services/user.service';
       font-size: .9rem;
     }
 
+    .items-panel {
+      padding: 52px 28px 24px;
+    }
+
+    .empty-view-panel {
+      display: flex;
+      min-height: 560px;
+      align-items: flex-end;
+      padding: 28px 28px 24px;
+    }
+
+    .items-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 24px;
+    }
+
+    .item-action-card {
+      display: flex;
+      min-height: 250px;
+      align-items: center;
+      justify-content: center;
+      padding: 22px;
+      border: 1px solid #e2e5ec;
+      border-radius: 30px;
+      background: #fafafc;
+    }
+
+    .item-action-content {
+      display: flex;
+      width: 100%;
+      min-height: 132px;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 18px 20px;
+      border: 1px solid #e2e5ec;
+      border-radius: 16px;
+      background: #f4f6fa;
+      text-align: center;
+    }
+
+    .item-action-content strong {
+      color: #102852;
+      font-size: .94rem;
+    }
+
+    .item-action-content p {
+      margin: 3px 0 17px;
+      color: #8191ae;
+      font-size: .82rem;
+      line-height: 1.4;
+    }
+
+    .item-action-content button {
+      min-width: 92px;
+      padding: 8px 22px;
+      border: 1px solid #d7e0f2;
+      border-radius: 999px;
+      background: #eef3ff;
+      color: #244d99;
+      font-size: .9rem;
+      font-weight: 700;
+    }
+
+    .item-action-content button:disabled {
+      cursor: not-allowed;
+      opacity: .5;
+    }
+
     @media (max-width: 1100px) {
       .topbar {
         flex-wrap: wrap;
@@ -509,6 +651,10 @@ import { UserService } from '../../services/user.service';
       .recent-panel {
         min-height: auto;
       }
+
+      .items-grid {
+        grid-template-columns: 1fr;
+      }
     }
 
     @media (max-width: 700px) {
@@ -535,6 +681,10 @@ import { UserService } from '../../services/user.service';
         grid-template-columns: 1fr;
       }
 
+      .items-panel {
+        padding: 28px 18px 20px;
+      }
+
       h1 {
         font-size: 1.55rem;
       }
@@ -544,6 +694,8 @@ import { UserService } from '../../services/user.service';
 export class Dashboard {
   readonly userService = inject(UserService);
   readonly router = inject(Router);
+  activeView: 'workspace' | 'items' | 'changes' | 'reports' = 'workspace';
+  showCreateModal = false;
 
   get userName(): string {
     return this.userService.currentUser() || 'User1';
