@@ -697,6 +697,10 @@ export class Dashboard {
   activeView: 'workspace' | 'items' | 'changes' | 'reports' = 'workspace';
   showCreateModal = false;
 
+  constructor() {
+    this.setActiveViewFromUrl(this.router.url);
+  }
+
   get userName(): string {
     return this.userService.currentUser() || 'User1';
   }
@@ -704,6 +708,14 @@ export class Dashboard {
   handleItemCreated() {
     this.showCreateModal = false;
     this.router.navigate(['/items']);
+  }
+
+  setActiveViewFromUrl(url: string) {
+    const query = url.split('?')[1] || '';
+    const requestedTab = new URLSearchParams(query).get('tab');
+    if (requestedTab === 'items') {
+      this.activeView = 'items';
+    }
   }
 
   logout(event: Event) {

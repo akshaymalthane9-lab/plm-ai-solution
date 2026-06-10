@@ -19,13 +19,13 @@ export class AppComponent implements OnDestroy {
   public userService = inject(UserService);
   private router = inject(Router);
   private routerSub: Subscription;
-  isDashboard = signal(false);
+  usesStandaloneShell = signal(false);
 
   constructor() {
-    this.updateDashboardState(this.router.url);
+    this.updateShellState(this.router.url);
     this.routerSub = this.router.events.subscribe(event => {
       if (event instanceof NavigationEnd) {
-        this.updateDashboardState(event.urlAfterRedirects);
+        this.updateShellState(event.urlAfterRedirects);
       }
     });
   }
@@ -34,7 +34,8 @@ export class AppComponent implements OnDestroy {
     this.routerSub.unsubscribe();
   }
 
-  private updateDashboardState(url: string) {
-    this.isDashboard.set(url.split('?')[0] === '/dashboard');
+  private updateShellState(url: string) {
+    const path = url.split('?')[0];
+    this.usesStandaloneShell.set(path === '/dashboard' || path === '/items');
   }
 }

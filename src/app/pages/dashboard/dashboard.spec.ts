@@ -30,4 +30,10 @@ describe('Dashboard', () => {
     expect(component.showCreateModal).toBe(false);
     expect(navigateSpy).toHaveBeenCalledWith(['/items']);
   });
+
+  it('opens the Items tab when requested in the URL', () => {
+    component.setActiveViewFromUrl('/dashboard?tab=items');
+
+    expect(component.activeView).toBe('items');
+  });
 });
