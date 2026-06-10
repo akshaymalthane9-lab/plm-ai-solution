@@ -80,7 +80,13 @@ type BomTreeNode = {
         </button>
 
         <section class="item-heading">
-          <div class="item-icon" aria-hidden="true">#</div>
+          <div class="item-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+              <path d="M4 7.5L12 3l8 4.5v9L12 21l-8-4.5v-9z"></path>
+              <path d="M4.5 7.8L12 12l7.5-4.2"></path>
+              <path d="M12 12v9"></path>
+            </svg>
+          </div>
           <div>
             <div class="title-line">
               <h1>{{ item.sku }}</h1>
@@ -114,7 +120,13 @@ type BomTreeNode = {
                 <h2>Item Details</h2>
 
                 <div class="detail-row">
-                  <span class="detail-icon">#</span>
+                  <span class="detail-icon item-number-icon">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M4 7.5L12 3l8 4.5v9L12 21l-8-4.5v-9z"></path>
+                      <path d="M4.5 7.8L12 12l7.5-4.2"></path>
+                      <path d="M12 12v9"></path>
+                    </svg>
+                  </span>
                   <span>
                     <small>Item Number</small>
                     <strong class="green-text">{{ item.sku }}</strong>
@@ -378,13 +390,15 @@ type BomTreeNode = {
     }
     .back-button { margin-bottom: 18px; border: 1px solid #dcebc3; background: #f3f8e9; color: #5f8919; }
     .item-heading { display: flex; align-items: center; gap: 15px; margin-bottom: 14px; }
-    .item-icon { display: grid; width: 45px; height: 45px; place-items: center; flex: 0 0 auto; border-radius: 12px; background: #f3f8e9; color: #6a951c; font-size: 20px; font-weight: 900; }
+    .item-icon { display: grid; width: 45px; height: 45px; place-items: center; flex: 0 0 auto; border-radius: 12px; background: #f3f8e9; color: #6a951c; }
+    .item-icon svg, .item-number-icon svg { width: 21px; height: 21px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
     .title-line { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
     h1 { margin: 0; color: #25324b; font-size: 1.9rem; line-height: 1.1; }
     .item-heading p { margin: 5px 0 0; color: #8f96ab; font-size: .86rem; }
     .success-badge { padding: 6px 14px; border: 1px solid #b7efc8; border-radius: 999px; background: #dcfce7; color: #16a34a; font-size: .72rem; }
 
-    .detail-tabs { display: flex; gap: 52px; width: 74%; margin: 18px 0 24px; overflow-x: auto; border-bottom: 1px solid #dfe2ea; }
+    .detail-tabs { display: flex; gap: 52px; width: 74%; margin: 18px 0 24px; overflow-x: auto; border-bottom: 1px solid #dfe2ea; scrollbar-width: none; -ms-overflow-style: none; }
+    .detail-tabs::-webkit-scrollbar { display: none; }
     .detail-tabs button { position: relative; flex: 0 0 auto; height: 52px; padding: 0 8px 13px; border: 0; background: transparent; color: #8f96ab; font-size: .86rem; font-weight: 700; }
     .detail-tabs button.active { color: #6a951c; }
     .detail-tabs button.active::after { position: absolute; right: 2px; bottom: -1px; left: 2px; height: 3px; border-radius: 2px; background: #86bc25; content: ''; }
@@ -397,6 +411,7 @@ type BomTreeNode = {
     .detail-row { display: flex; align-items: center; gap: 14px; padding: 14px 0; border-bottom: 1px solid #f0f1f5; }
     .detail-row.no-border { border-bottom: 0; }
     .detail-icon { display: grid; width: 36px; height: 36px; place-items: center; flex: 0 0 auto; border-radius: 10px; background: #f4f5f8; color: #7d8496; font-weight: 800; }
+    .item-number-icon { background: #f3f8e9; color: #6a951c; }
     .detail-row small, .extra-content small { display: block; margin-bottom: 3px; color: #9aa1b5; font-size: .76rem; }
     .detail-row strong, .extra-content strong { color: #25324b; font-size: .9rem; }
     .green-text { color: #6a951c !important; }

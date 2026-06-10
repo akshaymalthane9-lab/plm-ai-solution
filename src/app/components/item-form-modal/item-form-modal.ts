@@ -91,7 +91,7 @@ import { UserService } from '../../services/user.service';
     .modal-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.4); z-index: 1000; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(2px); animation: fadeIn var(--transition-fast); }
     .modal-card { width: 700px; max-width: 95vw; background: var(--bg-surface); border-radius: var(--border-radius-lg); box-shadow: var(--shadow-float); overflow: hidden; display: flex; flex-direction: column; }
     .edit-page-shell { width: 100%; margin-top: 1rem; }
-    .edit-page-card { width: 100%; background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--border-radius-md); box-shadow: var(--shadow-sm); overflow: hidden; display: flex; flex-direction: column; }
+    .edit-page-card { width: 100%; background: rgba(255,255,255,.92); border: 1px solid #e2e5ec; border-radius: 22px; box-shadow: 0 12px 30px rgba(31,50,88,.06); overflow: hidden; display: flex; flex-direction: column; }
     
     .modal-header { padding: 1.5rem 2rem 1rem; background: var(--bg-surface); }
     .title { font-size: 1.5rem; margin: 0; color: var(--text-primary); font-weight: 600; letter-spacing:-0.03em;}
@@ -106,6 +106,15 @@ import { UserService } from '../../services/user.service';
     .form-group { margin-bottom: 0; }
     .form-label { margin-bottom: 0.3rem; }
     .form-control { padding: 0.65rem 0.85rem; }
+    .edit-page-card .modal-header { padding: 1.4rem 1.7rem; }
+    .edit-page-card .title { color: #25324b; font-size: 1.15rem; }
+    .edit-page-card .modal-body { padding: 1.5rem 1.7rem; background: #f7f8fb; }
+    .edit-page-card .modal-footer { padding: 1rem 1.7rem; background: rgba(255,255,255,.92); }
+    .edit-page-card .form-label { color: #677087; }
+    .edit-page-card .form-control { border-color: #dfe4ed; border-radius: 12px; background: #fff; }
+    .edit-page-card .form-control:focus { border-color: #86bc25; box-shadow: 0 0 0 3px rgba(134,188,37,.14); }
+    .edit-page-card .btn-primary { border-radius: 999px; background: #86bc25; color: #24420a; }
+    .edit-page-card .btn-secondary { border-radius: 999px; background: #f3f8e9; border-color: #dcebc3; color: #5f8919; }
     
     @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
   `
