@@ -79,7 +79,7 @@ import { UserService } from '../../services/user.service';
     .topbar { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin-bottom: 18px; }
     .brand { padding: 0; border: 0; background: transparent; color: #223964; font-size: 1.45rem; font-weight: 900; }
     .topbar-center { display: flex; flex: 1; align-items: center; gap: 18px; min-width: 0; }
-    .search-cluster { display: flex; align-items: center; gap: 10px; margin-left: 64px; }
+    .search-cluster { display: flex; flex: 0 0 520px; width: 520px; align-items: center; gap: 10px; margin-left: 64px; }
     .search-cluster input, .search-cluster button, .top-actions button { height: 44px; border: 1px solid #dbe0e8; border-radius: 18px; background: rgba(255,255,255,.84); box-shadow: 0 2px 8px rgba(31,50,88,.04); }
     .search-cluster input { width: 340px; padding: 0 14px; outline: none; }
     .search-cluster button, .top-actions button { display: inline-flex; width: 48px; align-items: center; justify-content: center; }
@@ -104,12 +104,13 @@ import { UserService } from '../../services/user.service';
     @media (max-width: 900px) {
       .topbar { flex-wrap: wrap; }
       .topbar-center { order: 3; width: 100%; }
-      .search-cluster { flex: 1; margin-left: 0; }
+      .search-cluster { margin-left: 0; }
       .search-cluster input { width: 100%; }
     }
     @media (max-width: 700px) {
       .edit-page { padding: 18px 16px 28px; }
       .topbar-center { align-items: stretch; flex-direction: column; }
+      .search-cluster { flex: 1 1 auto; width: 100%; }
       .top-actions { margin-left: 0; }
     }
   `

@@ -155,6 +155,8 @@ import { UserService } from '../../services/user.service';
 
     .search-cluster {
       display: flex;
+      flex: 0 0 520px;
+      width: 520px;
       align-items: center;
       gap: 10px;
       margin-left: 64px;
@@ -381,13 +383,14 @@ import { UserService } from '../../services/user.service';
     @media (max-width: 1000px) {
       .topbar { flex-wrap: wrap; }
       .topbar-center { order: 3; width: 100%; }
-      .search-cluster { flex: 1; margin-left: 0; }
+      .search-cluster { margin-left: 0; }
       .search-cluster input { width: 100%; }
     }
 
     @media (max-width: 700px) {
       .items-page { padding: 18px 16px 28px; }
       .topbar-center { align-items: stretch; flex-direction: column; }
+      .search-cluster { flex: 1 1 auto; width: 100%; }
       .top-actions { margin-left: 0; }
       .page-heading { align-items: stretch; flex-direction: column; }
       .return-button { width: 100%; }

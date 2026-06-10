@@ -290,6 +290,8 @@ import { UserService } from '../../services/user.service';
 
     .search-cluster {
       display: flex;
+      flex: 0 0 520px;
+      width: 520px;
       align-items: center;
       gap: 10px;
       margin-left: 64px;
@@ -750,7 +752,6 @@ import { UserService } from '../../services/user.service';
       }
 
       .search-cluster {
-        flex: 1;
         margin-left: 0;
       }
 
@@ -784,6 +785,11 @@ import { UserService } from '../../services/user.service';
       .topbar-center {
         align-items: stretch;
         flex-direction: column;
+      }
+
+      .search-cluster {
+        flex: 1 1 auto;
+        width: 100%;
       }
 
       .top-actions {

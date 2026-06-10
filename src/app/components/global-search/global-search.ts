@@ -74,7 +74,7 @@ interface SearchSuggestion {
     </div>
   `,
   styles: `
-    :host { display: block; width: min(398px, 100%); }
+    :host { display: block; flex: 0 0 520px; width: 520px; max-width: 100%; }
     * { box-sizing: border-box; }
     .global-search { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) 48px; gap: 10px; width: 100%; }
     input, .global-search > button {
@@ -127,7 +127,7 @@ interface SearchSuggestion {
     .result-type { padding: 4px 8px; border-radius: 999px; background: #f4f5f8; color: #8191ae; font-size: .65rem; font-weight: 800; text-transform: uppercase; }
     .no-results { padding: 22px 14px; color: #98a4ba; font-size: .8rem; text-align: center; }
     @media (max-width: 700px) {
-      :host { width: 100%; }
+      :host { flex: 1 1 auto; width: 100%; }
       .suggestions { width: 100%; min-width: 0; }
     }
   `
