@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { vi } from 'vitest';
 
 import { Dashboard } from './dashboard';
 
@@ -18,5 +19,15 @@ describe('Dashboard', () => {
 
   it('should create', () => {
     expect(component).toBeTruthy();
+  });
+
+  it('navigates to the items page after creating an item', () => {
+    const navigateSpy = vi.spyOn(component.router, 'navigate').mockResolvedValue(true);
+    component.showCreateModal = true;
+
+    component.handleItemCreated();
+
+    expect(component.showCreateModal).toBe(false);
+    expect(navigateSpy).toHaveBeenCalledWith(['/items']);
   });
 });

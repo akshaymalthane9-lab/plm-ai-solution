@@ -11,39 +11,21 @@ import { UserService } from '../../services/user.service';
   template: `
     <div [class.modal-overlay]="!pageMode" [class.edit-page-shell]="pageMode" (click)="!pageMode && closeModal()">
       <div [class.modal-card]="!pageMode" [class.edit-page-card]="pageMode" class="flex-col" (click)="$event.stopPropagation()">
-        
+
         <div class="modal-header border-b">
           <div class="flex justify-between items-center w-full">
             <h2 class="title">{{ editItem ? 'Edit Enterprise Record' : 'Create Item' }}</h2>
             <button *ngIf="!pageMode" class="close-icon-btn flex items-center justify-center" (click)="closeModal()">✕</button>
           </div>
-       
+
         </div>
-        
+
         <div class="modal-body p-6">
            <div *ngIf="userService.isReadOnly()" class="card p-4 bg-danger mb-6" style="background:#fef2f2; border-color:#fca5a5; color:#dc2626;">
               <strong>Security Protocol:</strong> Your active Assessor role restricts core mutation capabilities.
            </div>
 
            <form [formGroup]="itemForm" class="flex-col gap-y-6" *ngIf="!userService.isReadOnly()">
-             <div class="grid-2">
-                <div class="form-group">
-                  <label class="form-label" for="sku">Item Number *</label>
-                  <input id="sku" type="text" class="form-control" formControlName="sku" placeholder="e.g. ASM-990" />
-                </div>
-                <div class="form-group">
-                  <label class="form-label" for="name">Part Name *</label>
-                  <input id="name" type="text" class="form-control" formControlName="name" placeholder="Item Name" />
-                </div>
-             </div>
-
-             <div class="grid-2">
-                <div class="form-group">
-                  <label class="form-label" for="revision">Active Revision *</label>
-                  <input id="revision" type="text" class="form-control" formControlName="revision" placeholder="A.01" />
-                </div>
-             </div>
-
              <div class="grid-2">
                 <div class="form-group">
                   <label class="form-label" for="part">Item Type *</label>
@@ -63,20 +45,13 @@ import { UserService } from '../../services/user.service';
 
              <div class="grid-2" *ngIf="isPartSelected()">
                 <div class="form-group">
-                  <label class="form-label" for="document">Document</label>
-                  <input id="document" type="text" class="form-control" formControlName="document" placeholder="Enter document reference" />
-                </div>
-             </div>
-
-             <div class="grid-2" *ngIf="isPartSelected()">
-                <div class="form-group">
                   <label class="form-label" for="partType">Part Type *</label>
                   <select id="partType" class="form-control" formControlName="partType" [disabled]="!isPartSelected()" (change)="onPartTypeChange()">
                     <option value="" disabled>Select type</option>
-                    <option value="Type A">Type A</option>
-                    <option value="Type B">Type B</option>
-                    <option value="Type C">Type C</option>
-                    <option value="Type D">Type D</option>
+                    <option value="Finished Good">Finished Good</option>
+                    <option value="Semi-Finished Good">Semi-Finished Good</option>
+                    <option value="Component">Component</option>
+                    <option value="Sub Assembly">Sub Assembly</option>
                   </select>
                 </div>
                 <div class="form-group">
@@ -88,7 +63,7 @@ import { UserService } from '../../services/user.service';
                 </div>
              </div>
 
-              <div class="form-group">
+              <div class="form-group" *ngIf="isPartSelected()">
                <label class="form-label" for="partDescription">Part description</label>
                <textarea id="partDescription" class="form-control" formControlName="partDescription" placeholder="Describe the part (max 1000 characters)" maxlength="1000" style="min-height: 120px; resize: vertical;" (input)="updateDescriptionCount()"></textarea>
                <div class="flex justify-between items-center mt-2">
@@ -148,11 +123,8 @@ export class ItemFormModal implements OnInit {
   descriptionCount = 0;
 
   itemForm = this.fb.group({
-    sku: ['', Validators.required],
-    name: ['', Validators.required],
     type: ['Part', Validators.required],
     lifecycle: ['Preliminary', Validators.required],
-    revision: ['A.01', Validators.required],
     part: ['', Validators.required],
     partDescription: ['', Validators.maxLength(1000)],
     document: [''],
@@ -167,11 +139,8 @@ export class ItemFormModal implements OnInit {
     if (this.editItem) {
       const normalizedPartType = this.normalizePartType((this.editItem as any)?.partType);
       this.itemForm.patchValue({
-        sku: this.editItem.sku,
-        name: this.editItem.name,
         type: this.editItem.type,
         lifecycle: this.editItem.lifecycle,
-        revision: this.editItem.revision,
         part: (this.editItem as any)?.part || this.editItem.type || '',
         partDescription: (this.editItem as any)?.partDescription || '',
         document: (this.editItem as any)?.document || '',
@@ -200,6 +169,10 @@ export class ItemFormModal implements OnInit {
     }
 
     const mapping: Record<string, string> = {
+      'Type A': 'Finished Good',
+      'Type B': 'Semi-Finished Good',
+      'Type C': 'Component',
+      'Type D': 'Sub Assembly',
       Electronic: 'Assembly',
       Mechanical: 'Mechanical Part',
       Electrical: 'Electrical Part',
@@ -216,8 +189,17 @@ export class ItemFormModal implements OnInit {
       return [];
     }
 
-    const prefix = partType.replace('Type ', 'PRT');
-    return [`${prefix}-1000`];
+    const prefix = this.getPartTypePrefix(partType);
+    return prefix ? [`${prefix}-001`] : [];
+  }
+
+  private getPartTypePrefix(partType: string): string {
+    return partType
+      .trim()
+      .split(/[\s-]+/)
+      .filter(Boolean)
+      .map(word => word.charAt(0).toUpperCase())
+      .join('');
   }
 
   onPartTypeChange() {
@@ -241,6 +223,11 @@ export class ItemFormModal implements OnInit {
     const classificationControl = this.itemForm.get('classification');
     const partNumberControl = this.itemForm.get('partNumber');
     const documentControl = this.itemForm.get('document');
+    const selectedItemType = this.itemForm.get('part')?.value;
+
+    if (selectedItemType === 'Part' || selectedItemType === 'Document') {
+      this.itemForm.get('type')?.setValue(selectedItemType);
+    }
     
     if (this.isPartSelected()) {
       partTypeControl?.setValidators([Validators.required]);
@@ -267,18 +254,26 @@ export class ItemFormModal implements OnInit {
 
   onSubmit() {
     if (this.itemForm.valid && !this.userService.isReadOnly()) {
-      const formValue = this.itemForm.value;
-      if (!formValue.type && formValue.part) {
-        formValue.type = formValue.part;
-      }
+      const formValue = this.itemForm.getRawValue();
+      const itemType = formValue.part || formValue.type || 'Part';
+      const generatedSku = formValue.partNumber || `${itemType.toUpperCase()}-001`;
+      const productUpdates: Partial<Product> = {
+        ...formValue,
+        type: itemType as Product['type'],
+        quantity: formValue.quantity ?? 0
+      } as Partial<Product>;
       
       if (this.editItem) {
-        this.inventoryService.updateProduct(this.editItem.sku, formValue as Partial<Product>);
+        this.inventoryService.updateProduct(this.editItem.sku, productUpdates);
       } else {
-        this.inventoryService.addProduct(formValue as Partial<Product>);
+        this.inventoryService.addProduct({
+          ...productUpdates,
+          sku: generatedSku,
+          name: formValue.partType || itemType
+        });
       }
       
-      this.saved.emit(formValue.sku || this.editItem?.sku || '');
+      this.saved.emit(this.editItem?.sku || generatedSku);
       this.closeModal();
     }
   }

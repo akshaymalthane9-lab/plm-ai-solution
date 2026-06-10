@@ -199,7 +199,7 @@ import { UserService } from '../../services/user.service';
 
     <app-item-form-modal
       *ngIf="showCreateModal"
-      (saved)="showCreateModal = false"
+      (saved)="handleItemCreated()"
       (close)="showCreateModal = false">
     </app-item-form-modal>
   `,
@@ -699,6 +699,11 @@ export class Dashboard {
 
   get userName(): string {
     return this.userService.currentUser() || 'User1';
+  }
+
+  handleItemCreated() {
+    this.showCreateModal = false;
+    this.router.navigate(['/items']);
   }
 
   logout(event: Event) {
