@@ -61,4 +61,12 @@ describe('Dashboard', () => {
       { queryParams: { status: 'released' } }
     );
   });
+
+  it('opens a recently accessed item', () => {
+    const navigateSpy = vi.spyOn(component.router, 'navigate').mockResolvedValue(true);
+
+    component.openRecentItem('FG-001');
+
+    expect(navigateSpy).toHaveBeenCalledWith(['/items', 'FG-001']);
+  });
 });

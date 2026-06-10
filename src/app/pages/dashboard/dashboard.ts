@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { ItemFormModal } from '../../components/item-form-modal/item-form-modal';
+import { RecentItemsService } from '../../services/recent-items.service';
 import { UserService } from '../../services/user.service';
 
 @Component({
@@ -99,7 +100,29 @@ import { UserService } from '../../services/user.service';
         <div class="dashboard-layout">
           <aside class="recent-panel">
             <h2>Recently Accessed</h2>
-            <div class="empty-recent">No recently accessed {{ recentEntityLabel }}</div>
+            <div class="recent-list" *ngIf="recentItemsService.recentItems().length; else noRecentItems">
+              <button
+                class="recent-item"
+                type="button"
+                *ngFor="let item of recentItemsService.recentItems()"
+                (click)="openRecentItem(item.sku)">
+                <span class="recent-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24">
+                    <path d="M4 7.5L12 3l8 4.5v9L12 21l-8-4.5v-9z"></path>
+                    <path d="M4.5 7.8L12 12l7.5-4.2"></path>
+                    <path d="M12 12v9"></path>
+                  </svg>
+                </span>
+                <span class="recent-copy">
+                  <strong>{{ item.sku }}</strong>
+                  <small>{{ item.name }}</small>
+                  <span>{{ item.partType }} · Rev {{ item.revision }}</span>
+                </span>
+              </button>
+            </div>
+            <ng-template #noRecentItems>
+              <div class="empty-recent">No recently accessed items</div>
+            </ng-template>
           </aside>
 
           <section class="workspace-panel" *ngIf="activeView === 'workspace'">
@@ -485,6 +508,84 @@ import { UserService } from '../../services/user.service';
       text-align: center;
     }
 
+    .recent-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .recent-item {
+      display: grid;
+      width: 100%;
+      grid-template-columns: 38px minmax(0, 1fr);
+      align-items: center;
+      gap: 11px;
+      padding: 13px;
+      border: 1px solid #e2e5ec;
+      border-radius: 16px;
+      background: #f4f6fa;
+      color: #223964;
+      text-align: left;
+      transition: border-color .2s ease, background .2s ease, transform .2s ease;
+    }
+
+    .recent-item:hover,
+    .recent-item:focus-visible {
+      border-color: #cfe4a9;
+      background: #f3f8e9;
+      outline: none;
+      transform: translateY(-1px);
+    }
+
+    .recent-icon {
+      display: grid;
+      width: 38px;
+      height: 38px;
+      place-items: center;
+      border-radius: 11px;
+      background: #e9f3d8;
+      color: #65901b;
+    }
+
+    .recent-icon svg {
+      width: 19px;
+      height: 19px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.8;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .recent-copy {
+      display: block;
+      min-width: 0;
+    }
+
+    .recent-copy strong,
+    .recent-copy small,
+    .recent-copy span {
+      display: block;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .recent-copy strong {
+      color: #5f8919;
+      font-size: .85rem;
+    }
+
+    .recent-copy small {
+      margin: 2px 0 4px;
+      color: #50627c;
+      font-size: .78rem;
+    }
+
+    .recent-copy span {
+      color: #98a4ba;
+      font-size: .7rem;
+    }
+
     .workspace-panel {
       padding: 28px 28px 24px;
     }
@@ -719,6 +820,7 @@ import { UserService } from '../../services/user.service';
 })
 export class Dashboard {
   readonly userService = inject(UserService);
+  readonly recentItemsService = inject(RecentItemsService);
   readonly router = inject(Router);
   activeView: 'workspace' | 'items' | 'changes' | 'reports' = 'workspace';
   showCreateModal = false;
@@ -729,10 +831,6 @@ export class Dashboard {
 
   get userName(): string {
     return this.userService.currentUser() || 'User1';
-  }
-
-  get recentEntityLabel(): string {
-    return this.activeView === 'changes' ? 'changes' : 'items';
   }
 
   handleItemCreated() {
@@ -750,6 +848,10 @@ export class Dashboard {
 
   browseReleasedChanges() {
     this.router.navigate(['/changes/manage'], { queryParams: { status: 'released' } });
+  }
+
+  openRecentItem(sku: string) {
+    this.router.navigate(['/items', sku]);
   }
 
   setActiveViewFromUrl(url: string) {

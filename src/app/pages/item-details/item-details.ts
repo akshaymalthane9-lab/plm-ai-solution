@@ -3,6 +3,7 @@ import { Component, inject, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AttachmentFile, InventoryService, Product, ProductAttachment } from '../../services/inventory.service';
+import { RecentItemsService } from '../../services/recent-items.service';
 import { UserService } from '../../services/user.service';
 
 type ItemDetailTab = 'Overview' | 'BOM' | 'Documents' | 'Changes' | 'History';
@@ -486,6 +487,7 @@ export class ItemDetails implements OnInit {
   readonly route = inject(ActivatedRoute);
   readonly router = inject(Router);
   readonly inventoryService = inject(InventoryService);
+  readonly recentItemsService = inject(RecentItemsService);
   readonly userService = inject(UserService);
 
   readonly tabs: ItemDetailTab[] = ['Overview', 'BOM', 'Documents', 'Changes', 'History'];
@@ -501,7 +503,12 @@ export class ItemDetails implements OnInit {
   selectedBomRemovePath = '';
 
   ngOnInit() {
-    const sku = this.route.snapshot.paramMap.get('sku');
+    this.route.paramMap.subscribe(params => {
+      this.loadItem(params.get('sku'));
+    });
+  }
+
+  private loadItem(sku: string | null) {
     if (!sku) {
       this.router.navigate(['/items']);
       return;
@@ -510,7 +517,10 @@ export class ItemDetails implements OnInit {
     this.item = this.inventoryService.getData().find(product => product.sku === sku) || null;
     if (!this.item) {
       this.router.navigate(['/items']);
+      return;
     }
+
+    this.recentItemsService.track(this.item);
   }
 
   get userName(): string {
