@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, inject, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { GlobalSearch } from '../../components/global-search/global-search';
 import { AttachmentFile, InventoryService, Product, ProductAttachment } from '../../services/inventory.service';
 import { RecentItemsService } from '../../services/recent-items.service';
 import { UserService } from '../../services/user.service';
@@ -16,7 +17,7 @@ type BomTreeNode = {
 @Component({
   selector: 'app-item-details',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [CommonModule, FormsModule, RouterLink, GlobalSearch],
   template: `
     <div class="detail-page">
       <header class="topbar">
@@ -24,16 +25,7 @@ type BomTreeNode = {
 
         <div class="topbar-center">
           <div class="search-cluster">
-            <input
-              type="search"
-              placeholder="Search Items/Changes/Users..."
-              aria-label="Search Items, Changes or Users">
-            <button type="button" aria-label="Search">
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <circle cx="11" cy="11" r="7"></circle>
-                <path d="M20 20L16.65 16.65"></path>
-              </svg>
-            </button>
+            <app-global-search></app-global-search>
           </div>
 
           <div class="top-actions" aria-label="Quick actions">

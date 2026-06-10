@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, inject, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
+import { GlobalSearch } from '../../components/global-search/global-search';
 import { ItemFormModal } from '../../components/item-form-modal/item-form-modal';
 import { InventoryService, Product } from '../../services/inventory.service';
 import { UserService } from '../../services/user.service';
@@ -8,7 +9,7 @@ import { UserService } from '../../services/user.service';
 @Component({
   selector: 'app-item-edit',
   standalone: true,
-  imports: [CommonModule, ItemFormModal],
+  imports: [CommonModule, GlobalSearch, ItemFormModal],
   template: `
     <div class="edit-page">
       <header class="topbar">
@@ -16,16 +17,7 @@ import { UserService } from '../../services/user.service';
 
         <div class="topbar-center">
           <div class="search-cluster">
-            <input
-              type="search"
-              placeholder="Search Items/Changes/Users..."
-              aria-label="Search Items, Changes or Users">
-            <button type="button" aria-label="Search">
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <circle cx="11" cy="11" r="7"></circle>
-                <path d="M20 20L16.65 16.65"></path>
-              </svg>
-            </button>
+            <app-global-search></app-global-search>
           </div>
 
           <div class="top-actions">
