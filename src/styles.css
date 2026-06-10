@@ -192,3 +192,190 @@ button {
 .status-badge.in-stock, .status-badge.normal, .status-badge.implemented { background-color: var(--color-success-bg); color: var(--color-success); border: 1px solid rgba(5,150,105,0.2); }
 .status-badge.low-stock, .status-badge.high { background-color: var(--color-warning-bg); color: var(--color-warning); border: 1px solid rgba(217,119,6,0.2); }
 .status-badge.out-of-stock { background-color: var(--color-danger-bg); color: var(--color-danger); border: 1px solid rgba(220,38,38,0.2); }
+
+/* Standalone item-detail header */
+.detail-page .topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 18px;
+}
+
+.detail-page .brand {
+  flex: 0 0 auto;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #223964;
+  font-size: 1.45rem;
+  font-weight: 900;
+  letter-spacing: .01em;
+}
+
+.detail-page .topbar-center {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 18px;
+  min-width: 0;
+}
+
+.detail-page .search-cluster {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: 64px;
+}
+
+.detail-page .search-cluster input,
+.detail-page .search-cluster button,
+.detail-page .top-actions button {
+  height: 44px;
+  border: 1px solid #dbe0e8;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, .84);
+  color: #223964;
+  box-shadow: 0 2px 8px rgba(31, 50, 88, .04), 0 12px 20px rgba(31, 50, 88, .03);
+}
+
+.detail-page .search-cluster input {
+  width: 340px;
+  padding: 0 14px;
+  outline: none;
+  font-size: .88rem;
+}
+
+.detail-page .search-cluster input::placeholder {
+  color: #8191ae;
+}
+
+.detail-page .search-cluster button,
+.detail-page .top-actions button {
+  display: inline-flex;
+  width: 48px;
+  min-width: 48px;
+  align-items: center;
+  justify-content: center;
+}
+
+.detail-page .top-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+}
+
+.detail-page svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: #28406f;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.detail-page .top-actions button:first-child svg {
+  fill: rgba(40, 64, 111, .08);
+}
+
+.detail-page .notification-button {
+  position: relative;
+}
+
+.detail-page .notification-dot {
+  position: absolute;
+  top: 8px;
+  right: 9px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #ff6b6b;
+  box-shadow: 0 0 0 2px #fff;
+}
+
+.detail-page .user-menu {
+  position: relative;
+  padding-bottom: 18px;
+  margin-bottom: -18px;
+}
+
+.detail-page .user-trigger {
+  padding: 9px 15px;
+  border: 1px solid #d6dae3;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .82);
+  color: #223964;
+  font-size: .88rem;
+  font-weight: 700;
+}
+
+.detail-page .user-dropdown {
+  position: absolute;
+  top: calc(100% + 2px);
+  right: 0;
+  z-index: 20;
+  display: none;
+  min-width: 200px;
+  padding: 10px;
+  border: 1px solid #dfe2ea;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 12px 28px rgba(28, 45, 87, .12);
+}
+
+.detail-page .user-menu:hover .user-dropdown,
+.detail-page .user-menu:focus-within .user-dropdown {
+  display: block;
+}
+
+.detail-page .user-dropdown a {
+  display: block;
+  padding: 9px 12px;
+  border-radius: 12px;
+  color: #223964;
+  font-size: .92rem;
+  text-decoration: none;
+}
+
+.detail-page .user-dropdown a:hover {
+  background: #f3f5f8;
+}
+
+.detail-page .section-separator {
+  height: 1px;
+  margin: 22px 0 24px;
+  background: linear-gradient(90deg, transparent, rgba(133, 148, 176, .72), transparent);
+}
+
+@media (max-width: 1000px) {
+  .detail-page .topbar {
+    flex-wrap: wrap;
+  }
+
+  .detail-page .topbar-center {
+    order: 3;
+    width: 100%;
+  }
+
+  .detail-page .search-cluster {
+    flex: 1;
+    margin-left: 0;
+  }
+
+  .detail-page .search-cluster input {
+    width: 100%;
+  }
+}
+
+@media (max-width: 700px) {
+  .detail-page .topbar-center {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .detail-page .top-actions {
+    margin-left: 0;
+  }
+}

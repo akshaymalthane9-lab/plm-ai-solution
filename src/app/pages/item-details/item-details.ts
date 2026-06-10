@@ -1,12 +1,11 @@
-import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Component, inject, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { AttachmentFile, Product, ProductAttachment, InventoryService } from '../../services/inventory.service';
+import { AttachmentFile, InventoryService, Product, ProductAttachment } from '../../services/inventory.service';
 import { UserService } from '../../services/user.service';
 
-type ItemDetailTab = 'Overview' | 'Changes' | 'Relationship' | 'WhereUsed' | 'Attachments' | 'History';
-type ChangeDetailTab = 'ChangeOrders' | 'ChangeRequests' | 'Deviation';
+type ItemDetailTab = 'Overview' | 'BOM' | 'Documents' | 'Changes' | 'History';
 type BomTreeNode = {
   product: Product;
   level: number;
@@ -18,557 +17,505 @@ type BomTreeNode = {
   standalone: true,
   imports: [CommonModule, FormsModule, RouterLink],
   template: `
-    <div class="page-container flex-col gap-6">
-      <div class="page-header flex justify-between items-center mt-4" *ngIf="item">
-        <div>
-          <div class="title-row flex items-center gap-4">
-            <h1 class="page-title font-mono">{{ item.sku }}</h1>
-            <span class="type-badge">{{ item.lifecycle }}</span>
-            <span class="revision-pill">Revision {{ item.revision }}</span>
+    <div class="detail-page">
+      <header class="topbar">
+        <button class="brand" type="button" (click)="router.navigate(['/dashboard'])">NexaPLM</button>
+
+        <div class="topbar-center">
+          <div class="search-cluster">
+            <input
+              type="search"
+              placeholder="Search Items/Changes/Users..."
+              aria-label="Search Items, Changes or Users">
+            <button type="button" aria-label="Search">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="11" cy="11" r="7"></circle>
+                <path d="M20 20L16.65 16.65"></path>
+              </svg>
+            </button>
           </div>
-        
+
+          <div class="top-actions" aria-label="Quick actions">
+            <button type="button" aria-label="Favorites" title="Favorites">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 3.8l2.53 5.13 5.66.82-4.1 4 .97 5.65L12 16.74 6.94 19.4l.97-5.65-4.1-4 5.66-.82L12 3.8z"></path>
+              </svg>
+            </button>
+            <button class="notification-button" type="button" aria-label="Notifications" title="Notifications">
+              <span class="notification-dot" aria-hidden="true"></span>
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M15 18H9"></path>
+                <path d="M18 16V11a6 6 0 10-12 0v5l-2 2h16l-2-2z"></path>
+              </svg>
+            </button>
+            <button type="button" aria-label="Data import" title="Data import">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 3v10"></path>
+                <path d="M8 9l4 4 4-4"></path>
+                <path d="M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"></path>
+              </svg>
+            </button>
+          </div>
         </div>
 
-        <div class="flex items-center gap-4">
-          <button class="btn btn-secondary" routerLink="/items">Back to Items</button>
-      
+        <div class="user-menu">
+          <button class="user-trigger" type="button">
+            {{ userName }} <span aria-hidden="true">▾</span>
+          </button>
+          <nav class="user-dropdown" aria-label="User menu">
+            <a href="#" (click)="$event.preventDefault()">My Profile</a>
+            <a href="#" (click)="$event.preventDefault()">Password Change</a>
+            <a href="#" (click)="logout($event)">Logout</a>
+            <a href="#" (click)="$event.preventDefault()">Help</a>
+            <a href="#" (click)="$event.preventDefault()">About NexaPLM</a>
+          </nav>
         </div>
-      </div>
+      </header>
 
-      <div class="tabs flex border-b w-full mb-6">
-        <button class="tab-btn" [class.active]="activeTab === 'Overview'" (click)="activeTab = 'Overview'">Item Overview</button>
-        <button class="tab-btn" [class.active]="activeTab === 'Changes'" (click)="activeTab = 'Changes'">Changes</button>
-        <button class="tab-btn" [class.active]="activeTab === 'Relationship'" (click)="activeTab = 'Relationship'">Relationship</button>
-        <button class="tab-btn" [class.active]="activeTab === 'WhereUsed'" (click)="activeTab = 'WhereUsed'">Where Used</button>
-        <button class="tab-btn" [class.active]="activeTab === 'Attachments'" (click)="activeTab = 'Attachments'">Attachments</button>
-        <button class="tab-btn" [class.active]="activeTab === 'History'" (click)="activeTab = 'History'">History</button>
-      </div>
+      <div class="section-separator" aria-hidden="true"></div>
 
-      <div class="tab-content" *ngIf="item">
-        <ng-container *ngIf="activeTab === 'Overview'">
-          <section class="item-overview-panel">
-            <button class="btn btn-primary overview-edit" type="button" [disabled]="userService.isReadOnly()" [routerLink]="['/items', item.sku, 'edit']">Edit</button>
+      <main *ngIf="item; else missingItem">
+        <button class="back-button" type="button" (click)="router.navigate(['/items'])">
+          ← Back to Items
+        </button>
 
-            <div class="overview-details">
-              <div class="overview-row">
-                <span class="overview-label">Part Number:</span>
-                <span class="overview-value">{{ item.sku }}</span>
-              </div>
-              <div class="overview-row">
-                <span class="overview-label">Unit of Measure:</span>
-                <span class="overview-value">{{ getUnitOfMeasure() }}</span>
-              </div>
-              <div class="overview-row">
-                <span class="overview-label">Part Name:</span>
-                <span class="overview-value">{{ item.name }}</span>
-              </div>
-              <div class="overview-row">
-                <span class="overview-label">Part Classification:</span>
-                <span class="overview-value">{{ getPartTypeLabel() }} | {{ getClassificationLabel() }}</span>
-              </div>
-              <div class="overview-row">
-                <span class="overview-label">Part Type:</span>
-                <span class="overview-value">{{ getPartTypeLabel() }}</span>
-              </div>
-              <div class="overview-row">
-                <span class="overview-label">Material:</span>
-                <span class="overview-value">{{ getMaterialLabel() }}</span>
-              </div>
-              <div class="overview-row description-row">
-                <span class="overview-label">Part Description:</span>
-                <div>
-                  <div class="description-box">{{ getPartDescription() }}</div>
-                
-                </div>
-              </div>
-              <div class="overview-row">
-                <span class="overview-label">Color/Finish:</span>
-                <span class="overview-value">{{ getColorFinishLabel() }}</span>
-              </div>
-              <div class="overview-row">
-                <span class="overview-label">Lifecycle Status:</span>
-                <span class="overview-value">{{ item.lifecycle }}</span>
-              </div>
+        <section class="item-heading">
+          <div class="item-icon" aria-hidden="true">#</div>
+          <div>
+            <div class="title-line">
+              <h1>{{ item.sku }}</h1>
+              <span class="success-badge">Registered</span>
             </div>
+            <p>{{ getPartTypeLabel() }} item is registered in the system.</p>
+          </div>
+        </section>
+
+        <nav class="detail-tabs" aria-label="Item detail sections">
+          <button
+            *ngFor="let tab of tabs"
+            type="button"
+            [class.active]="activeTab === tab"
+            (click)="activeTab = tab">
+            {{ tab }}
+          </button>
+        </nav>
+
+        <ng-container [ngSwitch]="activeTab">
+          <section class="overview-layout" *ngSwitchCase="'Overview'">
+            <div>
+              <article class="card details-card" [class.open]="showAdditionalAttributes">
+                <button
+                  *ngIf="!userService.isReadOnly()"
+                  class="edit-button"
+                  type="button"
+                  [routerLink]="['/items', item.sku, 'edit']">
+                  Edit
+                </button>
+                <h2>Item Details</h2>
+
+                <div class="detail-row">
+                  <span class="detail-icon">#</span>
+                  <span>
+                    <small>Item Number</small>
+                    <strong class="green-text">{{ item.sku }}</strong>
+                  </span>
+                </div>
+                <div class="detail-row">
+                  <span class="detail-icon">D</span>
+                  <span>
+                    <small>Description</small>
+                    <strong>{{ getPartDescription() }}</strong>
+                  </span>
+                </div>
+                <div class="detail-row">
+                  <span class="detail-icon">T</span>
+                  <span>
+                    <small>Item Type</small>
+                    <strong>{{ getPartTypeLabel() }}</strong>
+                  </span>
+                </div>
+                <div class="detail-row no-border">
+                  <span class="detail-icon">L</span>
+                  <span>
+                    <small>Lifecycle</small>
+                    <strong>{{ item.lifecycle }}</strong>
+                  </span>
+                </div>
+
+                <div class="attribute-toggle">
+                  <span></span>
+                  <button
+                    type="button"
+                    [attr.aria-expanded]="showAdditionalAttributes"
+                    (click)="showAdditionalAttributes = !showAdditionalAttributes">
+                    {{ showAdditionalAttributes ? '⌃' : '⌄' }}
+                  </button>
+                  <span></span>
+                </div>
+
+                <div class="extra-content" *ngIf="showAdditionalAttributes">
+                  <div>
+                    <small>Part Classification</small>
+                    <strong>{{ getPartTypeLabel() }} | {{ getClassificationLabel() }}</strong>
+                  </div>
+                  <div>
+                    <small>Category</small>
+                    <strong>{{ item.category }}</strong>
+                  </div>
+                  <div>
+                    <small>Quantity</small>
+                    <strong>{{ item.quantity }}</strong>
+                  </div>
+                  <div>
+                    <small>Status</small>
+                    <strong>{{ item.status }}</strong>
+                  </div>
+                </div>
+              </article>
+
+              <article class="card suggestions-card">
+                <h2>Suggested Attributes <span>applied on creation</span></h2>
+                <div class="pill-list">
+                  <span>Category: {{ item.category }}</span>
+                  <span>UOM: {{ getUnitOfMeasure() }}</span>
+                  <span>Revision: {{ item.revision }}</span>
+                  <span>Type: {{ item.type }}</span>
+                </div>
+              </article>
+            </div>
+
+            <aside>
+              <article class="card status-card">
+                <h2>Status</h2>
+                <div><span>Revision</span><strong class="green-tag">{{ item.revision }}</strong></div>
+                <div><span>Documents</span><strong>{{ item.attachments.length }}</strong></div>
+                <div><span>BOM Status</span><strong>{{ item.bom.length ? 'Available' : 'No BOM' }}</strong></div>
+                <div><span>CO Status</span><strong>{{ item.changes.length ? 'Active' : 'None' }}</strong></div>
+              </article>
+
+              <article class="card lifecycle-card">
+                <h2>Lifecycle</h2>
+                <ul>
+                  <li
+                    *ngFor="let stage of lifecycleStages"
+                    [class.active]="stage === item.lifecycle">
+                    <span></span>
+                    {{ stage }}
+                    <small *ngIf="stage === item.lifecycle">Current</small>
+                  </li>
+                </ul>
+              </article>
+            </aside>
           </section>
 
-          <div class="overview-divider"></div>
-
-          <section class="bom-overview">
-            <h3 class="bom-title">BOM</h3>
-            <div class="bom-actions" *ngIf="!userService.isReadOnly()">
-              <button class="btn btn-primary bom-btn" type="button" (click)="openBomAdd(item.sku)">Add</button>
-              <button class="btn bom-btn" type="button" style="background:#dc2626;color:#fff;border-color:#dc2626" [disabled]="getBomTree().length === 0" (click)="openBomRemove()">Remove</button>
-              <button class="btn bom-btn" type="button" style="background:#1479bd;color:#fff;border-color:#1479bd">Compare</button>
+          <section class="card tab-panel" *ngSwitchCase="'BOM'">
+            <div class="panel-heading">
+              <div>
+                <h2>Bill of Materials</h2>
+                <p>Manage components and nested assemblies for {{ item.sku }}.</p>
+              </div>
+              <div class="panel-actions" *ngIf="!userService.isReadOnly()">
+                <button class="primary-button" type="button" (click)="openBomAdd(item.sku)">Add</button>
+                <button class="danger-button" type="button" [disabled]="!getBomTree().length" (click)="openBomRemove()">Remove</button>
+              </div>
             </div>
 
-            <div class="bom-add-panel" *ngIf="isBomAddOpen && !userService.isReadOnly()">
-              <div class="bom-add-context">
-                Adding under <strong>{{ selectedBomParentSku }}</strong>
-              </div>
-              <select class="bom-select" [(ngModel)]="selectedBomChildSku" aria-label="Select item to add to BOM">
+            <div class="action-panel" *ngIf="isBomAddOpen && !userService.isReadOnly()">
+              <span>Adding under <strong>{{ selectedBomParentSku }}</strong></span>
+              <select [(ngModel)]="selectedBomChildSku" aria-label="Select item to add to BOM">
                 <option value="">Select part</option>
                 <option *ngFor="let product of getAvailableBomItems()" [value]="product.sku">
                   {{ product.sku }} - {{ product.name }}
                 </option>
               </select>
-              <button class="btn btn-primary bom-add-confirm" type="button" [disabled]="!selectedBomChildSku" (click)="addBomItem()">Add Item</button>
-              <button class="btn bom-btn" type="button" (click)="closeBomAdd()">Cancel</button>
+              <button class="primary-button" type="button" [disabled]="!selectedBomChildSku" (click)="addBomItem()">Add Item</button>
+              <button class="soft-button" type="button" (click)="closeBomAdd()">Cancel</button>
             </div>
 
-            <div class="bom-add-panel" *ngIf="isBomRemoveOpen && !userService.isReadOnly()">
-              <div>Remove BOM item</div>
-              <select class="bom-select" [(ngModel)]="selectedBomRemovePath" aria-label="Select BOM item to remove">
+            <div class="action-panel" *ngIf="isBomRemoveOpen && !userService.isReadOnly()">
+              <span>Remove BOM item</span>
+              <select [(ngModel)]="selectedBomRemovePath" aria-label="Select BOM item to remove">
                 <option value="">Select item</option>
                 <option *ngFor="let node of getBomTree()" [value]="node.path.join('>')">
                   {{ node.product.sku }} - {{ node.product.name }}
                 </option>
               </select>
-              <button class="btn bom-btn" type="button" style="background:#dc2626;color:#fff;border-color:#dc2626" [disabled]="!selectedBomRemovePath" (click)="removeSelectedBomItem()">Remove Item</button>
-              <button class="btn bom-btn" type="button" (click)="closeBomRemove()">Cancel</button>
+              <button class="danger-button" type="button" [disabled]="!selectedBomRemovePath" (click)="removeSelectedBomItem()">Remove Item</button>
+              <button class="soft-button" type="button" (click)="closeBomRemove()">Cancel</button>
             </div>
 
-            <div class="bom-tree border rounded">
-              <div class="bom-tree-header">
+            <div class="data-table">
+              <div class="bom-row bom-header">
                 <span>Item Number</span>
                 <span>Description</span>
                 <span>Revision</span>
-                <span>Lifecycle Phase</span>
-                <span>Qty</span>
-                <span>BOM Level</span>
+                <span>Lifecycle</span>
+                <span>Level</span>
                 <span *ngIf="!userService.isReadOnly()">Actions</span>
               </div>
-
               <div
                 *ngFor="let node of getBomTree()"
-                class="bom-tree-row hover-row"
-                [style.--bom-level]="node.level"
-              >
-                <button class="bom-item-link font-mono font-medium" type="button" (click)="navigateToItem(node.product.sku)">
-                  <span aria-hidden="true">L-</span>{{ node.product.sku }}
+                class="bom-row"
+                [style.--level]="node.level">
+                <button class="item-link" type="button" (click)="navigateToItem(node.product.sku)">
+                  {{ node.product.sku }}
                 </button>
                 <span>{{ getBomDescription(node.product) }}</span>
                 <span>{{ node.product.revision }}</span>
                 <span>{{ node.product.lifecycle }}</span>
-                <span>{{ getBomQuantity(node.level) }}</span>
                 <span>{{ node.level }}</span>
-                <span *ngIf="!userService.isReadOnly()" style="display:flex;gap:.5rem">
-                  <button class="btn btn-primary bom-btn" type="button" (click)="openBomAdd(node.product.sku)">Add child</button>
-                  <button class="btn bom-btn" type="button" style="background:#dc2626;color:#fff;border-color:#dc2626" (click)="removeBomItem(node)">Remove</button>
+                <span class="row-actions" *ngIf="!userService.isReadOnly()">
+                  <button class="soft-button" type="button" (click)="openBomAdd(node.product.sku)">Add child</button>
+                  <button class="danger-button" type="button" (click)="removeBomItem(node)">Remove</button>
                 </span>
               </div>
+              <p class="empty-message" *ngIf="!getBomTree().length">No BOM components attached to this item.</p>
+            </div>
+          </section>
 
-              <div *ngIf="getBomTree().length === 0" class="bom-empty text-center py-12 text-muted">
-                No BOM components attached to this item.
+          <section class="card tab-panel" *ngSwitchCase="'Documents'">
+            <div class="panel-heading">
+              <div>
+                <h2>Documents</h2>
+                <p>Files and documents linked to {{ item.sku }}.</p>
+              </div>
+              <div class="panel-actions">
+                <button
+                  *ngIf="!userService.isReadOnly()"
+                  class="primary-button"
+                  type="button"
+                  (click)="documentUpload.click()">
+                  Add Document
+                </button>
+                <input #documentUpload type="file" multiple hidden (change)="uploadAttachments($event)">
               </div>
             </div>
-          </section>
-        </ng-container>
 
-        <ng-container *ngIf="activeTab === 'Relationship'">
-          <section class="relationship-panel">
-            <h2 class="relationship-title">Relationship</h2>
-
-            <div class="relationship-summary flex justify-between items-center">
-              <span>Related Objects</span>
-              <span class="relationship-count">({{ getRelationshipObjects().length }} {{ getRelationshipObjects().length === 1 ? 'object' : 'objects' }})</span>
-            </div>
-
-            <div class="relationship-actions">
-              <button class="btn btn-primary" type="button" [disabled]="userService.isReadOnly()" (click)="openRelationshipAdd()">+ Add</button>
-              <button class="btn relation-action" type="button" style="background:#dc2626;color:#fff;border-color:#dc2626" [disabled]="userService.isReadOnly() || getRelationshipObjects().length === 0" (click)="openRelationshipRemove()">- Remove</button>
-              <button class="btn relation-action" type="button" [disabled]="userService.isReadOnly()">Edit Rule</button>
-            </div>
-
-            <div class="bom-add-panel" *ngIf="isRelationshipAddOpen && !userService.isReadOnly()">
-              <div>Add relationship</div>
-              <select class="bom-select" [(ngModel)]="selectedRelationshipSku" aria-label="Select related item">
-                <option value="">Select item</option>
-                <option *ngFor="let product of getAvailableRelationshipItems()" [value]="product.sku">
-                  {{ product.sku }} - {{ product.name }}
-                </option>
-              </select>
-              <button class="btn btn-primary" type="button" [disabled]="!selectedRelationshipSku" (click)="addRelationshipItem()">Add Item</button>
-              <button class="btn relation-action" type="button" (click)="closeRelationshipAdd()">Cancel</button>
-            </div>
-
-            <div class="bom-add-panel" *ngIf="isRelationshipRemoveOpen && !userService.isReadOnly()">
-              <div>Remove relationship</div>
-              <select class="bom-select" [(ngModel)]="selectedRelationshipSku" aria-label="Select relationship to remove">
-                <option value="">Select item</option>
-                <option *ngFor="let product of getRelationshipObjects()" [value]="product.sku">
-                  {{ product.sku }} - {{ product.name }}
-                </option>
-              </select>
-              <button class="btn relation-action" type="button" style="background:#dc2626;color:#fff;border-color:#dc2626" [disabled]="!selectedRelationshipSku" (click)="removeRelationshipItem()">Remove Item</button>
-              <button class="btn relation-action" type="button" (click)="closeRelationshipRemove()">Cancel</button>
-            </div>
-
-            <div class="change-table-wrap">
-              <table class="change-table relationship-table">
-                <thead>
-                  <tr>
-                    <th>Number</th>
-                    <th>Name</th>
-                    <th>Description</th>
-                    <th>Revision</th>
-                    <th>Rule</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr *ngFor="let related of getRelationshipObjects()" class="hover-row">
-                    <td class="font-mono">{{ related.sku }}</td>
-                    <td><button class="relationship-link" type="button" (click)="navigateToItem(related.sku)">{{ related.name }}</button></td>
-                    <td>{{ getBomDescription(related) }}</td>
-                    <td>{{ related.revision }}</td>
-                    <td>
-                      <span>Fulfill</span>
-                      <button
-                        *ngIf="!userService.isReadOnly()"
-                        class="btn relation-action"
-                        type="button"
-                        style="margin-left:.75rem;background:#dc2626;color:#fff;border-color:#dc2626"
-                        (click)="removeRelationshipItem(related.sku)"
-                      >
-                        Remove
-                      </button>
-                    </td>
-                  </tr>
-                  <tr *ngIf="getRelationshipObjects().length === 0">
-                    <td colspan="5" class="change-empty">No related objects available</td>
-                  </tr>
-                </tbody>
-              </table>
+            <div class="document-list">
+              <article *ngFor="let document of getVisibleAttachments(); let i = index">
+                <span class="document-icon">D</span>
+                <span class="document-copy">
+                  <strong>{{ getAttachmentName(document, i) }}</strong>
+                  <small>{{ getAttachmentType(document) }} · {{ getAttachmentSize(document, i) }}</small>
+                </span>
+                <button class="soft-button" type="button" (click)="downloadAttachment(document, i)">Download</button>
+                <button
+                  *ngIf="!userService.isReadOnly()"
+                  class="danger-button"
+                  type="button"
+                  (click)="removeAttachment(document, i)">
+                  Remove
+                </button>
+              </article>
+              <p class="empty-message" *ngIf="!getVisibleAttachments().length">No documents available.</p>
             </div>
           </section>
-        </ng-container>
 
-        <ng-container *ngIf="activeTab === 'WhereUsed'">
-          <div class="empty-state card p-8 text-center">
-            <p>No parent assemblies currently reference this item.</p>
-          </div>
-        </ng-container>
-
-        <ng-container *ngIf="activeTab === 'Attachments'">
-          <section class="attachment-panel">
-            <h2 class="relationship-title">Attachments</h2>
-            <p class="attachment-subtitle">Files attached to {{ item.sku }}</p>
-
-            <div class="attachment-toolbar">
-              <div class="relationship-actions">
-                <button class="btn btn-primary" type="button" [disabled]="userService.isReadOnly()" (click)="attachmentUpload.click()">+ Add</button>
-                <input #attachmentUpload type="file" multiple style="display:none" (change)="uploadAttachments($event)">
-                <button class="btn relation-action" type="button" style="background:#dc2626;color:#fff;border-color:#dc2626" [disabled]="userService.isReadOnly() || getVisibleAttachments().length === 0" (click)="openAttachmentRemove()">- Remove</button>
-                <button class="btn relation-action" type="button" [disabled]="getVisibleAttachments().length === 0" (click)="openAttachmentDownload()">Download</button>
-                <button class="btn relation-action" type="button" [disabled]="userService.isReadOnly()">Check-In</button>
-                <button class="btn relation-action" type="button" [disabled]="userService.isReadOnly()">Check Out</button>
-                <button class="btn relation-action" type="button" [disabled]="userService.isReadOnly()">Cancel Check Out</button>
+          <section class="card tab-panel" *ngSwitchCase="'Changes'">
+            <div class="panel-heading">
+              <div>
+                <h2>Changes</h2>
+                <p>Change orders associated with {{ item.sku }}.</p>
               </div>
-              <label class="changes-search attachment-search">
-                <input
-                  type="search"
-                  placeholder="Search in table"
-                  [value]="attachmentSearchQuery"
-                  (input)="attachmentSearchQuery = $any($event.target).value"
-                >
-              </label>
             </div>
-
-            <div class="bom-add-panel" *ngIf="isAttachmentRemoveOpen && !userService.isReadOnly()">
-              <div>Remove attachment</div>
-              <select class="bom-select" [(ngModel)]="selectedAttachmentId" aria-label="Select attachment to remove">
-                <option value="">Select file</option>
-                <option *ngFor="let attachment of getVisibleAttachments(); let i = index" [value]="getAttachmentId(attachment, i)">
-                  {{ getAttachmentName(attachment, i) }}
-                </option>
-              </select>
-              <button class="btn relation-action" type="button" style="background:#dc2626;color:#fff;border-color:#dc2626" [disabled]="!selectedAttachmentId" (click)="removeSelectedAttachment()">Remove File</button>
-              <button class="btn relation-action" type="button" (click)="closeAttachmentRemove()">Cancel</button>
+            <div class="simple-table">
+              <div class="simple-row simple-header">
+                <span>Change Number</span>
+                <span>Description</span>
+                <span>Status</span>
+                <span>Date</span>
+              </div>
+              <div class="simple-row" *ngFor="let change of item.changes">
+                <strong>{{ change.id }}</strong>
+                <span>{{ change.description }}</span>
+                <span>{{ change.status }}</span>
+                <span>{{ change.date || '—' }}</span>
+              </div>
+              <p class="empty-message" *ngIf="!item.changes.length">No changes available.</p>
             </div>
+          </section>
 
-            <div class="bom-add-panel" *ngIf="isAttachmentDownloadOpen">
-              <div>Download attachment</div>
-              <select class="bom-select" [(ngModel)]="selectedAttachmentId" aria-label="Select attachment to download">
-                <option value="">Select file</option>
-                <option *ngFor="let attachment of getVisibleAttachments(); let i = index" [value]="getAttachmentId(attachment, i)">
-                  {{ getAttachmentName(attachment, i) }}
-                </option>
-              </select>
-              <button class="btn relation-action" type="button" [disabled]="!selectedAttachmentId" (click)="downloadSelectedAttachment()">Download File</button>
-              <button class="btn relation-action" type="button" (click)="closeAttachmentDownload()">Cancel</button>
+          <section class="card tab-panel" *ngSwitchCase="'History'">
+            <div class="panel-heading">
+              <div>
+                <h2>History</h2>
+                <p>Recorded activity for {{ item.sku }}.</p>
+              </div>
             </div>
-
-            <div class="change-table-wrap">
-              <table class="change-table">
-                <thead>
-                  <tr>
-                    <th>File Name</th>
-                    <th>Type</th>
-                    <th>Version</th>
-                    <th>Size</th>
-                    <th>Modified On</th>
-                    <th>Modified By</th>
-                    <th>Checked Out User</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr *ngFor="let attachment of getVisibleAttachments(); let i = index">
-                    <td class="relationship-link">{{ getAttachmentName(attachment, i) }}</td>
-                    <td>{{ getAttachmentType(attachment) }}</td>
-                    <td>{{ getAttachmentVersion(attachment, i) }}</td>
-                    <td>{{ getAttachmentSize(attachment, i) }}</td>
-                    <td>{{ getAttachmentModifiedOn(attachment) }}</td>
-                    <td>{{ getAttachmentModifiedBy(attachment, i) }}</td>
-                    <td>{{ i === 0 ? '-' : 'Rahul Mehta' }}</td>
-                    <td>
-                      <div class="table-actions">
-                        <button class="btn relation-action" type="button" (click)="downloadAttachment(attachment, i)">Download</button>
-                        <button *ngIf="!userService.isReadOnly()" class="btn relation-action" type="button" style="background:#dc2626;color:#fff;border-color:#dc2626" (click)="removeAttachment(attachment, i)">Remove</button>
-                      </div>
-                    </td>
-                  </tr>
-                  <tr *ngIf="getVisibleAttachments().length === 0">
-                    <td colspan="8" class="change-empty">No attachments available</td>
-                  </tr>
-                </tbody>
-              </table>
+            <div class="history-list">
+              <article *ngFor="let entry of item.history">
+                <span class="history-dot"></span>
+                <span>
+                  <strong>{{ entry.action }}</strong>
+                  <small>{{ entry.user }} · {{ entry.date | date:'medium' }}</small>
+                  <p *ngIf="entry.details">{{ entry.details }}</p>
+                </span>
+              </article>
+              <p class="empty-message" *ngIf="!item.history.length">No history available.</p>
             </div>
-
-          
           </section>
         </ng-container>
+      </main>
 
-        <ng-container *ngIf="activeTab === 'Changes'">
-          <section class="changes-panel">
-            <div class="changes-subtabs">
-              <button class="changes-subtab" type="button" [class.active]="activeChangeTab === 'ChangeOrders'" (click)="activeChangeTab = 'ChangeOrders'">Change Orders</button>
-              <button class="changes-subtab" type="button" [class.active]="activeChangeTab === 'ChangeRequests'" (click)="activeChangeTab = 'ChangeRequests'">Change Requests</button>
-              <button class="changes-subtab" type="button" [class.active]="activeChangeTab === 'Deviation'" (click)="activeChangeTab = 'Deviation'">Deviation</button>
-            </div>
-
-            <div class="changes-toolbar">
-              <span class="changes-count">({{ getActiveChangeCount() }} {{ getActiveChangeLabel() }})</span>
-              <label class="changes-search">
-                <input
-                  type="search"
-                  placeholder="Search in table"
-                  [value]="changeSearchQuery"
-                  (input)="changeSearchQuery = $any($event.target).value"
-                >
-              </label>
-            </div>
-
-            <div class="change-table-wrap">
-              <table class="change-table">
-                <thead>
-                  <tr>
-                    <th class="select-col"><span class="table-checkbox" aria-hidden="true"></span></th>
-                    <th>Number</th>
-                    <th>Name</th>
-                    <th>Type</th>
-                    <th>State</th>
-                    <th>Need Date</th>
-                    <th>Context</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr *ngFor="let change of getVisibleChanges()">
-                    <td class="select-col"><span class="table-checkbox" aria-hidden="true"></span></td>
-                    <td class="font-mono text-primary font-medium">{{ change.id }}</td>
-                    <td>{{ change.description }}</td>
-                    <td>Change Order</td>
-                    <td>{{ change.status }}</td>
-                    <td>{{ change.date || 'N/A' }}</td>
-                    <td>{{ item.sku }}</td>
-                  </tr>
-                  <tr *ngIf="getVisibleChanges().length === 0">
-                    <td colspan="7" class="change-empty">{{ getEmptyChangeMessage() }}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-
-            <div class="changes-selected">({{ getVisibleChanges().length ? '0' : '0' }} objects selected)</div>
-          </section>
-        </ng-container>
-
-        <ng-container *ngIf="activeTab === 'History'">
-          <div *ngIf="item.history.length === 0" class="empty-state card p-8 text-center">
-             <p>No history log entries for this product.</p>
-          </div>
-          <div *ngFor="let entry of item.history" class="history-entry mb-4 border-l-4 pl-4 py-2">
-             <div class="font-medium">{{ entry.action }}</div>
-             <div class="text-sm text-muted">{{ entry.user }} - {{ entry.date }}</div>
-             <p class="text-sm mt-2" *ngIf="entry.details">{{ entry.details }}</p>
-          </div>
-        </ng-container>
-      </div>
+      <ng-template #missingItem>
+        <main class="missing-item">Item not found.</main>
+      </ng-template>
     </div>
   `,
   styles: `
-    .page-container { max-width: 1200px; margin: 0 auto; width: 100%; color: var(--text-primary); }
-    .page-header { padding: 0.25rem 0 0.75rem; }
-    .page-title { font-size: 1.7rem; margin: 0; color: var(--text-primary); letter-spacing: 0; }
-    .type-badge { background: var(--accent-primary-subtle); color: var(--accent-primary); padding: 0.25rem 0.75rem; border-radius: 4px; font-size: 0.75rem; font-weight: 700; }
-    .revision-pill { color: var(--text-secondary); border: 1px solid var(--border-color); padding: 0.25rem 0.7rem; border-radius: 999px; font-size: 0.75rem; }
+    :host { display: block; min-height: 100vh; background: #eeeff4; color: #25324b; }
+    * { box-sizing: border-box; }
+    button, input, select { font: inherit; }
 
-    .tabs { border-bottom: 1px solid var(--border-color); flex-wrap: wrap; gap: 0.5rem; }
-    .tab-btn { padding: 1rem 1.5rem; border: none; border-bottom: 2px solid transparent; background: transparent; color: var(--text-secondary); font-weight: 600; cursor: pointer; transition: all var(--transition-fast); text-transform: uppercase; }
-    .tab-btn:focus { outline: none; }
-    .tab-btn.active { color: var(--accent-primary); border-bottom-color: var(--accent-primary); }
+    .detail-page {
+      min-height: 100vh;
+      padding: 22px 28px 36px;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+    }
 
-    .tab-content { min-height: 400px; background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--border-radius-md); box-shadow: var(--shadow-sm); padding: 1.5rem; }
-    .item-overview-panel { position: relative; padding-top: 0.25rem; }
-    .overview-edit { position: absolute; top: 0; right: 0; padding: 0.55rem 1rem; border-radius: var(--border-radius-sm); box-shadow: var(--shadow-sm); font-size: 0.75rem; text-transform: uppercase; font-weight: 700; }
-    .overview-edit:disabled { opacity: 0.55; cursor: not-allowed; }
-    .overview-details { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 0.9fr); column-gap: 4rem; row-gap: 1.35rem; padding: 1.25rem 5rem 0 0; }
-    .overview-row { display: grid; grid-template-columns: 145px minmax(0, 1fr); align-items: start; gap: 1.25rem; }
-    .overview-row:nth-child(2n) { grid-template-columns: 165px minmax(0, 1fr); }
-    .overview-label { font-weight: 700; color: var(--text-secondary); line-height: 1.4; }
-    .overview-value { color: var(--text-primary); line-height: 1.4; }
-    .description-row { grid-row: span 2; }
-    .description-box { min-height: 70px; border-radius: 4px; color: var(--text-primary); line-height: 1.45; }
-    .character-count { margin-top: 0.35rem; font-size: 0.75rem; color: var(--text-muted); }
-    .overview-divider { height: 1px; background: var(--border-color); margin: 1.75rem 0 1.25rem; }
-    .bom-title { margin: 0 0 1rem; font-size: 1.35rem; color: var(--text-primary); font-weight: 700; }
-    .bom-actions { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
-    .bom-btn { padding: 0.5rem 0.85rem; border-radius: var(--border-radius-sm); border: 1px solid var(--border-color); box-shadow: var(--shadow-sm); font-size: 0.75rem; text-transform: uppercase; font-weight: 700; }
-    .bom-add-panel { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem; padding: 1rem; margin-bottom: 1rem; border: 1px solid var(--border-color); background: var(--bg-surface-hover); }
-    .bom-select { min-width: min(100%, 320px); min-height: 38px; border: 1px solid var(--border-color); }
-    .bom-tree { overflow-x: auto; }
-    .bom-tree-header, .bom-tree-row { display: grid; grid-template-columns: minmax(190px, 1.15fr) minmax(220px, 1.25fr) 110px 160px 80px 110px 180px; min-width: 980px; align-items: center; }
-    .bom-tree-header { background: var(--bg-surface-hover); color: var(--text-secondary); font-weight: 700; font-size: 0.82rem; text-transform: uppercase; border-bottom: 2px solid var(--border-color); }
-    .bom-tree-header span, .bom-tree-row > span, .bom-item-link { padding: 1rem 1.25rem; }
-    .bom-tree-row { border-bottom: 1px solid var(--border-color); color: var(--text-secondary); font-size: 0.875rem; }
-    .bom-item-link { display: flex; align-items: center; gap: 0.35rem; border: 0; background: transparent; color: var(--accent-primary); text-align: left; cursor: pointer; padding-left: calc(1.25rem + (var(--bom-level) - 1) * 1.6rem); }
+    .back-button, .edit-button, .primary-button, .soft-button, .danger-button {
+      border-radius: 999px; padding: 9px 16px; font-size: .78rem; font-weight: 700; cursor: pointer;
+    }
+    .back-button { margin-bottom: 18px; border: 1px solid #dcebc3; background: #f3f8e9; color: #5f8919; }
+    .item-heading { display: flex; align-items: center; gap: 15px; margin-bottom: 14px; }
+    .item-icon { display: grid; width: 45px; height: 45px; place-items: center; flex: 0 0 auto; border-radius: 12px; background: #f3f8e9; color: #6a951c; font-size: 20px; font-weight: 900; }
+    .title-line { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    h1 { margin: 0; color: #25324b; font-size: 1.9rem; line-height: 1.1; }
+    .item-heading p { margin: 5px 0 0; color: #8f96ab; font-size: .86rem; }
+    .success-badge { padding: 6px 14px; border: 1px solid #b7efc8; border-radius: 999px; background: #dcfce7; color: #16a34a; font-size: .72rem; }
 
-    .hover-row { transition: background var(--transition-fast); }
-    .hover-row:hover { background: var(--bg-surface-hover); }
+    .detail-tabs { display: flex; gap: 52px; width: 74%; margin: 18px 0 24px; overflow-x: auto; border-bottom: 1px solid #dfe2ea; }
+    .detail-tabs button { position: relative; flex: 0 0 auto; height: 52px; padding: 0 8px 13px; border: 0; background: transparent; color: #8f96ab; font-size: .86rem; font-weight: 700; }
+    .detail-tabs button.active { color: #6a951c; }
+    .detail-tabs button.active::after { position: absolute; right: 2px; bottom: -1px; left: 2px; height: 3px; border-radius: 2px; background: #86bc25; content: ''; }
 
-    .relationship-title { margin: 0 0 1.5rem; font-size: 1.45rem; font-weight: 700; letter-spacing: 0; }
-    .relationship-summary { margin-bottom: 1.25rem; color: var(--text-secondary); font-size: 1rem; font-weight: 700; }
-    .relationship-count { font-weight: 500; }
-    .relationship-actions { display: flex; gap: 0.9rem; margin-bottom: 1.25rem; flex-wrap: wrap; }
-    .relation-action { min-width: 118px; background: #e5e7eb; color: var(--text-secondary); border: 1px solid #d1d5db; box-shadow: var(--shadow-sm); }
-    .relation-action:disabled { opacity: 0.6; cursor: not-allowed; }
-    .table-actions { display: flex; gap: 0.5rem; align-items: center; }
-    .relationship-table { min-width: 860px; }
-    .relationship-link { color: #1479bd; font-weight: 500; }
-    .attachment-subtitle { margin: -0.75rem 0 1rem; color: var(--text-secondary); font-size: 0.9rem; }
-    .attachment-toolbar { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; margin-bottom: 1rem; }
-    .attachment-search { width: 170px; min-height: 38px; }
-    .attachment-details { margin-top: 1.25rem; padding: 1rem; border: 1px solid var(--border-color); background: var(--bg-surface-hover); color: var(--text-secondary); }
-    .attachment-details strong { display: block; margin-bottom: 0.35rem; color: var(--text-primary); }
+    .overview-layout { display: grid; grid-template-columns: minmax(0, 2fr) minmax(260px, 1fr); gap: 20px; align-items: start; }
+    .card { padding: 20px; border: 1px solid #e2e5ec; border-radius: 18px; background: rgba(255,255,255,.9); box-shadow: 0 2px 8px rgba(31,50,88,.04); }
+    .card h2 { margin: 0 0 18px; color: #2f3a56; font-size: 1rem; }
+    .details-card { position: relative; padding: 24px 20px 30px; }
+    .edit-button { position: absolute; top: 20px; right: 22px; border: 1px solid #dcebc3; background: #f3f8e9; color: #5f8919; }
+    .detail-row { display: flex; align-items: center; gap: 14px; padding: 14px 0; border-bottom: 1px solid #f0f1f5; }
+    .detail-row.no-border { border-bottom: 0; }
+    .detail-icon { display: grid; width: 36px; height: 36px; place-items: center; flex: 0 0 auto; border-radius: 10px; background: #f4f5f8; color: #7d8496; font-weight: 800; }
+    .detail-row small, .extra-content small { display: block; margin-bottom: 3px; color: #9aa1b5; font-size: .76rem; }
+    .detail-row strong, .extra-content strong { color: #25324b; font-size: .9rem; }
+    .green-text { color: #6a951c !important; }
+    .attribute-toggle { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 10px; margin: 8px 0 0; }
+    .attribute-toggle span { height: 1px; background: #ececf3; }
+    .attribute-toggle button { display: grid; width: 34px; height: 34px; place-items: center; border: 1px solid #dcebc3; border-radius: 50%; background: #f3f8e9; color: #5f8919; }
+    .extra-content { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; margin-top: 12px; padding: 14px; border: 1px solid #efeff5; border-radius: 14px; background: #fbfbfe; }
+    .extra-content > div { padding: 12px; border: 1px solid #eef0f5; border-radius: 12px; background: #fff; }
+    .suggestions-card, .lifecycle-card { margin-top: 20px; }
+    .suggestions-card h2 { color: #5f8919; }
+    .suggestions-card h2 span { color: #a0a6b7; font-size: .76rem; font-weight: 500; }
+    .pill-list { display: flex; flex-wrap: wrap; gap: 10px; }
+    .pill-list span { padding: 8px 12px; border: 1px solid #ebeef3; border-radius: 999px; background: #f4f5f8; color: #556079; font-size: .74rem; }
+    .status-card > div { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; color: #677087; font-size: .84rem; }
+    .status-card strong { padding: 6px 12px; border: 1px solid #e5e7eb; border-radius: 999px; background: #f3f4f6; color: #5f667a; font-size: .72rem; }
+    .status-card .green-tag { border-color: #dcebc3; background: #f3f8e9; color: #5f8919; }
+    .lifecycle-card ul { display: grid; gap: 12px; margin: 0; padding: 0; list-style: none; }
+    .lifecycle-card li { display: flex; align-items: center; gap: 10px; color: #c2c7d3; font-size: .84rem; }
+    .lifecycle-card li > span { width: 8px; height: 8px; border-radius: 50%; background: #d7d9e0; }
+    .lifecycle-card li.active { color: #5f8919; font-weight: 700; }
+    .lifecycle-card li.active > span { background: #86bc25; }
+    .lifecycle-card li small { margin-left: auto; padding: 4px 10px; border: 1px solid #dcebc3; border-radius: 999px; background: #f3f8e9; color: #5f8919; }
 
-    .changes-subtabs { display: flex; gap: 2rem; border-bottom: 1px solid var(--border-color); margin: -0.25rem 0 1.25rem; overflow-x: auto; }
-    .changes-subtab { padding: 1rem 0.25rem 0.85rem; border: 0; border-bottom: 3px solid transparent; background: transparent; color: var(--text-secondary); font-size: 1rem; font-weight: 600; text-transform: uppercase; white-space: nowrap; }
-    .changes-subtab.active { color: var(--accent-primary); border-bottom-color: var(--accent-primary); }
-    .changes-toolbar { display: flex; justify-content: space-between; align-items: center; gap: 1rem; margin: 0 0 1.25rem; }
-    .changes-count { color: var(--text-secondary); font-size: 0.95rem; font-weight: 500; }
-    .changes-search { width: min(100%, 340px); min-height: 46px; display: flex; align-items: center; gap: 0.75rem; padding: 0 1rem; border: 1px solid var(--border-color); border-radius: var(--border-radius-sm); background: var(--bg-surface); color: var(--text-muted); }
-    .changes-search input { width: 100%; border: 0; outline: 0; background: transparent; color: var(--text-primary); font-size: 0.95rem; }
-    .changes-search input::placeholder { color: var(--text-muted); }
-    .change-table-wrap { overflow-x: auto; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-surface); }
-    .change-table { width: 100%; min-width: 920px; border-collapse: collapse; text-align: left; }
-    .change-table th { padding: 1rem 1.25rem; background: var(--bg-surface-hover); border-bottom: 1px solid var(--border-color); color: var(--text-primary); font-size: 0.9rem; font-weight: 700; }
-    .change-table td { padding: 1rem 1.25rem; border-bottom: 1px solid var(--border-color); color: var(--text-secondary); font-size: 0.875rem; }
-    .change-table tbody tr:last-child td { border-bottom: 0; }
-    .select-col { width: 52px; }
-    .table-checkbox { display: inline-block; width: 18px; height: 18px; border: 2px solid #9ca3af; border-radius: 3px; background: var(--bg-surface); vertical-align: middle; }
-    .change-empty { height: 118px; text-align: center; color: var(--text-secondary); font-size: 0.95rem; }
-    .changes-selected { margin-top: 0.75rem; color: var(--text-secondary); font-size: 0.9rem; }
+    .tab-panel { min-height: 430px; }
+    .panel-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 20px; }
+    .panel-heading h2 { margin-bottom: 4px; }
+    .panel-heading p { margin: 0; color: #8f96ab; font-size: .82rem; }
+    .panel-actions, .row-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+    .primary-button { border: 1px solid #86bc25; background: #86bc25; color: #24420a; }
+    .soft-button { border: 1px solid #dcebc3; background: #f3f8e9; color: #5f8919; }
+    .danger-button { border: 1px solid #f3c4c4; background: #fff1f1; color: #b42318; }
+    button:disabled { cursor: not-allowed; opacity: .5; }
+    .action-panel { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; padding: 14px; border: 1px solid #e2e5ec; border-radius: 14px; background: #f4f6fa; }
+    .action-panel select { min-width: min(100%,300px); padding: 9px 12px; border: 1px solid #dbe0e8; border-radius: 10px; background: #fff; }
+    .data-table, .simple-table { overflow-x: auto; border: 1px solid #e2e5ec; border-radius: 14px; }
+    .bom-row { display: grid; grid-template-columns: minmax(150px,1fr) minmax(200px,1.3fr) 100px 120px 70px 190px; min-width: 880px; align-items: center; border-bottom: 1px solid #e6e9ef; color: #50627c; font-size: .8rem; }
+    .bom-row > span, .item-link { padding: 14px 16px; }
+    .bom-header { background: #f4f6fa; color: #8191ae; font-size: .7rem; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; }
+    .item-link { border: 0; background: transparent; color: #5f8919; font-weight: 800; text-align: left; padding-left: calc(16px + (var(--level) - 1) * 20px); }
+    .document-list { display: grid; gap: 10px; }
+    .document-list article { display: grid; grid-template-columns: 38px minmax(0,1fr) auto auto; align-items: center; gap: 12px; padding: 14px; border: 1px solid #e6e9ef; border-radius: 14px; background: #f8f9fb; }
+    .document-icon { display: grid; width: 38px; height: 38px; place-items: center; border-radius: 10px; background: #f3f8e9; color: #5f8919; font-weight: 900; }
+    .document-copy strong, .document-copy small { display: block; }
+    .document-copy small { color: #8f96ab; font-size: .72rem; }
+    .simple-row { display: grid; grid-template-columns: 150px minmax(220px,1fr) 120px 140px; min-width: 700px; border-bottom: 1px solid #e6e9ef; }
+    .simple-row > * { padding: 14px 16px; color: #50627c; font-size: .8rem; }
+    .simple-header { background: #f4f6fa; color: #8191ae; font-size: .7rem; font-weight: 800; text-transform: uppercase; }
+    .history-list { display: grid; gap: 12px; }
+    .history-list article { display: grid; grid-template-columns: 10px minmax(0,1fr); gap: 12px; padding: 14px; border: 1px solid #e6e9ef; border-radius: 14px; background: #f8f9fb; }
+    .history-dot { width: 8px; height: 8px; margin-top: 6px; border-radius: 50%; background: #86bc25; }
+    .history-list strong, .history-list small { display: block; }
+    .history-list small, .history-list p { color: #8f96ab; font-size: .74rem; }
+    .history-list p { margin: 5px 0 0; }
+    .empty-message, .missing-item { padding: 42px 18px; color: #98a4ba; text-align: center; }
 
-    .text-primary { color: var(--accent-primary); }
-    .text-muted { color: var(--text-muted); }
-    .font-mono { font-family: monospace; }
-    .empty-state { text-align: center; color: var(--text-muted); }
-    .history-entry { background: var(--bg-surface); color: var(--text-primary); }
-    .border { border: 1px solid var(--border-color); }
-    .p-8 { padding: 2rem; }
-    .mb-4 { margin-bottom: 1rem; }
-    .mt-2 { margin-top: 0.5rem; }
-    .py-12 { padding-top: 3rem; padding-bottom: 3rem; }
-    .text-center { text-align: center; }
-    .border-l-4 { border-left: 4px solid var(--accent-primary); }
-    .pl-4 { padding-left: 1rem; }
-    .py-2 { padding-top: 0.5rem; padding-bottom: 0.5rem; }
+    @media (max-width: 1000px) {
+      .detail-tabs { width: 100%; }
+      .overview-layout { grid-template-columns: 1fr; }
+    }
 
-    @media (max-width: 840px) {
-      .page-header { align-items: flex-start; flex-direction: column; gap: 1rem; }
-      .tab-content { padding: 1rem; }
-      .changes-subtabs { gap: 1.25rem; }
-      .changes-toolbar { align-items: stretch; flex-direction: column; }
-      .changes-search { width: 100%; }
-      .attachment-toolbar { flex-direction: column; }
-      .attachment-search { width: 100%; }
-      .relationship-summary { align-items: flex-start; flex-direction: column; gap: 0.35rem; }
-      .overview-details { grid-template-columns: 1fr; padding-right: 0; }
-      .overview-row, .overview-row:nth-child(2n) { grid-template-columns: 1fr; gap: 0.3rem; }
-      .overview-edit { position: static; margin-left: auto; display: block; width: fit-content; }
+    @media (max-width: 700px) {
+      .detail-page { padding: 18px 16px 28px; }
+      .detail-tabs { gap: 24px; }
+      .extra-content { grid-template-columns: 1fr; }
+      .panel-heading { flex-direction: column; }
+      .document-list article { grid-template-columns: 38px minmax(0,1fr); }
+      .document-list article button { grid-column: 2; }
     }
   `
 })
 export class ItemDetails implements OnInit {
-  private route = inject(ActivatedRoute);
-  private router = inject(Router);
-  inventoryService = inject(InventoryService);
-  userService = inject(UserService);
+  readonly route = inject(ActivatedRoute);
+  readonly router = inject(Router);
+  readonly inventoryService = inject(InventoryService);
+  readonly userService = inject(UserService);
+
+  readonly tabs: ItemDetailTab[] = ['Overview', 'BOM', 'Documents', 'Changes', 'History'];
+  readonly lifecycleStages = ['Preliminary', 'Design', 'Prototype', 'Production', 'Obsolete'];
 
   item: Product | null = null;
   activeTab: ItemDetailTab = 'Overview';
-  activeChangeTab: ChangeDetailTab = 'ChangeOrders';
-  changeSearchQuery = '';
-  attachmentSearchQuery = '';
+  showAdditionalAttributes = false;
   isBomAddOpen = false;
   isBomRemoveOpen = false;
   selectedBomParentSku = '';
   selectedBomChildSku = '';
   selectedBomRemovePath = '';
-  isRelationshipAddOpen = false;
-  isRelationshipRemoveOpen = false;
-  selectedRelationshipSku = '';
-  isAttachmentRemoveOpen = false;
-  isAttachmentDownloadOpen = false;
-  selectedAttachmentId = '';
 
   ngOnInit() {
     const sku = this.route.snapshot.paramMap.get('sku');
-      if (sku) {
-      this.item = this.inventoryService.getData().find(p => p.sku === sku) || null;
-      if (!this.item) {
-        this.router.navigate(['/items']);
-      }
-    } else {
+    if (!sku) {
+      this.router.navigate(['/items']);
+      return;
+    }
+
+    this.item = this.inventoryService.getData().find(product => product.sku === sku) || null;
+    if (!this.item) {
       this.router.navigate(['/items']);
     }
   }
 
-  canPromoteLifecycle(): boolean {
-    if (!this.item) return false;
-    const lifecycleOrder = ['Design', 'Prototype', 'Production', 'Obsolete'];
-    const currentIndex = lifecycleOrder.indexOf(this.item.lifecycle);
-    return currentIndex < lifecycleOrder.length - 1;
+  get userName(): string {
+    return this.userService.currentUser() || 'User1';
   }
 
-  promoteLifecycle() {
-    if (!this.item || this.userService.isReadOnly()) return;
-
-    const lifecycleOrder = ['Design', 'Prototype', 'Production', 'Obsolete'] as const;
-    const currentIndex = lifecycleOrder.indexOf(this.item.lifecycle);
-
-    if (currentIndex < lifecycleOrder.length - 1) {
-      const newLifecycle = lifecycleOrder[currentIndex + 1];
-      this.inventoryService.updateProduct(this.item.sku, { lifecycle: newLifecycle });
-      this.item.lifecycle = newLifecycle;
-    }
+  getPartTypeLabel(): string {
+    return this.item?.partType || this.item?.part || this.item?.type || 'Part';
   }
 
-  getResolvedBom(): Product[] {
-    if (!this.item?.bom) return [];
-    return this.item.bom
-      .map(sku => this.inventoryService.getData().find(p => p.sku === sku))
-      .filter(Boolean) as Product[];
+  getPartDescription(): string {
+    return this.item?.partDescription || this.item?.name || 'No description available';
+  }
+
+  getClassificationLabel(): string {
+    return this.item?.classification || this.item?.category || 'Unclassified';
+  }
+
+  getUnitOfMeasure(): string {
+    return this.item?.type === 'Document' ? 'File' : 'Each';
   }
 
   getBomTree(): BomTreeNode[] {
@@ -604,7 +551,6 @@ export class ItemDetails implements OnInit {
 
   getAvailableBomItems(): Product[] {
     if (!this.item || !this.selectedBomParentSku) return [];
-
     const parent = this.inventoryService.getData().find(product => product.sku === this.selectedBomParentSku);
     const existingChildren = new Set(parent?.bom || []);
 
@@ -617,11 +563,8 @@ export class ItemDetails implements OnInit {
 
   addBomItem() {
     if (!this.selectedBomParentSku || !this.selectedBomChildSku || this.userService.isReadOnly()) return;
-
     this.inventoryService.attachBomComponent(this.selectedBomParentSku, this.selectedBomChildSku);
-    if (this.item) {
-      this.item = this.inventoryService.getData().find(product => product.sku === this.item?.sku) || this.item;
-    }
+    this.refreshCurrentItem();
     this.closeBomAdd();
   }
 
@@ -637,192 +580,31 @@ export class ItemDetails implements OnInit {
     this.removeBomLink(node.path[node.path.length - 2], node.product.sku);
   }
 
-  getRelationshipObjects(): Product[] {
-    if (!this.item?.relationships) return [];
-    return this.item.relationships
-      .map(sku => this.inventoryService.getData().find(product => product.sku === sku))
-      .filter(Boolean) as Product[];
-  }
-
-  openRelationshipAdd() {
-    if (this.userService.isReadOnly()) return;
-    this.selectedRelationshipSku = '';
-    this.isRelationshipAddOpen = true;
-    this.closeRelationshipRemove();
-  }
-
-  closeRelationshipAdd() {
-    this.isRelationshipAddOpen = false;
-    this.selectedRelationshipSku = '';
-  }
-
-  openRelationshipRemove() {
-    if (this.userService.isReadOnly()) return;
-    this.selectedRelationshipSku = '';
-    this.isRelationshipRemoveOpen = true;
-    this.closeRelationshipAdd();
-  }
-
-  closeRelationshipRemove() {
-    this.isRelationshipRemoveOpen = false;
-    this.selectedRelationshipSku = '';
-  }
-
-  getAvailableRelationshipItems(): Product[] {
-    if (!this.item) return [];
-    const existingRelationships = new Set(this.item.relationships || []);
-
-    return this.inventoryService.getData().filter(product =>
-      product.sku !== this.item?.sku &&
-      !existingRelationships.has(product.sku)
-    );
-  }
-
-  addRelationshipItem() {
-    if (!this.item || !this.selectedRelationshipSku || this.userService.isReadOnly()) return;
-    this.inventoryService.attachRelationship(this.item.sku, this.selectedRelationshipSku);
-    this.refreshCurrentItem();
-    this.closeRelationshipAdd();
-  }
-
-  removeRelationshipItem(sku = this.selectedRelationshipSku) {
-    if (!this.item || !sku || this.userService.isReadOnly()) return;
-    this.inventoryService.detachRelationship(this.item.sku, sku);
-    this.refreshCurrentItem();
-    this.closeRelationshipRemove();
+  getBomDescription(product: Product): string {
+    return product.partDescription || product.name;
   }
 
   navigateToItem(sku: string) {
     this.router.navigate(['/items', sku]);
   }
 
-  getPartTypeLabel(): string {
-    return this.item?.partType || this.item?.part || this.item?.type || 'Part';
-  }
-
-  getUnitOfMeasure(): string {
-    return this.item?.type === 'Document' ? 'File' : 'kg';
-  }
-
-  getClassificationLabel(): string {
-    return this.item?.classification || this.item?.category || 'Unclassified';
-  }
-
-  getMaterialLabel(): string {
-    return this.item?.category === 'Hardware' ? 'Aluminium 6061-T6' : 'Not applicable';
-  }
-
-  getPartDescription(): string {
-    return this.item?.partDescription || this.item?.name || '';
-  }
-
-  getColorFinishLabel(): string {
-    return this.item?.type === 'Document' ? 'Not applicable' : 'Powder Coated';
-  }
-
-  getBomDescription(child: Product): string {
-    return child.partDescription || child.name;
-  }
-
-  getBomQuantity(index: number): number {
-    return index === 1 ? 2 : 1;
-  }
-
-  private buildBomTree(parentSku: string, level: number, path: string[]): BomTreeNode[] {
-    const parent = this.inventoryService.getData().find(product => product.sku === parentSku);
-    if (!parent?.bom?.length) return [];
-
-    return parent.bom.flatMap(childSku => {
-      if (path.includes(childSku)) return [];
-
-      const child = this.inventoryService.getData().find(product => product.sku === childSku);
-      if (!child) return [];
-
-      const childPath = [...path, childSku];
-      return [
-        { product: child, level, path: childPath },
-        ...this.buildBomTree(childSku, level + 1, childPath)
-      ];
-    });
-  }
-
-  private removeBomLink(parentSku: string, childSku: string) {
-    this.inventoryService.detachBomComponent(parentSku, childSku);
-    this.refreshCurrentItem();
-  }
-
-  private refreshCurrentItem() {
-    if (this.item) {
-      this.item = this.inventoryService.getData().find(product => product.sku === this.item?.sku) || this.item;
-    }
-  }
-
-  private isAncestorOrSelf(candidateSku: string, parentSku: string): boolean {
-    if (candidateSku === parentSku) return true;
-
-    const candidate = this.inventoryService.getData().find(product => product.sku === candidateSku);
-    if (!candidate?.bom?.length) return false;
-    if (candidate.bom.includes(parentSku)) return true;
-
-    return candidate.bom.some(childSku => this.isAncestorOrSelf(childSku, parentSku));
-  }
-
-  getActiveChangeLabel(): string {
-    if (this.activeChangeTab === 'ChangeRequests') return 'Change Requests';
-    if (this.activeChangeTab === 'Deviation') return 'Deviations';
-    return 'Change Orders';
-  }
-
-  getActiveChangeCount(): number {
-    return this.getVisibleChanges().length;
-  }
-
-  getVisibleChanges(): Product['changes'] {
-    if (!this.item || this.activeChangeTab !== 'ChangeOrders') return [];
-
-    const query = this.changeSearchQuery.trim().toLowerCase();
-    if (!query) return this.item.changes;
-
-    return this.item.changes.filter(change =>
-      change.id.toLowerCase().includes(query) ||
-      change.description.toLowerCase().includes(query) ||
-      change.status.toLowerCase().includes(query) ||
-      (change.date || '').toLowerCase().includes(query)
-    );
-  }
-
-  getEmptyChangeMessage(): string {
-    if (this.activeChangeTab === 'ChangeRequests') return 'No change requests available';
-    if (this.activeChangeTab === 'Deviation') return 'No deviations available';
-    return 'No change orders available';
-  }
-
   getVisibleAttachments(): ProductAttachment[] {
-    if (!this.item) return [];
-    const query = this.attachmentSearchQuery.trim().toLowerCase();
-    if (!query) return this.item.attachments;
-    return this.item.attachments.filter((attachment, index) =>
-      this.getAttachmentName(attachment, index).toLowerCase().includes(query) ||
-      this.getAttachmentType(attachment).toLowerCase().includes(query)
-    );
+    return this.item?.attachments || [];
   }
 
   uploadAttachments(event: Event) {
     if (!this.item || this.userService.isReadOnly()) return;
-
     const input = event.target as HTMLInputElement;
-    const files = Array.from(input.files || []);
 
-    files.forEach(file => {
+    Array.from(input.files || []).forEach(file => {
       if (!this.item) return;
-
       const attachment: AttachmentFile = {
         id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
         name: file.name,
         type: file.type || 'application/octet-stream',
         size: file.size,
         modifiedOn: new Date().toISOString(),
-        modifiedBy: 'Current User'
+        modifiedBy: this.userName
       };
 
       this.inventoryService.addAttachment(this.item.sku, attachment);
@@ -840,58 +622,18 @@ export class ItemDetails implements OnInit {
     input.value = '';
   }
 
-  openAttachmentRemove() {
-    if (this.userService.isReadOnly()) return;
-    this.selectedAttachmentId = '';
-    this.isAttachmentRemoveOpen = true;
-    this.closeAttachmentDownload();
-  }
-
-  closeAttachmentRemove() {
-    this.isAttachmentRemoveOpen = false;
-    this.selectedAttachmentId = '';
-  }
-
-  openAttachmentDownload() {
-    this.selectedAttachmentId = '';
-    this.isAttachmentDownloadOpen = true;
-    this.closeAttachmentRemove();
-  }
-
-  closeAttachmentDownload() {
-    this.isAttachmentDownloadOpen = false;
-    this.selectedAttachmentId = '';
-  }
-
-  removeSelectedAttachment() {
-    if (!this.selectedAttachmentId) return;
-    this.removeAttachmentById(this.selectedAttachmentId);
-    this.closeAttachmentRemove();
-  }
-
-  downloadSelectedAttachment() {
-    const attachment = this.getVisibleAttachments().find((file, index) => this.getAttachmentId(file, index) === this.selectedAttachmentId);
-    if (!attachment) return;
-    const index = this.getVisibleAttachments().indexOf(attachment);
-    this.downloadAttachment(attachment, index);
-    this.closeAttachmentDownload();
-  }
-
   removeAttachment(attachment: ProductAttachment, index: number) {
-    this.removeAttachmentById(this.getAttachmentId(attachment, index));
+    if (!this.item || this.userService.isReadOnly()) return;
+    this.inventoryService.removeAttachment(this.item.sku, this.getAttachmentId(attachment, index));
+    this.refreshCurrentItem();
   }
 
   downloadAttachment(attachment: ProductAttachment, index: number) {
-    const name = this.getAttachmentName(attachment, index);
     const link = document.createElement('a');
-
-    if (typeof attachment !== 'string' && attachment.dataUrl) {
-      link.href = attachment.dataUrl;
-    } else {
-      link.href = URL.createObjectURL(new Blob([''], { type: this.getAttachmentType(attachment) }));
-    }
-
-    link.download = name;
+    link.download = this.getAttachmentName(attachment, index);
+    link.href = typeof attachment !== 'string' && attachment.dataUrl
+      ? attachment.dataUrl
+      : URL.createObjectURL(new Blob([''], { type: this.getAttachmentType(attachment) }));
     link.click();
 
     if (typeof attachment === 'string' || !attachment.dataUrl) {
@@ -903,24 +645,15 @@ export class ItemDetails implements OnInit {
     return typeof attachment === 'string' ? `${attachment}-${index}` : attachment.id;
   }
 
-  getAttachmentName(file: ProductAttachment, index: number): string {
-    if (typeof file !== 'string') return file.name;
-    return file || (index === 0 ? 'drawing_main_assembly.dwg' : 'installation_notes.docx');
+  getAttachmentName(attachment: ProductAttachment, index: number): string {
+    if (typeof attachment !== 'string') return attachment.name;
+    return attachment || `document-${index + 1}`;
   }
 
-  getAttachmentType(file: ProductAttachment): string {
-    if (typeof file !== 'string' && file.type) return file.type;
-
-    const name = typeof file === 'string' ? file : file.name;
-    const ext = name.split('.').pop()?.toLowerCase();
-    if (ext === 'dwg' || ext === 'step') return 'DWG Drawing';
-    if (ext === 'doc' || ext === 'docx') return 'Word Document';
-    if (ext === 'pdf') return 'PDF Document';
-    return 'Document';
-  }
-
-  getAttachmentVersion(attachment: ProductAttachment, index: number): string {
-    return typeof attachment === 'string' ? (index === 0 ? 'A.3' : 'B.1') : 'A.1';
+  getAttachmentType(attachment: ProductAttachment): string {
+    if (typeof attachment !== 'string') return attachment.type || 'Document';
+    const extension = attachment.split('.').pop()?.toUpperCase();
+    return extension ? `${extension} Document` : 'Document';
   }
 
   getAttachmentSize(attachment: ProductAttachment, index: number): string {
@@ -930,32 +663,43 @@ export class ItemDetails implements OnInit {
     return `${(attachment.size / (1024 * 1024)).toFixed(1)} MB`;
   }
 
-  getAttachmentModifiedOn(attachment: ProductAttachment): string {
-    if (typeof attachment === 'string') return this.getTodayLabel();
-    return new Date(attachment.modifiedOn).toLocaleDateString('en-GB', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric'
+  logout(event: Event) {
+    event.preventDefault();
+    this.userService.logout();
+    this.router.navigate(['/login']);
+  }
+
+  private buildBomTree(parentSku: string, level: number, path: string[]): BomTreeNode[] {
+    const parent = this.inventoryService.getData().find(product => product.sku === parentSku);
+    if (!parent?.bom?.length) return [];
+
+    return parent.bom.flatMap(childSku => {
+      if (path.includes(childSku)) return [];
+      const child = this.inventoryService.getData().find(product => product.sku === childSku);
+      if (!child) return [];
+      const childPath = [...path, childSku];
+      return [
+        { product: child, level, path: childPath },
+        ...this.buildBomTree(childSku, level + 1, childPath)
+      ];
     });
   }
 
-  getAttachmentModifiedBy(attachment: ProductAttachment, index: number): string {
-    return typeof attachment === 'string' ? (index === 0 ? 'Alex Johnson' : 'Priya Sharma') : attachment.modifiedBy;
-  }
-
-  private removeAttachmentById(attachmentId: string) {
-    if (!this.item || this.userService.isReadOnly()) return;
-    this.inventoryService.removeAttachment(this.item.sku, attachmentId);
+  private removeBomLink(parentSku: string, childSku: string) {
+    this.inventoryService.detachBomComponent(parentSku, childSku);
     this.refreshCurrentItem();
   }
 
+  private refreshCurrentItem() {
+    if (!this.item) return;
+    this.item = this.inventoryService.getData().find(product => product.sku === this.item?.sku) || this.item;
+  }
 
-
-  getTodayLabel(): string {
-    return new Date().toLocaleDateString('en-GB', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric'
-    });
+  private isAncestorOrSelf(candidateSku: string, parentSku: string): boolean {
+    if (candidateSku === parentSku) return true;
+    const candidate = this.inventoryService.getData().find(product => product.sku === candidateSku);
+    if (!candidate?.bom?.length) return false;
+    if (candidate.bom.includes(parentSku)) return true;
+    return candidate.bom.some(childSku => this.isAncestorOrSelf(childSku, parentSku));
   }
 }
