@@ -1,834 +1,1442 @@
 import { CommonModule } from '@angular/common';
 import { Component, inject } from '@angular/core';
 import { Router } from '@angular/router';
-import { GlobalSearch } from '../../components/global-search/global-search';
 import { ItemFormModal } from '../../components/item-form-modal/item-form-modal';
 import { RecentItemsService } from '../../services/recent-items.service';
 import { UserService } from '../../services/user.service';
 
+type DashboardView = 'workspace' | 'items' | 'changes' | 'regulatory' | 'reports';
+
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, GlobalSearch, ItemFormModal],
+  imports: [CommonModule, ItemFormModal],
   template: `
-    <div class="dashboard-page">
-      <header class="topbar">
-        <div class="brand" aria-label="NexaPLM">NexaPLM</div>
+    <div class="plm-shell" [class.light-theme]="theme === 'light'">
+      <header class="topnav">
+        <button
+          class="brand"
+          type="button"
+          (click)="selectView('workspace')"
+          aria-label="NexaPLM home"
+        >
+          <span class="brand-mark">N</span>
+          <span>NexaPLM</span>
+        </button>
 
-        <div class="topbar-center">
-          <div class="search-cluster">
-            <app-global-search></app-global-search>
-          </div>
-
-          <div class="top-actions" aria-label="Quick actions">
-            <button type="button" aria-label="Favorites" title="Favorites">
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M12 3.8l2.53 5.13 5.66.82-4.1 4 .97 5.65L12 16.74 6.94 19.4l.97-5.65-4.1-4 5.66-.82L12 3.8z"></path>
-              </svg>
-            </button>
-            <button class="notification-button" type="button" aria-label="Notifications" title="Notifications">
-              <span class="notification-dot" aria-hidden="true"></span>
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M15 18H9"></path>
-                <path d="M18 16V11a6 6 0 10-12 0v5l-2 2h16l-2-2z"></path>
-              </svg>
-            </button>
-            <button type="button" aria-label="Data import" title="Data import">
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M12 3v10"></path>
-                <path d="M8 9l4 4 4-4"></path>
-                <path d="M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"></path>
-              </svg>
-            </button>
-          </div>
-        </div>
-
-        <div class="user-menu">
-          <button class="user-trigger" type="button">
-            {{ userName }} <span aria-hidden="true">▾</span>
-          </button>
-          <nav class="user-dropdown" aria-label="User menu">
-            <a href="#" (click)="$event.preventDefault()">My Profile</a>
-            <a href="#" (click)="$event.preventDefault()">Password Change</a>
-            <a href="#" (click)="logout($event)">Logout</a>
-            <a href="#" (click)="$event.preventDefault()">Help</a>
-            <a href="#" (click)="$event.preventDefault()">About NexaPLM</a>
-          </nav>
-        </div>
-      </header>
-
-      <div class="section-separator" aria-hidden="true"></div>
-
-      <main>
-        <h1>Welcome, {{ userName }}</h1>
-
-        <nav class="dashboard-toolbar" aria-label="Dashboard navigation">
-          <button
-            type="button"
-            [class.active]="activeView === 'workspace'"
-            (click)="activeView = 'workspace'">
+        <nav class="top-tabs" aria-label="Primary navigation">
+          <button [class.active]="activeView === 'workspace'" (click)="selectView('workspace')">
             Workspace
           </button>
-          <button
-            type="button"
-            [class.active]="activeView === 'items'"
-            (click)="activeView = 'items'">
+          <button [class.active]="activeView === 'items'" (click)="selectView('items')">
             Items
           </button>
-          <button
-            type="button"
-            [class.active]="activeView === 'changes'"
-            (click)="activeView = 'changes'">
+          <button [class.active]="activeView === 'changes'" (click)="selectView('changes')">
             Changes
           </button>
-          <button
-            type="button"
-            [class.active]="activeView === 'reports'"
-            (click)="activeView = 'reports'">
-            Reports &amp; Analytics
+          <button [class.active]="activeView === 'regulatory'" (click)="selectView('regulatory')">
+            Regulatory
+          </button>
+          <button [class.active]="activeView === 'reports'" (click)="selectView('reports')">
+            Reports
           </button>
         </nav>
 
-        <div class="dashboard-layout">
-          <aside class="recent-panel">
-            <h2>Recently Accessed</h2>
-            <div class="recent-list" *ngIf="recentItemsService.recentItems().length; else noRecentItems">
-              <button
-                class="recent-item"
-                type="button"
-                *ngFor="let item of recentItemsService.recentItems()"
-                (click)="openRecentItem(item.sku)">
-                <span class="recent-icon" aria-hidden="true">
-                  <svg viewBox="0 0 24 24">
-                    <path d="M4 7.5L12 3l8 4.5v9L12 21l-8-4.5v-9z"></path>
-                    <path d="M4.5 7.8L12 12l7.5-4.2"></path>
-                    <path d="M12 12v9"></path>
-                  </svg>
-                </span>
-                <span class="recent-copy">
-                  <strong>{{ item.sku }}</strong>
-                  <small>{{ item.name }}</small>
-                  <span>{{ item.partType }} · Rev {{ item.revision }}</span>
-                </span>
-              </button>
+        <div class="top-actions">
+          <button class="ai-button" type="button" (click)="aiOpen = !aiOpen">
+            <span aria-hidden="true">✦</span> AI Assistant
+          </button>
+          <button
+            class="round-button theme-toggle"
+            type="button"
+            (click)="toggleTheme()"
+            [attr.aria-label]="'Switch to ' + (theme === 'dark' ? 'light' : 'dark') + ' theme'"
+            [title]="'Switch to ' + (theme === 'dark' ? 'light' : 'dark') + ' theme'"
+          >
+            <svg *ngIf="theme === 'dark'" viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="12" cy="12" r="4"></circle>
+              <path
+                d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42M17.65 17.65l1.42 1.42M2 12h2M20 12h2M4.93 19.07l1.42-1.42M17.65 6.35l1.42-1.42"
+              ></path>
+            </svg>
+            <svg *ngIf="theme === 'light'" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M20.5 14.2A8 8 0 019.8 3.5 8.5 8.5 0 1020.5 14.2z"></path>
+            </svg>
+          </button>
+          <button
+            class="round-button notification-button"
+            type="button"
+            aria-label="Notifications"
+            title="Notifications"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M18 16v-5a6 6 0 10-12 0v5l-2 2h16l-2-2M10 21h4"></path>
+            </svg>
+            <span class="notification-dot"></span>
+          </button>
+
+          <div class="user-menu">
+            <button class="avatar" type="button" aria-label="Open account menu">
+              {{ initials }}
+            </button>
+            <nav class="user-dropdown" aria-label="User menu">
+              <div class="account-summary">
+                <strong>{{ userName }}</strong>
+                <span>{{ userService.currentRole() }}</span>
+              </div>
+              <a href="#" (click)="$event.preventDefault()">My Profile</a>
+              <a href="#" (click)="$event.preventDefault()">Password Change</a>
+              <a href="#" (click)="$event.preventDefault()">Help</a>
+              <a href="#" (click)="$event.preventDefault()">About NexaPLM</a>
+              <a href="#" class="logout-link" (click)="logout($event)">Logout</a>
+            </nav>
+          </div>
+        </div>
+      </header>
+
+      <div class="app-body">
+        <aside class="sidebar">
+          <div class="sidebar-section">NPI Process</div>
+          <button
+            class="sidebar-item"
+            [class.active]="activeView === 'workspace'"
+            (click)="selectView('workspace')"
+          >
+            <span class="nav-icon">⌂</span> Dashboard
+          </button>
+          <button class="sidebar-item" (click)="selectView('workspace')">
+            <span class="nav-icon">◇</span> NPI Tracker
+          </button>
+          <button class="sidebar-item" (click)="selectView('workspace')">
+            <span class="nav-icon">◷</span> Pending Actions
+            <span class="sidebar-badge danger">5</span>
+          </button>
+
+          <div class="sidebar-section">Items</div>
+          <button
+            class="sidebar-item"
+            [class.active]="activeView === 'items'"
+            (click)="selectView('items')"
+          >
+            <span class="nav-icon">□</span> All Items
+          </button>
+          <button
+            class="sidebar-item"
+            (click)="showCreateModal = true"
+            [disabled]="userService.isReadOnly()"
+          >
+            <span class="nav-icon">＋</span> Create Item
+          </button>
+          <button class="sidebar-item" (click)="selectView('items')">
+            <span class="nav-icon">⌬</span> Formulations
+          </button>
+          <button class="sidebar-item" (click)="selectView('items')">
+            <span class="nav-icon">✓</span> Released Items
+          </button>
+
+          <div class="sidebar-section">Changes</div>
+          <button
+            class="sidebar-item"
+            [class.active]="activeView === 'changes'"
+            (click)="selectView('changes')"
+          >
+            <span class="nav-icon">▤</span> Change Orders
+            <span class="sidebar-badge warning">2</span>
+          </button>
+          <button class="sidebar-item" (click)="openMyChanges()">
+            <span class="nav-icon">⌕</span> Change Review
+          </button>
+
+          <div class="sidebar-section">Quality</div>
+          <button class="sidebar-item" (click)="selectView('regulatory')">
+            <span class="nav-icon">△</span> CAPA <span class="sidebar-badge warning">3</span>
+          </button>
+          <button class="sidebar-item" (click)="selectView('regulatory')">
+            <span class="nav-icon">○</span> Deviations
+          </button>
+
+          <div class="sidebar-section">Regulatory</div>
+          <button
+            class="sidebar-item"
+            [class.active]="activeView === 'regulatory'"
+            (click)="selectView('regulatory')"
+          >
+            <span class="nav-icon">▥</span> Submissions
+          </button>
+          <button class="sidebar-item" (click)="selectView('regulatory')">
+            <span class="nav-icon">⌁</span> Clinical Phases
+          </button>
+        </aside>
+
+        <main class="main-content">
+          <section *ngIf="activeView === 'workspace'">
+            <div class="page-heading">
+              <div>
+                <h1>Welcome, {{ userName }}</h1>
+                <p>NexaPLM Pharma · NPI Process Overview · {{ todayLabel }}</p>
+              </div>
+              <div class="heading-actions">
+                <button class="button secondary" type="button">Import Data</button>
+                <button
+                  class="button primary"
+                  type="button"
+                  (click)="showCreateModal = true"
+                  [disabled]="userService.isReadOnly()"
+                >
+                  + New Item
+                </button>
+              </div>
             </div>
-            <ng-template #noRecentItems>
-              <div class="empty-recent">No recently accessed items</div>
-            </ng-template>
-          </aside>
 
-          <section class="workspace-panel" *ngIf="activeView === 'workspace'">
-            <h2>Workspace Overview</h2>
-
-            <div class="summary-row">
-              <div>Pending Approvals</div>
-              <div>Recent Activity</div>
-            </div>
-
-            <div class="workspace-columns">
-              <article class="workspace-card">
-                <div class="workspace-item">
-                  <strong>ECO-0145 Approval</strong>
-                  <span>Due today · Engineering Change Order</span>
-                  <small class="alert">High</small>
-                </div>
-                <div class="workspace-item">
-                  <strong>Drawing Release Review</strong>
-                  <span>Pending sign-off · CAD document package</span>
-                  <small>Review</small>
-                </div>
-                <div class="workspace-item">
-                  <strong>BOM Deviation Request</strong>
-                  <span>Awaiting approval · Manufacturing update</span>
-                  <small>Open</small>
-                </div>
+            <div class="stats-grid">
+              <article class="stat-card">
+                <span>Active NPIs</span><strong>7</strong
+                ><small class="success">↑ 2 this quarter</small>
               </article>
-
-              <article class="workspace-card">
-                <div class="workspace-item">
-                  <strong>Part-100238 revised</strong>
-                  <span>Updated 20 mins ago · Rev B published</span>
-                  <small>Update</small>
-                </div>
-                <div class="workspace-item">
-                  <strong>Workflow completed</strong>
-                  <span>Packaging review closed · 1 hour ago</span>
-                  <small>Done</small>
-                </div>
-                <div class="workspace-item">
-                  <strong>Document uploaded</strong>
-                  <span>Test report added · 2 hours ago</span>
-                  <small>New</small>
-                </div>
+              <article class="stat-card">
+                <span>Pending Approvals</span><strong class="warning-text">5</strong
+                ><small>3 due this week</small>
+              </article>
+              <article class="stat-card">
+                <span>Open Change Orders</span><strong>4</strong
+                ><small class="danger-text">2 high priority</small>
+              </article>
+              <article class="stat-card">
+                <span>Items in Production</span><strong>24</strong
+                ><small class="success">All compliant</small>
               </article>
             </div>
 
-            <p class="status-text">Current view: WORKSPACE</p>
-          </section>
-
-          <section class="items-panel" *ngIf="activeView === 'items'">
-            <div class="items-grid">
-              <article class="item-action-card">
-                <div class="item-action-content">
-                  <strong>Create Item</strong>
-                  <p>Create a new item with attributes, lifecycle, BOM, and relationships.</p>
-                  <button
-                    type="button"
-                    [disabled]="userService.isReadOnly()"
-                    (click)="showCreateModal = true">
-                    Create
+            <div class="content-grid">
+              <section class="panel npi-panel">
+                <div class="panel-title">
+                  <h2>Active NPI Programs</h2>
+                  <button type="button" (click)="selectView('items')">View all</button>
+                </div>
+                <div class="npi-list">
+                  <button class="npi-row" type="button" (click)="openRecentItem('FG-001')">
+                    <span class="product-icon blue">Rx</span>
+                    <span class="npi-copy"
+                      ><strong>Product-X Tablet 50mg</strong
+                      ><small>FG-001 · Modified Release Tablet</small></span
+                    >
+                    <span class="phase"
+                      ><b>Scale-Up</b><i><em style="width:72%"></em></i
+                    ></span>
+                    <span class="badge blue">On Track</span>
+                  </button>
+                  <button class="npi-row" type="button" (click)="openRecentItem('DS-001')">
+                    <span class="product-icon purple">DS</span>
+                    <span class="npi-copy"
+                      ><strong>API Intermediate Program</strong
+                      ><small>DS-001 · Drug Substance</small></span
+                    >
+                    <span class="phase"
+                      ><b>Validation</b><i><em style="width:54%"></em></i
+                    ></span>
+                    <span class="badge amber">At Risk</span>
+                  </button>
+                  <button class="npi-row" type="button" (click)="selectView('items')">
+                    <span class="product-icon teal">PK</span>
+                    <span class="npi-copy"
+                      ><strong>PVDC Blister Pack</strong
+                      ><small>PKG-001 · Packaging Component</small></span
+                    >
+                    <span class="phase"
+                      ><b>Commercial</b><i><em style="width:91%"></em></i
+                    ></span>
+                    <span class="badge green">On Track</span>
                   </button>
                 </div>
-              </article>
+              </section>
 
-              <article class="item-action-card">
-                <div class="item-action-content">
-                  <strong>Show Items Created By Me</strong>
-                  <p>View and manage items created by you across the system.</p>
-                  <button type="button" (click)="router.navigate(['/items'])">Open</button>
+              <section class="panel activity-panel">
+                <div class="panel-title">
+                  <h2>Recent Activity</h2>
+                  <span class="count">8</span>
                 </div>
-              </article>
-
-              <article class="item-action-card">
-                <div class="item-action-content">
-                  <strong>Browse Released Items</strong>
-                  <p>Quickly browse released items available for reuse and reference.</p>
-                  <button type="button" (click)="router.navigate(['/items'])">Browse</button>
+                <div class="activity-item">
+                  <span class="activity-icon green">✓</span>
+                  <p>
+                    <strong>ECO-001 approved</strong
+                    ><small>Formula update for FG-001 · 24 min ago</small>
+                  </p>
                 </div>
-              </article>
+                <div class="activity-item">
+                  <span class="activity-icon blue">↻</span>
+                  <p>
+                    <strong>DS-002 moved to Validation</strong
+                    ><small>Lifecycle updated by {{ userName }} · 1 hr ago</small>
+                  </p>
+                </div>
+                <div class="activity-item">
+                  <span class="activity-icon purple">↑</span>
+                  <p>
+                    <strong>Protocol document uploaded</strong
+                    ><small>VAL-2026-014.pdf · 2 hrs ago</small>
+                  </p>
+                </div>
+                <div class="activity-item">
+                  <span class="activity-icon amber">!</span>
+                  <p>
+                    <strong>Approval requested</strong
+                    ><small>ECO-002 awaiting Quality review · 3 hrs ago</small>
+                  </p>
+                </div>
+              </section>
             </div>
 
-            <p class="status-text">Current view: ITEMS</p>
+            <div class="content-grid lower-grid">
+              <section class="panel">
+                <div class="panel-title">
+                  <h2>Pending Actions</h2>
+                  <span class="count">5</span>
+                </div>
+                <div class="action-row">
+                  <span class="priority high">High</span>
+                  <p>
+                    <strong>Review ECO-002 impact assessment</strong
+                    ><small>Due today · Quality</small>
+                  </p>
+                  <button (click)="openMyChanges()">Review</button>
+                </div>
+                <div class="action-row">
+                  <span class="priority medium">Med</span>
+                  <p>
+                    <strong>Approve DS-002 validation protocol</strong
+                    ><small>Due Jun 13 · Regulatory</small>
+                  </p>
+                  <button (click)="openMyChanges()">Open</button>
+                </div>
+                <div class="action-row">
+                  <span class="priority low">Low</span>
+                  <p>
+                    <strong>Complete packaging specification</strong
+                    ><small>Due Jun 18 · Engineering</small>
+                  </p>
+                  <button (click)="selectView('items')">Open</button>
+                </div>
+              </section>
+
+              <section class="panel ai-insight-panel">
+                <div class="panel-title">
+                  <h2><span class="gradient-text">✦ AI Insights</span></h2>
+                  <span class="live-dot">Live</span>
+                </div>
+                <div class="insight">
+                  <strong>Release risk detected</strong>
+                  <p>
+                    DS-002 validation protocol is missing an approval. This may delay ECO-002 by
+                    approximately 3 days.
+                  </p>
+                  <button (click)="openMyChanges()">Review blocker</button>
+                </div>
+                <div class="insight">
+                  <strong>Reuse opportunity</strong>
+                  <p>FG-001 shares 82% of its formulation with an existing released item.</p>
+                  <button (click)="selectView('items')">Compare items</button>
+                </div>
+              </section>
+            </div>
           </section>
 
-          <section class="items-panel" *ngIf="activeView === 'changes'">
-            <div class="items-grid">
-              <article class="item-action-card">
-                <div class="item-action-content">
-                  <strong>Create Change</strong>
-                  <p>Create a new change request and define the required product updates.</p>
-                  <button type="button" (click)="openChangeCreate()">Create</button>
-                </div>
-              </article>
+          <section *ngIf="activeView === 'items'" class="view-panel">
+            <div class="page-heading">
+              <div>
+                <h1>Items</h1>
+                <p>Create, review, and reuse product lifecycle records.</p>
+              </div>
+              <button
+                class="button primary"
+                (click)="showCreateModal = true"
+                [disabled]="userService.isReadOnly()"
+              >
+                + Create Item
+              </button>
+            </div>
+            <div class="quick-grid">
+              <button class="quick-card" (click)="showCreateModal = true">
+                <span>＋</span><strong>Create Item</strong
+                ><small>Start a new product, material, or packaging record.</small>
+              </button>
+              <button class="quick-card" (click)="router.navigate(['/items'])">
+                <span>□</span><strong>All Items</strong
+                ><small>Browse the complete item repository.</small>
+              </button>
+              <button class="quick-card" (click)="router.navigate(['/items'])">
+                <span>✓</span><strong>Released Items</strong
+                ><small>Find production-ready records for reuse.</small>
+              </button>
+            </div>
+            <section class="panel recent-panel">
+              <div class="panel-title"><h2>Recently Accessed</h2></div>
+              <div class="recent-empty" *ngIf="!recentItemsService.recentItems().length">
+                No recently accessed items
+              </div>
+              <button
+                class="recent-row"
+                *ngFor="let item of recentItemsService.recentItems()"
+                (click)="openRecentItem(item.sku)"
+              >
+                <strong>{{ item.sku }}</strong
+                ><span>{{ item.name }}</span
+                ><small>{{ item.partType }} · Rev {{ item.revision }}</small>
+              </button>
+            </section>
+          </section>
 
-              <article class="item-action-card">
-                <div class="item-action-content">
-                  <strong>Show Changes Created By Me</strong>
-                  <p>View and manage change requests created by you across the system.</p>
-                  <button type="button" (click)="openMyChanges()">Open</button>
-                </div>
-              </article>
+          <section *ngIf="activeView === 'changes'" class="view-panel">
+            <div class="page-heading">
+              <div>
+                <h1>Change Management</h1>
+                <p>Control engineering changes, approvals, and release workflows.</p>
+              </div>
+              <button class="button primary" (click)="openChangeCreate()">+ New Change</button>
+            </div>
+            <div class="quick-grid">
+              <button class="quick-card" (click)="openChangeCreate()">
+                <span>＋</span><strong>Create Change</strong
+                ><small>Define scope, impact, and approval workflow.</small>
+              </button>
+              <button class="quick-card" (click)="openMyChanges()">
+                <span>▤</span><strong>My Changes</strong
+                ><small>Manage your active change requests.</small>
+              </button>
+              <button class="quick-card" (click)="browseReleasedChanges()">
+                <span>✓</span><strong>Released Changes</strong
+                ><small>Browse completed and released orders.</small>
+              </button>
+            </div>
+          </section>
 
-              <article class="item-action-card">
-                <div class="item-action-content">
-                  <strong>Browse Released Changes</strong>
-                  <p>Quickly browse released changes available for review and reference.</p>
-                  <button type="button" (click)="browseReleasedChanges()">Browse</button>
-                </div>
+          <section *ngIf="activeView === 'regulatory'" class="view-panel">
+            <div class="page-heading">
+              <div>
+                <h1>Regulatory</h1>
+                <p>Submission readiness, clinical phases, CAPA, and deviations.</p>
+              </div>
+            </div>
+            <div class="quick-grid">
+              <article class="quick-card static">
+                <span>▥</span><strong>Submissions</strong
+                ><small>2 active dossiers · 1 review due this week</small>
+              </article>
+              <article class="quick-card static">
+                <span>⌁</span><strong>Clinical Phases</strong
+                ><small>3 programs currently in clinical development</small>
+              </article>
+              <article class="quick-card static">
+                <span>△</span><strong>CAPA</strong><small>3 open actions · 1 high priority</small>
               </article>
             </div>
-
-            <p class="status-text">Current view: CHANGES</p>
           </section>
 
-          <section class="empty-view-panel" *ngIf="activeView === 'reports'">
-            <p class="status-text">Current view: REPORTS &amp; ANALYTICS</p>
+          <section *ngIf="activeView === 'reports'" class="view-panel">
+            <div class="page-heading">
+              <div>
+                <h1>Reports</h1>
+                <p>NPI throughput, change performance, compliance, and portfolio health.</p>
+              </div>
+            </div>
+            <div class="report-placeholder panel">
+              <div class="bar-chart" aria-label="Illustrative NPI throughput chart">
+                <i style="height:42%"></i><i style="height:66%"></i><i style="height:54%"></i
+                ><i style="height:82%"></i><i style="height:73%"></i><i style="height:92%"></i>
+              </div>
+              <strong>NPI Throughput</strong><small>Monthly portfolio progress</small>
+            </div>
           </section>
-        </div>
-      </main>
+        </main>
+
+        <aside class="ai-panel" [class.open]="aiOpen">
+          <div class="ai-header">
+            <span class="ai-mark">✦</span><strong class="gradient-text">NexaPLM AI Assistant</strong
+            ><button (click)="aiOpen = false">×</button>
+          </div>
+          <div class="ai-body">
+            <article>
+              <b>Active Alert</b>
+              <p>
+                DS-002 validation protocol is missing. ECO-002 has a release risk before its
+                deadline.
+              </p>
+              <button (click)="openMyChanges()">Review change</button>
+            </article>
+            <article>
+              <b>NPI Recommendation</b>
+              <p>
+                COMP-003 should move to Production before FG-001 can complete its release workflow.
+              </p>
+              <button (click)="selectView('items')">View item</button>
+            </article>
+            <article>
+              <b>Regulatory Intel</b>
+              <p>Two CTD Module 3 sections may need revision for the active submission.</p>
+              <button (click)="selectView('regulatory')">View submissions</button>
+            </article>
+          </div>
+          <div class="ai-input">
+            <input placeholder="Ask about items, changes, compliance..." /><button>↑</button>
+          </div>
+        </aside>
+      </div>
     </div>
 
     <app-item-form-modal
       *ngIf="showCreateModal"
       (saved)="handleItemCreated()"
-      (close)="showCreateModal = false">
-    </app-item-form-modal>
+      (close)="showCreateModal = false"
+    ></app-item-form-modal>
   `,
   styles: `
     :host {
       display: block;
       min-height: 100vh;
-      background: #eeeff4;
-      color: #223964;
     }
-
     * {
       box-sizing: border-box;
     }
-
-    .dashboard-page {
-      min-height: 100vh;
-      padding: 22px 28px 36px;
-      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+    button,
+    input {
+      font: inherit;
     }
-
-    .topbar {
+    .plm-shell {
+      --bg: #0d1117;
+      --surface: #161b22;
+      --surface-2: #21262d;
+      --surface-3: #30363d;
+      --border: #30363d;
+      --text: #e6edf3;
+      --muted: #8b949e;
+      --subtle: #6e7681;
+      --accent: #2f81f7;
+      --accent-2: #388bfd;
+      --green: #3fb950;
+      --amber: #d29922;
+      --red: #f85149;
+      --purple: #bc8cff;
+      --teal: #39d3c4;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
+    .plm-shell.light-theme {
+      --bg: #f5f7fa;
+      --surface: #ffffff;
+      --surface-2: #eef2f7;
+      --surface-3: #dfe5ec;
+      --border: #d8dee7;
+      --text: #172033;
+      --muted: #59677c;
+      --subtle: #7b8798;
+      --accent: #1f6feb;
+      --accent-2: #1158c7;
+      --green: #1a7f37;
+      --amber: #9a6700;
+      --red: #cf222e;
+      --purple: #8250df;
+      --teal: #087f8c;
+    }
+    .topnav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      display: flex;
+      height: 52px;
+      align-items: center;
+      gap: 22px;
+      padding: 0 18px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+    }
+    .brand {
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      gap: 18px;
-      margin-bottom: 18px;
+      gap: 8px;
+      border: 0;
+      background: transparent;
+      color: var(--accent);
+      font-size: 16px;
+      font-weight: 800;
     }
-
-    .brand {
-      flex: 0 0 auto;
-      color: #223964;
-      font-size: 1.45rem;
-      font-weight: 900;
-      letter-spacing: .01em;
-      line-height: 1;
+    .brand-mark {
+      display: grid;
+      width: 27px;
+      height: 27px;
+      place-items: center;
+      border-radius: 7px;
+      background: linear-gradient(135deg, var(--accent), var(--purple));
+      color: #fff;
+      font-size: 13px;
+    }
+    .top-tabs {
+      display: flex;
+      align-self: stretch;
+      flex: 1;
+      gap: 2px;
+      overflow-x: auto;
+    }
+    .top-tabs button {
+      padding: 0 13px;
+      border: 0;
+      border-bottom: 2px solid transparent;
+      background: transparent;
+      color: var(--muted);
+      font-size: 13px;
       white-space: nowrap;
     }
-
-    .topbar-center {
-      display: flex;
-      flex: 1;
-      align-items: center;
-      gap: 18px;
-      min-width: 0;
+    .top-tabs button:hover {
+      background: var(--surface-2);
+      color: var(--text);
     }
-
-    .search-cluster {
-      display: flex;
-      flex: 0 0 520px;
-      width: 520px;
-      align-items: center;
-      gap: 10px;
-      margin-left: 64px;
+    .top-tabs button.active {
+      border-bottom-color: var(--accent);
+      background: color-mix(in srgb, var(--accent) 9%, transparent);
+      color: var(--accent);
     }
-
-    .search-cluster input,
-    .search-cluster button,
-    .top-actions button {
-      height: 44px;
-      border: 1px solid #dbe0e8;
-      border-radius: 18px;
-      background: rgba(255, 255, 255, .84);
-      color: #223964;
-      box-shadow: 0 2px 8px rgba(31, 50, 88, .04), 0 12px 20px rgba(31, 50, 88, .03);
-    }
-
-    .search-cluster input {
-      width: 340px;
-      padding: 0 14px;
-      outline: none;
-      font-size: .88rem;
-    }
-
-    .search-cluster input::placeholder {
-      color: #8191ae;
-    }
-
-    .search-cluster button,
-    .top-actions button {
-      display: inline-flex;
-      width: 48px;
-      min-width: 48px;
-      align-items: center;
-      justify-content: center;
-    }
-
     .top-actions {
       display: flex;
       align-items: center;
-      gap: 10px;
-      margin-left: auto;
+      gap: 9px;
     }
-
-    svg {
-      width: 18px;
-      height: 18px;
-      fill: none;
-      stroke: #28406f;
-      stroke-width: 2;
-      stroke-linecap: round;
-      stroke-linejoin: round;
-    }
-
-    .top-actions button:first-child svg {
-      fill: rgba(40, 64, 111, .08);
-    }
-
-    .notification-button {
-      position: relative;
-    }
-
-    .notification-dot {
-      position: absolute;
-      top: 8px;
-      right: 9px;
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: #ff6b6b;
-      box-shadow: 0 0 0 2px #fff;
-    }
-
-    .user-menu {
-      position: relative;
-      padding-bottom: 18px;
-      margin-bottom: -18px;
-    }
-
-    .user-trigger {
-      padding: 9px 15px;
-      border: 1px solid #d6dae3;
+    .ai-button {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border: 1px solid color-mix(in srgb, var(--purple) 35%, transparent);
       border-radius: 999px;
-      background: rgba(255, 255, 255, .82);
-      color: #223964;
-      font-size: .88rem;
+      background: color-mix(in srgb, var(--purple) 10%, transparent);
+      color: var(--purple);
+      font-size: 12px;
       font-weight: 700;
-      box-shadow: 0 2px 8px rgba(31, 50, 88, .04);
     }
-
-    .user-dropdown {
-      position: absolute;
-      top: calc(100% + 2px);
-      right: 0;
-      z-index: 20;
-      display: none;
-      min-width: 200px;
-      padding: 10px;
-      border: 1px solid #dfe2ea;
-      border-radius: 18px;
-      background: #fff;
-      box-shadow: 0 12px 28px rgba(28, 45, 87, .12);
-    }
-
-    .user-menu:hover .user-dropdown,
-    .user-menu:focus-within .user-dropdown {
-      display: block;
-    }
-
-    .user-dropdown a {
-      display: block;
-      padding: 9px 12px;
-      border-radius: 12px;
-      color: #223964;
-      font-size: .92rem;
-      text-decoration: none;
-    }
-
-    .user-dropdown a:hover {
-      background: #f3f5f8;
-    }
-
-    .section-separator {
-      height: 1px;
-      margin: 22px 0 26px;
-      background: linear-gradient(90deg, transparent, rgba(133, 148, 176, .72), transparent);
-    }
-
-    h1 {
-      margin: 0 0 12px;
-      color: #223964;
-      font-size: 1.9rem;
-      font-weight: 800;
-      letter-spacing: .01em;
-    }
-
-    .dashboard-toolbar {
-      display: flex;
-      gap: 12px;
-      width: calc(100% - 308px);
-      margin: 0 0 22px 308px;
-      padding: 8px;
-      overflow-x: auto;
-      border: 1px solid #e2e6ef;
-      border-radius: 20px;
-      background: rgba(255, 255, 255, .68);
-      box-shadow: 0 8px 20px rgba(31, 50, 88, .06);
-    }
-
-    .dashboard-toolbar button {
-      flex: 1 1 0;
-      padding: 12px 18px;
-      border: 0;
-      border-radius: 14px;
-      background: transparent;
-      color: #8191ae;
-      font-size: .95rem;
-      font-weight: 600;
-      white-space: nowrap;
-    }
-
-    .dashboard-toolbar button.active {
-      background: linear-gradient(135deg, #a7d84a, #86bc25);
-      color: #24420a;
-      box-shadow: 0 6px 14px rgba(134, 188, 37, .28);
-    }
-
-    .dashboard-layout {
+    .round-button {
+      position: relative;
       display: grid;
-      grid-template-columns: 280px minmax(0, 1fr);
-      gap: 28px;
-      align-items: start;
-    }
-
-    .recent-panel,
-    .workspace-panel,
-    .items-panel,
-    .empty-view-panel {
-      border: 1px solid #e2e5ec;
-      border-radius: 26px;
-      background: rgba(250, 250, 251, .88);
-      box-shadow: 0 2px 8px rgba(31, 50, 88, .04), 0 12px 20px rgba(31, 50, 88, .03);
-    }
-
-    .recent-panel {
-      min-height: 560px;
-      padding: 26px 22px;
-    }
-
-    .recent-panel h2,
-    .workspace-panel h2 {
-      margin: 0 0 20px;
-      color: #223964;
-      font-size: 1.1rem;
-      font-weight: 800;
-      letter-spacing: .01em;
-    }
-
-    .empty-recent {
-      display: flex;
-      min-height: 120px;
-      align-items: center;
-      justify-content: center;
-      border: 1px dashed #e6e9ef;
-      border-radius: 18px;
-      background: #f4f5f8;
-      color: #98a4ba;
-      font-size: .92rem;
-      text-align: center;
-    }
-
-    .recent-list {
-      display: grid;
-      gap: 10px;
-    }
-
-    .recent-item {
-      display: grid;
-      width: 100%;
-      grid-template-columns: 38px minmax(0, 1fr);
-      align-items: center;
-      gap: 11px;
-      padding: 13px;
-      border: 1px solid #e2e5ec;
-      border-radius: 16px;
-      background: #f4f6fa;
-      color: #223964;
-      text-align: left;
-      transition: border-color .2s ease, background .2s ease, transform .2s ease;
-    }
-
-    .recent-item:hover,
-    .recent-item:focus-visible {
-      border-color: #cfe4a9;
-      background: #f3f8e9;
-      outline: none;
-      transform: translateY(-1px);
-    }
-
-    .recent-icon {
-      display: grid;
-      width: 38px;
-      height: 38px;
+      width: 31px;
+      height: 31px;
       place-items: center;
-      border-radius: 11px;
-      background: #e9f3d8;
-      color: #65901b;
+      border: 1px solid var(--border);
+      border-radius: 50%;
+      background: var(--surface-2);
+      color: var(--muted);
     }
-
-    .recent-icon svg {
-      width: 19px;
-      height: 19px;
+    .round-button svg {
+      width: 15px;
+      height: 15px;
       fill: none;
       stroke: currentColor;
       stroke-width: 1.8;
       stroke-linecap: round;
       stroke-linejoin: round;
     }
-
-    .recent-copy {
-      display: block;
-      min-width: 0;
+    .round-button:hover {
+      color: var(--text);
     }
-
-    .recent-copy strong,
-    .recent-copy small,
-    .recent-copy span {
+    .notification-dot {
+      position: absolute;
+      top: 3px;
+      right: 3px;
+      width: 7px;
+      height: 7px;
+      border: 1px solid var(--surface);
+      border-radius: 50%;
+      background: var(--red);
+    }
+    .user-menu {
+      position: relative;
+      padding-bottom: 10px;
+      margin-bottom: -10px;
+    }
+    .avatar {
+      display: grid;
+      width: 31px;
+      height: 31px;
+      place-items: center;
+      border: 0;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), var(--purple));
+      color: #fff;
+      font-size: 11px;
+      font-weight: 800;
+    }
+    .user-dropdown {
+      position: absolute;
+      top: calc(100% + 6px);
+      right: 0;
+      z-index: 120;
+      display: none;
+      width: 220px;
+      padding: 8px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--surface);
+      box-shadow: 0 18px 40px rgba(0, 0, 0, 0.28);
+    }
+    .user-menu:hover .user-dropdown,
+    .user-menu:focus-within .user-dropdown {
       display: block;
+    }
+    .account-summary {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      padding: 9px 10px 10px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 5px;
+    }
+    .account-summary strong {
+      font-size: 13px;
+    }
+    .account-summary span {
+      color: var(--subtle);
+      font-size: 11px;
+    }
+    .user-dropdown a {
+      display: block;
+      padding: 8px 10px;
+      border-radius: 6px;
+      color: var(--muted);
+      font-size: 13px;
+      text-decoration: none;
+    }
+    .user-dropdown a:hover {
+      background: var(--surface-2);
+      color: var(--text);
+    }
+    .user-dropdown .logout-link {
+      color: var(--red);
+    }
+    .app-body {
+      display: flex;
+      min-height: calc(100vh - 52px);
+    }
+    .sidebar {
+      position: sticky;
+      top: 52px;
+      display: flex;
+      width: 210px;
+      min-width: 210px;
+      height: calc(100vh - 52px);
+      flex-direction: column;
+      overflow-y: auto;
+      padding: 8px 0 18px;
+      border-right: 1px solid var(--border);
+      background: var(--surface);
+    }
+    .sidebar-section {
+      padding: 12px 16px 4px;
+      color: var(--subtle);
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.09em;
+      text-transform: uppercase;
+    }
+    .sidebar-item {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      margin: 1px 6px;
+      padding: 7px 10px;
+      border: 0;
+      border-radius: 6px;
+      background: transparent;
+      color: var(--muted);
+      font-size: 13px;
+      text-align: left;
+    }
+    .sidebar-item:hover {
+      background: var(--surface-2);
+      color: var(--text);
+    }
+    .sidebar-item.active {
+      background: color-mix(in srgb, var(--accent) 13%, transparent);
+      color: var(--accent);
+      font-weight: 650;
+    }
+    .sidebar-item:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .nav-icon {
+      width: 17px;
+      color: currentColor;
+      text-align: center;
+    }
+    .sidebar-badge {
+      margin-left: auto;
+      padding: 1px 6px;
+      border-radius: 999px;
+      color: #fff;
+      font-size: 10px;
+      font-weight: 800;
+    }
+    .sidebar-badge.danger {
+      background: var(--red);
+    }
+    .sidebar-badge.warning {
+      background: var(--amber);
+    }
+    .main-content {
+      flex: 1;
+      min-width: 0;
+      padding: 24px 28px 36px;
       overflow: hidden;
+    }
+    .page-heading {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+    .page-heading h1 {
+      margin: 0;
+      color: var(--text);
+      font-size: 20px;
+      line-height: 1.2;
+    }
+    .page-heading p {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .heading-actions {
+      display: flex;
+      gap: 8px;
+    }
+    .button {
+      padding: 7px 13px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .button.primary {
+      border: 1px solid var(--accent);
+      background: var(--accent);
+      color: #fff;
+    }
+    .button.primary:hover {
+      background: var(--accent-2);
+    }
+    .button.secondary {
+      border: 1px solid var(--border);
+      background: var(--surface-2);
+      color: var(--text);
+    }
+    .button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+    .stat-card {
+      display: flex;
+      min-width: 0;
+      flex-direction: column;
+      padding: 15px 17px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--surface);
+    }
+    .stat-card span {
+      color: var(--muted);
+      font-size: 11.5px;
+    }
+    .stat-card strong {
+      margin: 5px 0 3px;
+      font-size: 26px;
+      line-height: 1;
+    }
+    .stat-card small {
+      color: var(--subtle);
+      font-size: 11px;
+    }
+    .success {
+      color: var(--green) !important;
+    }
+    .warning-text {
+      color: var(--amber);
+    }
+    .danger-text {
+      color: var(--red) !important;
+    }
+    .content-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.65fr) minmax(280px, 1fr);
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+    .lower-grid {
+      grid-template-columns: 1.2fr 1fr;
+    }
+    .panel {
+      min-width: 0;
+      padding: 15px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--surface);
+    }
+    .panel-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .panel-title h2 {
+      margin: 0;
+      color: var(--text);
+      font-size: 12.5px;
+    }
+    .panel-title button {
+      border: 0;
+      background: transparent;
+      color: var(--accent);
+      font-size: 11px;
+    }
+    .count {
+      padding: 1px 6px;
+      border-radius: 999px;
+      background: var(--surface-2);
+      color: var(--muted);
+      font-size: 10px;
+    }
+    .npi-list {
+      display: grid;
+    }
+    .npi-row {
+      display: grid;
+      grid-template-columns: 36px minmax(180px, 1fr) 130px auto;
+      align-items: center;
+      gap: 11px;
+      width: 100%;
+      padding: 11px 5px;
+      border: 0;
+      border-bottom: 1px solid var(--border);
+      background: transparent;
+      color: var(--text);
+      text-align: left;
+    }
+    .npi-row:last-child {
+      border-bottom: 0;
+    }
+    .npi-row:hover {
+      background: color-mix(in srgb, var(--text) 2%, transparent);
+    }
+    .product-icon {
+      display: grid;
+      width: 34px;
+      height: 34px;
+      place-items: center;
+      border-radius: 8px;
+      font-size: 10px;
+      font-weight: 800;
+    }
+    .product-icon.blue {
+      background: color-mix(in srgb, var(--accent) 16%, transparent);
+      color: var(--accent);
+    }
+    .product-icon.purple {
+      background: color-mix(in srgb, var(--purple) 16%, transparent);
+      color: var(--purple);
+    }
+    .product-icon.teal {
+      background: color-mix(in srgb, var(--teal) 16%, transparent);
+      color: var(--teal);
+    }
+    .npi-copy,
+    .phase {
+      display: flex;
+      min-width: 0;
+      flex-direction: column;
+    }
+    .npi-copy strong {
+      overflow: hidden;
+      font-size: 12.5px;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
-
-    .recent-copy strong {
-      color: #5f8919;
-      font-size: .85rem;
+    .npi-copy small,
+    .phase b {
+      margin-top: 3px;
+      color: var(--subtle);
+      font-size: 10.5px;
+      font-weight: 500;
     }
-
-    .recent-copy small {
-      margin: 2px 0 4px;
-      color: #50627c;
-      font-size: .78rem;
+    .phase i {
+      height: 5px;
+      margin-top: 6px;
+      overflow: hidden;
+      border-radius: 4px;
+      background: var(--surface-2);
     }
-
-    .recent-copy span {
-      color: #98a4ba;
-      font-size: .7rem;
+    .phase em {
+      display: block;
+      height: 100%;
+      border-radius: 4px;
+      background: var(--accent);
     }
-
-    .workspace-panel {
-      padding: 28px 28px 24px;
-    }
-
-    .summary-row,
-    .workspace-columns {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 22px;
-    }
-
-    .summary-row {
-      margin-bottom: 18px;
-    }
-
-    .summary-row div {
-      display: flex;
-      min-height: 58px;
-      align-items: center;
-      justify-content: center;
-      padding: 0 18px;
-      border: 1px solid #e6e9ef;
-      border-radius: 18px;
-      background: #f4f5f8;
-      color: #223964;
-      font-size: .98rem;
-      font-weight: 700;
-      text-align: center;
-    }
-
-    .workspace-columns {
-      gap: 24px;
-    }
-
-    .workspace-card {
-      display: grid;
-      gap: 12px;
-      min-height: 320px;
-      align-content: center;
-      padding: 22px;
-      border: 1px solid #e6e9ef;
-      border-radius: 30px;
-      background: #fafafc;
-    }
-
-    .workspace-item {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 7px;
-      padding: 16px;
-      border: 1px solid #e6e9ef;
-      border-radius: 16px;
-      background: #f4f6fa;
-      text-align: center;
-    }
-
-    .workspace-item strong {
-      color: #223964;
-      font-size: .94rem;
-    }
-
-    .workspace-item span {
-      color: #8191ae;
-      font-size: .82rem;
-    }
-
-    .workspace-item small {
-      min-width: 74px;
-      padding: 6px 10px;
-      border: 1px solid #dcebc3;
+    .badge {
+      padding: 2px 7px;
+      border: 1px solid;
       border-radius: 999px;
-      background: #f3f8e9;
-      color: #5f8919;
-      font-size: .8rem;
+      font-size: 10px;
       font-weight: 700;
+      white-space: nowrap;
     }
-
-    .workspace-item small.alert {
-      border-color: #f8ddbe;
-      background: #fff3e8;
-      color: #9a5b11;
+    .badge.blue {
+      border-color: color-mix(in srgb, var(--accent) 35%, transparent);
+      background: color-mix(in srgb, var(--accent) 13%, transparent);
+      color: var(--accent);
     }
-
-    .status-text {
-      margin: 18px 0 0;
-      color: #98a4ba;
-      font-size: .9rem;
+    .badge.amber {
+      border-color: color-mix(in srgb, var(--amber) 35%, transparent);
+      background: color-mix(in srgb, var(--amber) 13%, transparent);
+      color: var(--amber);
     }
-
-    .items-panel {
-      padding: 52px 28px 24px;
+    .badge.green {
+      border-color: color-mix(in srgb, var(--green) 35%, transparent);
+      background: color-mix(in srgb, var(--green) 13%, transparent);
+      color: var(--green);
     }
-
-    .empty-view-panel {
+    .activity-item {
       display: flex;
-      min-height: 560px;
-      align-items: flex-end;
-      padding: 28px 28px 24px;
+      gap: 10px;
+      padding: 9px 0;
+      border-bottom: 1px solid var(--border);
     }
-
-    .items-grid {
+    .activity-item:last-child {
+      border: 0;
+    }
+    .activity-icon {
+      display: grid;
+      width: 29px;
+      height: 29px;
+      flex: 0 0 29px;
+      place-items: center;
+      border-radius: 50%;
+      font-size: 12px;
+    }
+    .activity-icon.green {
+      background: color-mix(in srgb, var(--green) 14%, transparent);
+      color: var(--green);
+    }
+    .activity-icon.blue {
+      background: color-mix(in srgb, var(--accent) 14%, transparent);
+      color: var(--accent);
+    }
+    .activity-icon.purple {
+      background: color-mix(in srgb, var(--purple) 14%, transparent);
+      color: var(--purple);
+    }
+    .activity-icon.amber {
+      background: color-mix(in srgb, var(--amber) 14%, transparent);
+      color: var(--amber);
+    }
+    .activity-item p,
+    .action-row p {
+      display: flex;
+      min-width: 0;
+      flex: 1;
+      flex-direction: column;
+      margin: 0;
+    }
+    .activity-item strong,
+    .action-row strong {
+      font-size: 12px;
+    }
+    .activity-item small,
+    .action-row small {
+      margin-top: 3px;
+      color: var(--subtle);
+      font-size: 10.5px;
+    }
+    .action-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .action-row:last-child {
+      border: 0;
+    }
+    .priority {
+      width: 32px;
+      padding: 3px 0;
+      border-radius: 4px;
+      font-size: 9px;
+      font-weight: 800;
+      text-align: center;
+      text-transform: uppercase;
+    }
+    .priority.high {
+      background: color-mix(in srgb, var(--red) 14%, transparent);
+      color: var(--red);
+    }
+    .priority.medium {
+      background: color-mix(in srgb, var(--amber) 14%, transparent);
+      color: var(--amber);
+    }
+    .priority.low {
+      background: var(--surface-2);
+      color: var(--muted);
+    }
+    .action-row button,
+    .insight button {
+      padding: 4px 8px;
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      background: var(--surface-2);
+      color: var(--text);
+      font-size: 10.5px;
+    }
+    .ai-insight-panel {
+      border-color: color-mix(in srgb, var(--purple) 28%, var(--border));
+    }
+    .gradient-text {
+      background: linear-gradient(135deg, var(--accent), var(--purple));
+      background-clip: text;
+      color: transparent;
+    }
+    .live-dot {
+      color: var(--green);
+      font-size: 10px;
+    }
+    .live-dot:before {
+      content: '';
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      margin-right: 4px;
+      border-radius: 50%;
+      background: var(--green);
+    }
+    .insight {
+      padding: 10px;
+      border: 1px solid color-mix(in srgb, var(--purple) 20%, var(--border));
+      border-radius: 7px;
+      background: color-mix(in srgb, var(--purple) 5%, transparent);
+    }
+    .insight + .insight {
+      margin-top: 8px;
+    }
+    .insight strong {
+      font-size: 11.5px;
+    }
+    .insight p {
+      margin: 4px 0 8px;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.45;
+    }
+    .view-panel {
+      max-width: 1200px;
+    }
+    .quick-grid {
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 24px;
+      gap: 14px;
+      margin-bottom: 14px;
     }
-
-    .item-action-card {
+    .quick-card {
       display: flex;
-      min-height: 250px;
-      align-items: center;
+      min-height: 155px;
+      flex-direction: column;
+      align-items: flex-start;
       justify-content: center;
-      padding: 22px;
-      border: 1px solid #e2e5ec;
-      border-radius: 30px;
-      background: #fafafc;
+      padding: 20px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--surface);
+      color: var(--text);
+      text-align: left;
     }
-
-    .item-action-content {
-      display: flex;
+    .quick-card:hover:not(.static) {
+      border-color: var(--accent);
+      transform: translateY(-1px);
+    }
+    .quick-card > span {
+      color: var(--accent);
+      font-size: 25px;
+    }
+    .quick-card strong {
+      margin-top: 12px;
+      font-size: 14px;
+    }
+    .quick-card small {
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 11.5px;
+      line-height: 1.45;
+    }
+    .recent-panel {
+      margin-top: 14px;
+    }
+    .recent-empty {
+      padding: 30px;
+      color: var(--subtle);
+      text-align: center;
+    }
+    .recent-row {
+      display: grid;
       width: 100%;
-      min-height: 132px;
+      grid-template-columns: 100px 1fr auto;
+      gap: 12px;
+      padding: 10px;
+      border: 0;
+      border-top: 1px solid var(--border);
+      background: transparent;
+      color: var(--text);
+      text-align: left;
+    }
+    .recent-row small {
+      color: var(--subtle);
+    }
+    .report-placeholder {
+      display: flex;
+      min-height: 320px;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: 18px 20px;
-      border: 1px solid #e2e5ec;
-      border-radius: 16px;
-      background: #f4f6fa;
-      text-align: center;
     }
-
-    .item-action-content strong {
-      color: #102852;
-      font-size: .94rem;
+    .bar-chart {
+      display: flex;
+      width: min(500px, 90%);
+      height: 180px;
+      align-items: flex-end;
+      justify-content: center;
+      gap: 18px;
+      padding: 15px;
+      border-bottom: 1px solid var(--border);
     }
-
-    .item-action-content p {
-      margin: 3px 0 17px;
-      color: #8191ae;
-      font-size: .82rem;
-      line-height: 1.4;
+    .bar-chart i {
+      width: 42px;
+      border-radius: 5px 5px 0 0;
+      background: linear-gradient(var(--purple), var(--accent));
     }
-
-    .item-action-content button {
-      min-width: 92px;
-      padding: 8px 22px;
-      border: 1px solid #d7e0f2;
+    .report-placeholder strong {
+      margin-top: 20px;
+    }
+    .report-placeholder small {
+      color: var(--muted);
+    }
+    .ai-panel {
+      display: none;
+      width: 340px;
+      min-width: 340px;
+      flex-direction: column;
+      border-left: 1px solid var(--border);
+      background: var(--surface);
+    }
+    .ai-panel.open {
+      display: flex;
+    }
+    .ai-header {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      padding: 13px 15px;
+      border-bottom: 1px solid var(--border);
+      font-size: 13px;
+    }
+    .ai-header strong {
+      flex: 1;
+    }
+    .ai-header > button {
+      border: 0;
+      background: transparent;
+      color: var(--muted);
+      font-size: 20px;
+    }
+    .ai-mark {
+      display: grid;
+      width: 28px;
+      height: 28px;
+      place-items: center;
+      border-radius: 7px;
+      background: linear-gradient(135deg, var(--accent), var(--purple));
+      color: #fff;
+    }
+    .ai-body {
+      display: flex;
+      flex: 1;
+      flex-direction: column;
+      gap: 10px;
+      padding: 14px;
+    }
+    .ai-body article {
+      padding: 11px;
+      border: 1px solid color-mix(in srgb, var(--purple) 23%, var(--border));
+      border-radius: 8px;
+      background: color-mix(in srgb, var(--purple) 5%, transparent);
+    }
+    .ai-body b {
+      color: var(--purple);
+      font-size: 10px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    .ai-body p {
+      margin: 6px 0 9px;
+      color: var(--muted);
+      font-size: 11.5px;
+      line-height: 1.5;
+    }
+    .ai-body button {
+      padding: 4px 8px;
+      border: 1px solid var(--border);
       border-radius: 999px;
-      background: #eef3ff;
-      color: #244d99;
-      font-size: .9rem;
-      font-weight: 700;
+      background: var(--surface-2);
+      color: var(--text);
+      font-size: 10px;
     }
-
-    .item-action-content button:disabled {
-      cursor: not-allowed;
-      opacity: .5;
+    .ai-input {
+      display: flex;
+      gap: 7px;
+      padding: 11px 14px;
+      border-top: 1px solid var(--border);
     }
-
+    .ai-input input {
+      min-width: 0;
+      flex: 1;
+      padding: 8px 11px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      outline: 0;
+      background: var(--surface-2);
+      color: var(--text);
+      font-size: 11px;
+    }
+    .ai-input button {
+      width: 32px;
+      height: 32px;
+      border: 0;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), var(--purple));
+      color: #fff;
+    }
     @media (max-width: 1100px) {
-      .topbar {
-        flex-wrap: wrap;
+      .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
       }
-
-      .topbar-center {
-        order: 3;
-        width: 100%;
-      }
-
-      .search-cluster {
-        margin-left: 0;
-      }
-
-      .search-cluster input {
-        width: 100%;
-      }
-
-      .dashboard-toolbar {
-        width: 100%;
-        margin-left: 0;
-      }
-
-      .dashboard-layout {
+      .content-grid,
+      .lower-grid {
         grid-template-columns: 1fr;
       }
-
-      .recent-panel {
-        min-height: auto;
-      }
-
-      .items-grid {
-        grid-template-columns: 1fr;
+      .ai-panel {
+        position: fixed;
+        top: 52px;
+        right: 0;
+        bottom: 0;
+        z-index: 80;
+        box-shadow: -15px 0 35px rgba(0, 0, 0, 0.25);
       }
     }
-
-    @media (max-width: 700px) {
-      .dashboard-page {
-        padding: 18px 16px 28px;
+    @media (max-width: 780px) {
+      .topnav {
+        gap: 10px;
       }
-
-      .topbar-center {
-        align-items: stretch;
+      .top-tabs {
+        display: none;
+      }
+      .ai-button {
+        display: none;
+      }
+      .sidebar {
+        width: 58px;
+        min-width: 58px;
+      }
+      .sidebar-section,
+      .sidebar-item:not(.active) .sidebar-badge {
+        font-size: 0;
+      }
+      .sidebar-item {
+        justify-content: center;
+      }
+      .nav-icon {
+        font-size: 16px;
+      }
+      .main-content {
+        padding: 20px 14px;
+      }
+      .quick-grid {
+        grid-template-columns: 1fr;
+      }
+      .npi-row {
+        grid-template-columns: 34px 1fr auto;
+      }
+      .phase {
+        display: none;
+      }
+    }
+    @media (max-width: 520px) {
+      .stats-grid {
+        grid-template-columns: 1fr;
+      }
+      .page-heading {
         flex-direction: column;
       }
-
-      .search-cluster {
-        flex: 1 1 auto;
+      .heading-actions {
         width: 100%;
       }
-
-      .top-actions {
-        margin-left: 0;
+      .heading-actions .button {
+        flex: 1;
       }
-
-      .dashboard-toolbar button {
-        flex: 0 0 auto;
-        min-width: 140px;
-      }
-
-      .summary-row,
-      .workspace-columns {
-        grid-template-columns: 1fr;
-      }
-
-      .items-panel {
-        padding: 28px 18px 20px;
-      }
-
-      h1 {
-        font-size: 1.55rem;
+      .ai-panel {
+        width: 100%;
+        min-width: 0;
       }
     }
-  `
+  `,
 })
 export class Dashboard {
   readonly userService = inject(UserService);
   readonly recentItemsService = inject(RecentItemsService);
   readonly router = inject(Router);
-  activeView: 'workspace' | 'items' | 'changes' | 'reports' = 'workspace';
+
+  activeView: DashboardView = 'workspace';
   showCreateModal = false;
+  aiOpen = false;
+  theme: 'dark' | 'light' = 'dark';
+  readonly todayLabel = new Intl.DateTimeFormat('en-US', {
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+  }).format(new Date());
 
   constructor() {
     this.setActiveViewFromUrl(this.router.url);
+    this.theme = localStorage.getItem('nexaplm_theme') === 'light' ? 'light' : 'dark';
   }
 
   get userName(): string {
     return this.userService.currentUser() || 'User1';
+  }
+
+  get initials(): string {
+    return this.userName
+      .split(/\s+/)
+      .map((part) => part[0])
+      .join('')
+      .slice(0, 2)
+      .toUpperCase();
+  }
+
+  selectView(view: DashboardView) {
+    this.activeView = view;
+  }
+
+  toggleTheme() {
+    this.theme = this.theme === 'dark' ? 'light' : 'dark';
+    localStorage.setItem('nexaplm_theme', this.theme);
   }
 
   handleItemCreated() {
@@ -855,7 +1463,12 @@ export class Dashboard {
   setActiveViewFromUrl(url: string) {
     const query = url.split('?')[1] || '';
     const requestedTab = new URLSearchParams(query).get('tab');
-    if (requestedTab === 'items' || requestedTab === 'changes' || requestedTab === 'reports') {
+    if (
+      requestedTab === 'items' ||
+      requestedTab === 'changes' ||
+      requestedTab === 'regulatory' ||
+      requestedTab === 'reports'
+    ) {
       this.activeView = requestedTab;
     }
   }
