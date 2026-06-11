@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { ItemFormModal } from '../../components/item-form-modal/item-form-modal';
+import { InventoryService, Product } from '../../services/inventory.service';
 import { RecentItemsService } from '../../services/recent-items.service';
 import { UserService } from '../../services/user.service';
 
@@ -634,49 +635,130 @@ type DashboardView = 'workspace' | 'items' | 'changes' | 'regulatory' | 'reports
             </div>
           </section>
 
-          <section *ngIf="activeView === 'items'" class="view-panel">
-            <div class="page-heading">
+          <section *ngIf="activeView === 'items'" class="view-panel items-view">
+            <div class="page-heading items-heading">
               <div>
                 <h1>Items</h1>
-                <p>Create, review, and reuse product lifecycle records.</p>
+                <p>Drug substances, products, components, and packaging</p>
               </div>
+              <div class="heading-actions">
+                <button class="button secondary" type="button" (click)="browseReleasedItems()">
+                  Browse Released
+                </button>
+                <button
+                  class="button primary"
+                  type="button"
+                  (click)="showCreateModal = true"
+                  [disabled]="userService.isReadOnly()"
+                >
+                  + Create Item
+                </button>
+              </div>
+            </div>
+
+            <div class="item-search">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="11" cy="11" r="7"></circle>
+                <path d="M20 20l-4-4"></path>
+              </svg>
+              <input
+                type="search"
+                [value]="itemQuery"
+                (input)="updateItemQuery($event)"
+                placeholder="Search items by number, description, or type..."
+                aria-label="Search items"
+              />
+              <button type="button">Advanced Filter</button>
+            </div>
+
+            <div class="item-filter-row" aria-label="Item type filters">
+              <button [class.active]="itemFilter === 'all'" (click)="itemFilter = 'all'">
+                All ({{ inventoryService.inventory().length }})
+              </button>
               <button
-                class="button primary"
-                (click)="showCreateModal = true"
-                [disabled]="userService.isReadOnly()"
+                [class.active]="itemFilter === 'drug-substance'"
+                (click)="itemFilter = 'drug-substance'"
               >
-                + Create Item
+                Drug Substance ({{ itemCount('drug-substance') }})
+              </button>
+              <button
+                [class.active]="itemFilter === 'drug-product'"
+                (click)="itemFilter = 'drug-product'"
+              >
+                Drug Product ({{ itemCount('drug-product') }})
+              </button>
+              <button
+                [class.active]="itemFilter === 'raw-material'"
+                (click)="itemFilter = 'raw-material'"
+              >
+                Raw Material ({{ itemCount('raw-material') }})
+              </button>
+              <button
+                [class.active]="itemFilter === 'packaging'"
+                (click)="itemFilter = 'packaging'"
+              >
+                Packaging ({{ itemCount('packaging') }})
               </button>
             </div>
-            <div class="quick-grid">
-              <button class="quick-card" (click)="showCreateModal = true">
-                <span>＋</span><strong>Create Item</strong
-                ><small>Start a new product, material, or packaging record.</small>
-              </button>
-              <button class="quick-card" (click)="router.navigate(['/items'])">
-                <span>□</span><strong>All Items</strong
-                ><small>Browse the complete item repository.</small>
-              </button>
-              <button class="quick-card" (click)="router.navigate(['/items'])">
-                <span>✓</span><strong>Released Items</strong
-                ><small>Find production-ready records for reuse.</small>
-              </button>
+
+            <div class="items-table-wrap">
+              <table class="items-table">
+                <thead>
+                  <tr>
+                    <th>Item #</th>
+                    <th>Description</th>
+                    <th>Type</th>
+                    <th>Lifecycle</th>
+                    <th>Revision</th>
+                    <th>ECM Status</th>
+                    <th>Updated</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr
+                    *ngFor="let item of filteredItems"
+                    tabindex="0"
+                    (click)="openRecentItem(item.sku)"
+                    (keydown.enter)="openRecentItem(item.sku)"
+                  >
+                    <td>
+                      <span class="item-number">{{ item.sku }}</span>
+                    </td>
+                    <td class="item-description">{{ itemDescription(item) }}</td>
+                    <td>
+                      <span class="item-pill" [ngClass]="itemTypeClass(item)">
+                        {{ itemTypeLabel(item) }}
+                      </span>
+                    </td>
+                    <td>
+                      <span class="item-pill" [ngClass]="lifecycleClass(item)">
+                        {{ lifecycleLabel(item) }}
+                      </span>
+                    </td>
+                    <td>{{ displayRevision(item.revision) }}</td>
+                    <td>
+                      <span class="item-pill" [ngClass]="ecmStatusClass(item)">
+                        {{ ecmStatus(item) }}
+                      </span>
+                    </td>
+                    <td class="updated-cell">{{ updatedDate(item) }}</td>
+                    <td>
+                      <button
+                        class="open-item"
+                        type="button"
+                        (click)="$event.stopPropagation(); openRecentItem(item.sku)"
+                      >
+                        Open →
+                      </button>
+                    </td>
+                  </tr>
+                  <tr *ngIf="!filteredItems.length">
+                    <td class="empty-items" colspan="8">No items match the selected filters.</td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
-            <section class="panel recent-panel">
-              <div class="panel-title"><h2>Recently Accessed</h2></div>
-              <div class="recent-empty" *ngIf="!recentItemsService.recentItems().length">
-                No recently accessed items
-              </div>
-              <button
-                class="recent-row"
-                *ngFor="let item of recentItemsService.recentItems()"
-                (click)="openRecentItem(item.sku)"
-              >
-                <strong>{{ item.sku }}</strong
-                ><span>{{ item.name }}</span
-                ><small>{{ item.partType }} · Rev {{ item.revision }}</small>
-              </button>
-            </section>
           </section>
 
           <section *ngIf="activeView === 'changes'" class="view-panel">
@@ -1731,6 +1813,171 @@ type DashboardView = 'workspace' | 'items' | 'changes' | 'regulatory' | 'reports
     .view-panel {
       max-width: 1200px;
     }
+    .items-view {
+      max-width: none;
+    }
+    .items-heading {
+      margin-bottom: 24px;
+    }
+    .item-search {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-height: 49px;
+      margin-bottom: 19px;
+      padding: 0 17px;
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      background: var(--surface-2);
+    }
+    .item-search svg {
+      width: 19px;
+      height: 19px;
+      fill: none;
+      stroke: var(--purple);
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+    .item-search input {
+      min-width: 0;
+      flex: 1;
+      border: 0;
+      outline: 0;
+      background: transparent;
+      color: var(--text);
+      font-size: 13px;
+    }
+    .item-search input::placeholder {
+      color: var(--subtle);
+    }
+    .item-search button {
+      border: 0;
+      background: transparent;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 650;
+    }
+    .item-filter-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 9px;
+      margin-bottom: 17px;
+    }
+    .item-filter-row button {
+      padding: 4px 10px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: var(--surface-2);
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.2;
+    }
+    .item-filter-row button.active {
+      border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+      background: color-mix(in srgb, var(--accent) 14%, transparent);
+      color: var(--accent);
+    }
+    .items-table-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--bg);
+    }
+    .items-table {
+      width: 100%;
+      min-width: 1050px;
+      border-collapse: collapse;
+      text-align: left;
+    }
+    .items-table thead {
+      background: var(--surface-2);
+    }
+    .items-table th {
+      padding: 12px 16px;
+      color: var(--muted);
+      font-size: 10.5px;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    .items-table td {
+      padding: 13px 16px;
+      border-top: 1px solid var(--border);
+      color: var(--text);
+      font-size: 12px;
+      white-space: nowrap;
+    }
+    .items-table tbody tr {
+      cursor: pointer;
+      transition: background 0.14s ease;
+    }
+    .items-table tbody tr:hover,
+    .items-table tbody tr:focus {
+      outline: none;
+      background: color-mix(in srgb, var(--accent) 5%, transparent);
+    }
+    .item-number {
+      color: var(--accent);
+      font-weight: 700;
+    }
+    .item-description {
+      min-width: 330px;
+      white-space: normal !important;
+    }
+    .item-pill {
+      display: inline-flex;
+      padding: 3px 9px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: var(--surface-2);
+      color: var(--muted);
+      font-size: 10.5px;
+      font-weight: 650;
+    }
+    .pill-blue {
+      border-color: color-mix(in srgb, var(--accent) 40%, transparent);
+      background: color-mix(in srgb, var(--accent) 14%, transparent);
+      color: var(--accent);
+    }
+    .pill-purple {
+      border-color: color-mix(in srgb, var(--purple) 40%, transparent);
+      background: color-mix(in srgb, var(--purple) 14%, transparent);
+      color: var(--purple);
+    }
+    .pill-green {
+      border-color: color-mix(in srgb, var(--green) 38%, transparent);
+      background: color-mix(in srgb, var(--green) 13%, transparent);
+      color: var(--green);
+    }
+    .pill-amber {
+      border-color: color-mix(in srgb, var(--amber) 40%, transparent);
+      background: color-mix(in srgb, var(--amber) 13%, transparent);
+      color: var(--amber);
+    }
+    .pill-gray {
+      border-color: var(--border);
+      background: var(--surface-2);
+      color: var(--muted);
+    }
+    .updated-cell {
+      color: var(--muted) !important;
+    }
+    .open-item {
+      border: 0;
+      background: transparent;
+      color: var(--muted);
+      font-size: 11.5px;
+      font-weight: 700;
+    }
+    .open-item:hover {
+      color: var(--accent);
+    }
+    .empty-items {
+      padding: 48px 20px !important;
+      color: var(--subtle) !important;
+      text-align: center;
+    }
     .quick-grid {
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1996,6 +2243,7 @@ type DashboardView = 'workspace' | 'items' | 'changes' | 'regulatory' | 'reports
 })
 export class Dashboard {
   readonly userService = inject(UserService);
+  readonly inventoryService = inject(InventoryService);
   readonly recentItemsService = inject(RecentItemsService);
   readonly router = inject(Router);
 
@@ -2003,6 +2251,8 @@ export class Dashboard {
   showCreateModal = false;
   aiOpen = false;
   theme: 'dark' | 'light' = 'dark';
+  itemQuery = '';
+  itemFilter: 'all' | 'drug-substance' | 'drug-product' | 'raw-material' | 'packaging' = 'all';
   readonly todayLabel = new Intl.DateTimeFormat('en-US', {
     month: 'long',
     day: 'numeric',
@@ -2027,8 +2277,134 @@ export class Dashboard {
       .toUpperCase();
   }
 
+  get filteredItems(): Product[] {
+    const query = this.itemQuery.trim().toLowerCase();
+    return this.inventoryService
+      .inventory()
+      .filter((item) => this.itemFilter === 'all' || this.itemCategory(item) === this.itemFilter)
+      .filter((item) => {
+        if (!query) {
+          return true;
+        }
+        return [
+          item.sku,
+          item.name,
+          item.partDescription,
+          item.partType,
+          item.category,
+          item.classification,
+          item.lifecycle,
+        ]
+          .filter(Boolean)
+          .join(' ')
+          .toLowerCase()
+          .includes(query);
+      });
+  }
+
   selectView(view: DashboardView) {
     this.activeView = view;
+  }
+
+  updateItemQuery(event: Event) {
+    this.itemQuery = (event.target as HTMLInputElement).value;
+  }
+
+  browseReleasedItems() {
+    this.itemFilter = 'all';
+    this.itemQuery = 'production';
+  }
+
+  itemCount(category: Exclude<Dashboard['itemFilter'], 'all'>): number {
+    return this.inventoryService.inventory().filter((item) => this.itemCategory(item) === category)
+      .length;
+  }
+
+  itemDescription(item: Product): string {
+    return item.partDescription || item.name || item.partType || item.type;
+  }
+
+  itemTypeLabel(item: Product): string {
+    const category = this.itemCategory(item);
+    if (category === 'drug-substance') return 'Drug Substance';
+    if (category === 'drug-product') return 'Finished Good';
+    if (category === 'raw-material') return item.partType || 'Raw Material';
+    if (category === 'packaging') return 'Packaging';
+    return item.partType || item.part || item.type;
+  }
+
+  itemTypeClass(item: Product): string {
+    const category = this.itemCategory(item);
+    if (category === 'drug-product') return 'pill-blue';
+    if (category === 'drug-substance') return 'pill-purple';
+    if (category === 'packaging') return 'pill-green';
+    return 'pill-gray';
+  }
+
+  lifecycleLabel(item: Product): string {
+    return item.lifecycle === 'Design' ? 'Preliminary' : item.lifecycle;
+  }
+
+  lifecycleClass(item: Product): string {
+    if (item.lifecycle === 'Production') return 'pill-green';
+    if (item.lifecycle === 'Prototype') return 'pill-amber';
+    return 'pill-gray';
+  }
+
+  displayRevision(revision: string): string {
+    return revision.split('.')[0] || revision;
+  }
+
+  ecmStatus(item: Product): string {
+    if (item.changes?.some((change) => /draft|review|pending/i.test(change.status))) {
+      return 'Pending';
+    }
+    if (item.lifecycle === 'Production') {
+      return 'Completed';
+    }
+    if (item.bom?.length) {
+      return 'Defined';
+    }
+    return 'Pending';
+  }
+
+  ecmStatusClass(item: Product): string {
+    const status = this.ecmStatus(item);
+    if (status === 'Pending') return 'pill-amber';
+    return 'pill-green';
+  }
+
+  updatedDate(item: Product): string {
+    const rawDate = item.history?.[0]?.date;
+    if (!rawDate) {
+      return '—';
+    }
+    const date = new Date(rawDate);
+    if (Number.isNaN(date.getTime())) {
+      return rawDate;
+    }
+    return new Intl.DateTimeFormat('en-GB', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    }).format(date);
+  }
+
+  private itemCategory(
+    item: Product,
+  ): 'drug-substance' | 'drug-product' | 'raw-material' | 'packaging' | 'other' {
+    const value = [item.sku, item.partType, item.category, item.classification, item.name]
+      .filter(Boolean)
+      .join(' ')
+      .toLowerCase();
+
+    if (/packag|pkg-|blister/.test(value)) return 'packaging';
+    if (/drug substance|api|^ds-/.test(value)) return 'drug-substance';
+    if (/finished good|drug product|^fg-/.test(value)) return 'drug-product';
+    if (/raw material|excipient|semi-finished|component|^comp-|^rm-/.test(value)) {
+      return 'raw-material';
+    }
+    return 'other';
   }
 
   toggleTheme() {
