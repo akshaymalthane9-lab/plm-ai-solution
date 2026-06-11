@@ -188,153 +188,447 @@ type DashboardView = 'workspace' | 'items' | 'changes' | 'regulatory' | 'reports
               </div>
             </div>
 
+            <!-- Previous workspace body retained in source history.
+              <div class="stats-grid">
+                <article class="stat-card">
+                  <span>Active NPIs</span><strong>7</strong
+                  ><small class="success">↑ 2 this quarter</small>
+                </article>
+                <article class="stat-card">
+                  <span>Pending Approvals</span><strong class="warning-text">5</strong
+                  ><small>3 due this week</small>
+                </article>
+                <article class="stat-card">
+                  <span>Open Change Orders</span><strong>4</strong
+                  ><small class="danger-text">2 high priority</small>
+                </article>
+                <article class="stat-card">
+                  <span>Items in Production</span><strong>24</strong
+                  ><small class="success">All compliant</small>
+                </article>
+              </div>
+
+              <div class="content-grid">
+                <section class="panel npi-panel">
+                  <div class="panel-title">
+                    <h2>Active NPI Programs</h2>
+                    <button type="button" (click)="selectView('items')">View all</button>
+                  </div>
+                  <div class="npi-list">
+                    <button class="npi-row" type="button" (click)="openRecentItem('FG-001')">
+                      <span class="product-icon blue">Rx</span>
+                      <span class="npi-copy"
+                        ><strong>Product-X Tablet 50mg</strong
+                        ><small>FG-001 · Modified Release Tablet</small></span
+                      >
+                      <span class="phase"
+                        ><b>Scale-Up</b><i><em style="width:72%"></em></i
+                      ></span>
+                      <span class="badge blue">On Track</span>
+                    </button>
+                    <button class="npi-row" type="button" (click)="openRecentItem('DS-001')">
+                      <span class="product-icon purple">DS</span>
+                      <span class="npi-copy"
+                        ><strong>API Intermediate Program</strong
+                        ><small>DS-001 · Drug Substance</small></span
+                      >
+                      <span class="phase"
+                        ><b>Validation</b><i><em style="width:54%"></em></i
+                      ></span>
+                      <span class="badge amber">At Risk</span>
+                    </button>
+                    <button class="npi-row" type="button" (click)="selectView('items')">
+                      <span class="product-icon teal">PK</span>
+                      <span class="npi-copy"
+                        ><strong>PVDC Blister Pack</strong
+                        ><small>PKG-001 · Packaging Component</small></span
+                      >
+                      <span class="phase"
+                        ><b>Commercial</b><i><em style="width:91%"></em></i
+                      ></span>
+                      <span class="badge green">On Track</span>
+                    </button>
+                  </div>
+                </section>
+
+                <section class="panel activity-panel">
+                  <div class="panel-title">
+                    <h2>Recent Activity</h2>
+                    <span class="count">8</span>
+                  </div>
+                  <div class="activity-item">
+                    <span class="activity-icon green">✓</span>
+                    <p>
+                      <strong>ECO-001 approved</strong
+                      ><small>Formula update for FG-001 · 24 min ago</small>
+                    </p>
+                  </div>
+                  <div class="activity-item">
+                    <span class="activity-icon blue">↻</span>
+                    <p>
+                      <strong>DS-002 moved to Validation</strong
+                      ><small>Lifecycle updated by {{ userName }} · 1 hr ago</small>
+                    </p>
+                  </div>
+                  <div class="activity-item">
+                    <span class="activity-icon purple">↑</span>
+                    <p>
+                      <strong>Protocol document uploaded</strong
+                      ><small>VAL-2026-014.pdf · 2 hrs ago</small>
+                    </p>
+                  </div>
+                  <div class="activity-item">
+                    <span class="activity-icon amber">!</span>
+                    <p>
+                      <strong>Approval requested</strong
+                      ><small>ECO-002 awaiting Quality review · 3 hrs ago</small>
+                    </p>
+                  </div>
+                </section>
+              </div>
+
+              <div class="content-grid lower-grid">
+                <section class="panel">
+                  <div class="panel-title">
+                    <h2>Pending Actions</h2>
+                    <span class="count">5</span>
+                  </div>
+                  <div class="action-row">
+                    <span class="priority high">High</span>
+                    <p>
+                      <strong>Review ECO-002 impact assessment</strong
+                      ><small>Due today · Quality</small>
+                    </p>
+                    <button (click)="openMyChanges()">Review</button>
+                  </div>
+                  <div class="action-row">
+                    <span class="priority medium">Med</span>
+                    <p>
+                      <strong>Approve DS-002 validation protocol</strong
+                      ><small>Due Jun 13 · Regulatory</small>
+                    </p>
+                    <button (click)="openMyChanges()">Open</button>
+                  </div>
+                  <div class="action-row">
+                    <span class="priority low">Low</span>
+                    <p>
+                      <strong>Complete packaging specification</strong
+                      ><small>Due Jun 18 · Engineering</small>
+                    </p>
+                    <button (click)="selectView('items')">Open</button>
+                  </div>
+                </section>
+
+                <section class="panel ai-insight-panel">
+                  <div class="panel-title">
+                    <h2><span class="gradient-text">✦ AI Insights</span></h2>
+                    <span class="live-dot">Live</span>
+                  </div>
+                  <div class="insight">
+                    <strong>Release risk detected</strong>
+                    <p>
+                      DS-002 validation protocol is missing an approval. This may delay ECO-002 by
+                      approximately 3 days.
+                    </p>
+                    <button (click)="openMyChanges()">Review blocker</button>
+                  </div>
+                  <div class="insight">
+                    <strong>Reuse opportunity</strong>
+                    <p>FG-001 shares 82% of its formulation with an existing released item.</p>
+                    <button (click)="selectView('items')">Compare items</button>
+                  </div>
+                </section>
+              </div>
+            -->
+
             <div class="stats-grid">
               <article class="stat-card">
-                <span>Active NPIs</span><strong>7</strong
-                ><small class="success">↑ 2 this quarter</small>
+                <span>Active NPIs</span>
+                <strong>7</strong>
+                <small class="success">↑ 2 this quarter</small>
               </article>
               <article class="stat-card">
-                <span>Pending Approvals</span><strong class="warning-text">5</strong
-                ><small>3 due this week</small>
+                <span>Pending Approvals</span>
+                <strong class="warning-text">5</strong>
+                <small>Avg. 1.4 days waiting</small>
               </article>
               <article class="stat-card">
-                <span>Open Change Orders</span><strong>4</strong
-                ><small class="danger-text">2 high priority</small>
+                <span>Items in Production</span>
+                <strong class="production-text">12</strong>
+                <small class="success">↑ 3 from last month</small>
               </article>
               <article class="stat-card">
-                <span>Items in Production</span><strong>24</strong
-                ><small class="success">All compliant</small>
+                <span>Regulatory Filings</span>
+                <strong class="purple-text">3</strong>
+                <small>IND · NDA · EMA-MAA</small>
               </article>
             </div>
 
-            <div class="content-grid">
-              <section class="panel npi-panel">
-                <div class="panel-title">
-                  <h2>Active NPI Programs</h2>
-                  <button type="button" (click)="selectView('items')">View all</button>
+            <div class="reference-grid">
+              <section class="panel approval-panel">
+                <div class="section-heading">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <circle cx="12" cy="12" r="8"></circle>
+                    <path d="M12 7v5l3 2"></path>
+                  </svg>
+                  <strong>Pending Approvals</strong>
+                  <span class="count">5</span>
                 </div>
-                <div class="npi-list">
-                  <button class="npi-row" type="button" (click)="openRecentItem('FG-001')">
-                    <span class="product-icon blue">Rx</span>
-                    <span class="npi-copy"
-                      ><strong>Product-X Tablet 50mg</strong
-                      ><small>FG-001 · Modified Release Tablet</small></span
-                    >
-                    <span class="phase"
-                      ><b>Scale-Up</b><i><em style="width:72%"></em></i
-                    ></span>
-                    <span class="badge blue">On Track</span>
-                  </button>
-                  <button class="npi-row" type="button" (click)="openRecentItem('DS-001')">
-                    <span class="product-icon purple">DS</span>
-                    <span class="npi-copy"
-                      ><strong>API Intermediate Program</strong
-                      ><small>DS-001 · Drug Substance</small></span
-                    >
-                    <span class="phase"
-                      ><b>Validation</b><i><em style="width:54%"></em></i
-                    ></span>
-                    <span class="badge amber">At Risk</span>
-                  </button>
-                  <button class="npi-row" type="button" (click)="selectView('items')">
-                    <span class="product-icon teal">PK</span>
-                    <span class="npi-copy"
-                      ><strong>PVDC Blister Pack</strong
-                      ><small>PKG-001 · Packaging Component</small></span
-                    >
-                    <span class="phase"
-                      ><b>Commercial</b><i><em style="width:91%"></em></i
-                    ></span>
-                    <span class="badge green">On Track</span>
-                  </button>
+                <div class="approval-table-wrap">
+                  <table class="approval-table">
+                    <thead>
+                      <tr>
+                        <th>Change</th>
+                        <th>Type</th>
+                        <th>Stage</th>
+                        <th>Waiting</th>
+                        <th></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td>
+                          <button class="record-link" (click)="openMyChanges()">ECO-001</button>
+                        </td>
+                        <td><span class="badge blue">ECO</span></td>
+                        <td><span class="badge amber">Review</span></td>
+                        <td class="muted-cell">2d</td>
+                        <td>
+                          <button class="table-action primary" (click)="openMyChanges()">
+                            Approve
+                          </button>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>
+                          <button class="record-link" (click)="openMyChanges()">ECO-002</button>
+                        </td>
+                        <td><span class="badge blue">ECO</span></td>
+                        <td><span class="badge amber">Review</span></td>
+                        <td class="muted-cell">1d</td>
+                        <td>
+                          <button class="table-action primary" (click)="openMyChanges()">
+                            Approve
+                          </button>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>
+                          <button class="record-link" (click)="selectView('regulatory')">
+                            DEV-004
+                          </button>
+                        </td>
+                        <td><span class="badge red">Deviation</span></td>
+                        <td><span class="badge amber">Approve</span></td>
+                        <td class="muted-cell">4d</td>
+                        <td>
+                          <button class="table-action" (click)="selectView('regulatory')">
+                            Review
+                          </button>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>
+                          <button class="record-link" (click)="selectView('regulatory')">
+                            CAPA-002
+                          </button>
+                        </td>
+                        <td><span class="badge purple">CAPA</span></td>
+                        <td><span class="badge blue">Approve</span></td>
+                        <td class="muted-cell">6h</td>
+                        <td>
+                          <button class="table-action" (click)="selectView('regulatory')">
+                            Review
+                          </button>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
                 </div>
               </section>
 
               <section class="panel activity-panel">
-                <div class="panel-title">
-                  <h2>Recent Activity</h2>
-                  <span class="count">8</span>
+                <div class="section-heading">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M13 2L4 14h7l-1 8 9-12h-7l1-8z"></path>
+                  </svg>
+                  <strong>Recent Activity</strong>
                 </div>
                 <div class="activity-item">
-                  <span class="activity-icon green">✓</span>
-                  <p>
-                    <strong>ECO-001 approved</strong
-                    ><small>Formula update for FG-001 · 24 min ago</small>
-                  </p>
+                  <span class="activity-icon green">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M5 12l4 4L19 6"></path>
+                    </svg>
+                  </span>
+                  <div class="activity-copy">
+                    <p>
+                      <strong>ECO-001A</strong> completed — Component COMP-001 released to
+                      Production
+                    </p>
+                    <small>2 hours ago · Reviewer A</small>
+                  </div>
                 </div>
                 <div class="activity-item">
-                  <span class="activity-icon blue">↻</span>
-                  <p>
-                    <strong>DS-002 moved to Validation</strong
-                    ><small>Lifecycle updated by {{ userName }} · 1 hr ago</small>
-                  </p>
+                  <span class="activity-icon blue">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M4 7l8-4 8 4-8 4-8-4zM4 7v10l8 4 8-4V7M12 11v10"></path>
+                    </svg>
+                  </span>
+                  <div class="activity-copy">
+                    <p><strong>FG-001</strong> lifecycle promoted — Preliminary → Prototype</p>
+                    <small>5 hours ago · System</small>
+                  </div>
                 </div>
                 <div class="activity-item">
-                  <span class="activity-icon purple">↑</span>
-                  <p>
-                    <strong>Protocol document uploaded</strong
-                    ><small>VAL-2026-014.pdf · 2 hrs ago</small>
-                  </p>
+                  <span class="activity-icon purple">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path
+                        d="M12 3l1.4 4.1L18 8.5l-4.1 1.4L12.5 14l-1.4-4.1L7 8.5l4.1-1.4L12 3zM18 15l.7 2.3L21 18l-2.3.7L18 21l-.7-2.3L15 18l2.3-.7L18 15z"
+                      ></path>
+                    </svg>
+                  </span>
+                  <div class="activity-copy">
+                    <p><strong>AI</strong> flagged missing validation protocol for DS-002</p>
+                    <small>1 day ago · AI Assistant</small>
+                  </div>
                 </div>
                 <div class="activity-item">
-                  <span class="activity-icon amber">!</span>
-                  <p>
-                    <strong>Approval requested</strong
-                    ><small>ECO-002 awaiting Quality review · 3 hrs ago</small>
-                  </p>
+                  <span class="activity-icon amber">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M7 3h10v4H7zM6 5H4v16h16V5h-2M8 11h8M8 15h8"></path>
+                    </svg>
+                  </span>
+                  <div class="activity-copy">
+                    <p><strong>IND-2026-001</strong> submitted to FDA — acknowledgement pending</p>
+                    <small>2 days ago · Reg Affairs</small>
+                  </div>
                 </div>
               </section>
             </div>
 
-            <div class="content-grid lower-grid">
-              <section class="panel">
-                <div class="panel-title">
-                  <h2>Pending Actions</h2>
-                  <span class="count">5</span>
+            <div class="dashboard-divider"></div>
+
+            <section class="panel workflow-panel">
+              <div class="section-heading">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path
+                    d="M3 6l5-3 5 3 5-3 3 2v13l-5 3-5-3-5 3-3-2V6zM8 3v15M13 6v12M18 3v15"
+                  ></path>
+                </svg>
+                <strong>NPI Stage Progress — Product-X (FG-001)</strong>
+              </div>
+              <div class="workflow-bar">
+                <div class="workflow-step done">
+                  <strong>Concept</strong><small>✓ Complete</small>
                 </div>
-                <div class="action-row">
-                  <span class="priority high">High</span>
-                  <p>
-                    <strong>Review ECO-002 impact assessment</strong
-                    ><small>Due today · Quality</small>
-                  </p>
-                  <button (click)="openMyChanges()">Review</button>
+                <div class="workflow-step done">
+                  <strong>Feasibility</strong><small>✓ Complete</small>
                 </div>
-                <div class="action-row">
-                  <span class="priority medium">Med</span>
-                  <p>
-                    <strong>Approve DS-002 validation protocol</strong
-                    ><small>Due Jun 13 · Regulatory</small>
-                  </p>
-                  <button (click)="openMyChanges()">Open</button>
+                <div class="workflow-step done">
+                  <strong>Development</strong><small>✓ Complete</small>
                 </div>
-                <div class="action-row">
-                  <span class="priority low">Low</span>
+                <div class="workflow-step current">
+                  <strong>Clinical Pilot</strong><small>↻ In Progress</small>
+                </div>
+                <div class="workflow-step"><strong>Validation</strong><small>Pending</small></div>
+                <div class="workflow-step"><strong>Registration</strong><small>Pending</small></div>
+                <div class="workflow-step"><strong>Launch</strong><small>Pending</small></div>
+              </div>
+              <div class="workflow-meta">
+                <div>
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M5 3v3M19 3v3M4 8h16M5 5h14a1 1 0 011 1v14H4V6a1 1 0 011-1z"></path>
+                  </svg>
+                  <span>Target Launch: <strong>Q2 2027</strong></span>
+                </div>
+                <div>
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M12 21s7-5.1 7-12A7 7 0 105 9c0 6.9 7 12 7 12z"></path>
+                    <circle cx="12" cy="9" r="2"></circle>
+                  </svg>
+                  <span>Current Phase: <strong class="warning-text">Clinical Pilot</strong></span>
+                </div>
+                <div>
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M12 3L2.5 20h19L12 3zM12 9v5M12 17h.01"></path>
+                  </svg>
+                  <span>At-Risk Items: <strong class="danger-text">2</strong></span>
+                </div>
+              </div>
+            </section>
+
+            <div class="reference-grid bottom-grid">
+              <section class="panel ai-insight-panel">
+                <div class="section-heading">
+                  <svg class="purple-icon" viewBox="0 0 24 24" aria-hidden="true">
+                    <path
+                      d="M12 3l1.4 4.1L18 8.5l-4.1 1.4L12.5 14l-1.4-4.1L7 8.5l4.1-1.4L12 3zM18 15l.7 2.3L21 18l-2.3.7L18 21l-.7-2.3L15 18l2.3-.7L18 15z"
+                    ></path>
+                  </svg>
+                  <strong class="gradient-text">AI Insights</strong>
+                </div>
+                <div class="insight">
+                  <div class="insight-label">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <circle cx="11" cy="11" r="7"></circle>
+                      <path d="M20 20l-4-4"></path>
+                    </svg>
+                    Risk Alert
+                  </div>
                   <p>
-                    <strong>Complete packaging specification</strong
-                    ><small>Due Jun 18 · Engineering</small>
+                    Validation protocol for Drug Substance DS-002 is missing. This may block ECO-002
+                    release. Recommend creating VP-DS-002 document now.
                   </p>
-                  <button (click)="selectView('items')">Open</button>
+                  <div class="chip-row">
+                    <button>Create Protocol</button><button>Snooze</button>
+                  </div>
+                </div>
+                <div class="insight">
+                  <div class="insight-label">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path
+                        d="M9 18h6M10 22h4M8 14a7 7 0 118 0c-1.2 1-1.7 2-1.8 3H9.8C9.7 16 9.2 15 8 14z"
+                      ></path>
+                    </svg>
+                    Suggestion
+                  </div>
+                  <p>
+                    Based on your NPI timeline, COMP-003 should be released to Production before
+                    June 20 to avoid Clinical Pilot delay.
+                  </p>
+                  <div class="chip-row">
+                    <button (click)="openRecentItem('COMP-003')">View COMP-003</button>
+                    <button (click)="openChangeCreate()">Create ECO</button>
+                  </div>
                 </div>
               </section>
 
-              <section class="panel ai-insight-panel">
-                <div class="panel-title">
-                  <h2><span class="gradient-text">✦ AI Insights</span></h2>
-                  <span class="live-dot">Live</span>
+              <section class="panel workspace-overview">
+                <div class="section-heading">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M4 20V10M10 20V4M16 20v-7M22 20H2"></path>
+                  </svg>
+                  <strong>Workspace Overview</strong>
                 </div>
-                <div class="insight">
-                  <strong>Release risk detected</strong>
-                  <p>
-                    DS-002 validation protocol is missing an approval. This may delay ECO-002 by
-                    approximately 3 days.
-                  </p>
-                  <button (click)="openMyChanges()">Review blocker</button>
+                <div class="metric">
+                  <div><span>NPI Completion</span><strong>42%</strong></div>
+                  <i><em class="blue-fill" style="width:42%"></em></i>
                 </div>
-                <div class="insight">
-                  <strong>Reuse opportunity</strong>
-                  <p>FG-001 shares 82% of its formulation with an existing released item.</p>
-                  <button (click)="selectView('items')">Compare items</button>
+                <div class="metric">
+                  <div>
+                    <span>Regulatory Readiness</span><strong class="warning-text">28%</strong>
+                  </div>
+                  <i><em class="amber-fill" style="width:28%"></em></i>
+                </div>
+                <div class="metric">
+                  <div>
+                    <span>Quality Compliance</span><strong class="production-text">85%</strong>
+                  </div>
+                  <i><em class="green-fill" style="width:85%"></em></i>
+                </div>
+                <div class="metric">
+                  <div><span>Document Control</span><strong class="purple-text">61%</strong></div>
+                  <i><em class="purple-fill" style="width:61%"></em></i>
                 </div>
               </section>
             </div>
@@ -1137,6 +1431,303 @@ type DashboardView = 'workspace' | 'items' | 'changes' | 'regulatory' | 'reports
       font-size: 11px;
       line-height: 1.45;
     }
+    .production-text {
+      color: var(--green) !important;
+    }
+    .purple-text {
+      color: var(--purple) !important;
+    }
+    .reference-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+    .section-heading {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      min-height: 20px;
+      margin-bottom: 12px;
+      color: var(--text);
+      font-size: 12.5px;
+    }
+    .section-heading > svg {
+      width: 15px;
+      height: 15px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.8;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+    .section-heading .purple-icon {
+      color: var(--purple);
+    }
+    .section-heading .count {
+      margin-left: 1px;
+    }
+    .approval-table-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+    }
+    .approval-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+    .approval-table thead {
+      background: var(--surface-2);
+    }
+    .approval-table th {
+      padding: 8px 11px;
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 750;
+      letter-spacing: 0.05em;
+      text-align: left;
+      text-transform: uppercase;
+    }
+    .approval-table td {
+      padding: 9px 11px;
+      border-top: 1px solid var(--border);
+      color: var(--text);
+      vertical-align: middle;
+    }
+    .approval-table tbody tr:hover {
+      background: color-mix(in srgb, var(--text) 2%, transparent);
+    }
+    .record-link {
+      padding: 0;
+      border: 0;
+      background: transparent;
+      color: var(--accent);
+      font-weight: 650;
+    }
+    .muted-cell {
+      color: var(--muted) !important;
+    }
+    .table-action {
+      padding: 4px 9px;
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      background: var(--surface-2);
+      color: var(--text);
+      font-size: 10.5px;
+      font-weight: 650;
+    }
+    .table-action.primary {
+      border-color: var(--accent);
+      background: var(--accent);
+      color: #fff;
+    }
+    .badge.red {
+      border-color: color-mix(in srgb, var(--red) 35%, transparent);
+      background: color-mix(in srgb, var(--red) 13%, transparent);
+      color: var(--red);
+    }
+    .badge.purple {
+      border-color: color-mix(in srgb, var(--purple) 35%, transparent);
+      background: color-mix(in srgb, var(--purple) 13%, transparent);
+      color: var(--purple);
+    }
+    .activity-panel {
+      padding-bottom: 8px;
+    }
+    .activity-icon svg {
+      width: 15px;
+      height: 15px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.9;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+    .activity-copy {
+      min-width: 0;
+      flex: 1;
+    }
+    .activity-copy p {
+      margin: 0;
+      color: var(--text);
+      font-size: 12px;
+      line-height: 1.4;
+    }
+    .activity-copy small {
+      display: block;
+      margin-top: 2px;
+      color: var(--subtle);
+      font-size: 10.5px;
+    }
+    .dashboard-divider {
+      height: 1px;
+      margin: 18px 0;
+      background: var(--border);
+    }
+    .workflow-panel {
+      margin-bottom: 18px;
+    }
+    .workflow-bar {
+      display: flex;
+      align-items: stretch;
+      overflow-x: auto;
+      margin: 14px 0 12px;
+    }
+    .workflow-step {
+      display: flex;
+      min-width: 92px;
+      flex: 1;
+      flex-direction: column;
+      align-items: center;
+      padding: 9px 12px;
+      border: 1.5px solid var(--border);
+      border-right: 0;
+      background: var(--surface-2);
+      color: var(--muted);
+      text-align: center;
+    }
+    .workflow-step:first-child {
+      border-radius: 6px 0 0 6px;
+    }
+    .workflow-step:last-child {
+      border-right: 1.5px solid var(--border);
+      border-radius: 0 6px 6px 0;
+    }
+    .workflow-step strong {
+      font-size: 10.5px;
+      font-weight: 650;
+    }
+    .workflow-step small {
+      margin-top: 2px;
+      color: var(--subtle);
+      font-size: 9px;
+    }
+    .workflow-step.done {
+      border-color: color-mix(in srgb, var(--green) 38%, transparent);
+      background: color-mix(in srgb, var(--green) 8%, transparent);
+      color: var(--green);
+    }
+    .workflow-step.done small {
+      color: var(--green);
+    }
+    .workflow-step.current {
+      border-color: var(--amber);
+      background: color-mix(in srgb, var(--amber) 8%, transparent);
+      color: var(--amber);
+    }
+    .workflow-step.current small {
+      color: var(--amber);
+    }
+    .workflow-meta {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+    .workflow-meta > div {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      color: var(--muted);
+      font-size: 11px;
+    }
+    .workflow-meta svg {
+      width: 14px;
+      height: 14px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.8;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+    .workflow-meta strong {
+      color: var(--text);
+    }
+    .bottom-grid {
+      align-items: stretch;
+    }
+    .ai-insight-panel {
+      border-color: color-mix(in srgb, var(--purple) 22%, var(--border));
+    }
+    .insight-label {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      color: var(--purple);
+      font-size: 9.5px;
+      font-weight: 800;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+    .insight-label svg {
+      width: 13px;
+      height: 13px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.8;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+    .chip-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .chip-row button {
+      padding: 3px 9px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: var(--surface-2);
+      color: var(--text);
+      font-size: 10.5px;
+    }
+    .chip-row button:hover {
+      border-color: var(--purple);
+      color: var(--purple);
+    }
+    .workspace-overview .section-heading {
+      margin-bottom: 15px;
+    }
+    .metric + .metric {
+      margin-top: 12px;
+    }
+    .metric > div {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 4px;
+      font-size: 11px;
+    }
+    .metric span {
+      color: var(--muted);
+    }
+    .metric strong {
+      color: var(--text);
+      font-size: 11px;
+    }
+    .metric > i {
+      display: block;
+      height: 6px;
+      overflow: hidden;
+      border-radius: 4px;
+      background: var(--surface-2);
+    }
+    .metric em {
+      display: block;
+      height: 100%;
+      border-radius: inherit;
+    }
+    .blue-fill {
+      background: var(--accent);
+    }
+    .amber-fill {
+      background: var(--amber);
+    }
+    .green-fill {
+      background: var(--green);
+    }
+    .purple-fill {
+      background: var(--purple);
+    }
     .view-panel {
       max-width: 1200px;
     }
@@ -1331,6 +1922,9 @@ type DashboardView = 'workspace' | 'items' | 'changes' | 'regulatory' | 'reports
       .lower-grid {
         grid-template-columns: 1fr;
       }
+      .reference-grid {
+        grid-template-columns: 1fr;
+      }
       .ai-panel {
         position: fixed;
         top: 52px;
@@ -1368,6 +1962,9 @@ type DashboardView = 'workspace' | 'items' | 'changes' | 'regulatory' | 'reports
         padding: 20px 14px;
       }
       .quick-grid {
+        grid-template-columns: 1fr;
+      }
+      .workflow-meta {
         grid-template-columns: 1fr;
       }
       .npi-row {
