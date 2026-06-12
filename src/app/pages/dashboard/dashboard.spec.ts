@@ -21,14 +21,18 @@ describe('Dashboard', () => {
     expect(component).toBeTruthy();
   });
 
-  it('navigates to the items page after creating an item', () => {
+  it('opens the dashboard Items tab after creating an item', () => {
     const navigateSpy = vi.spyOn(component.router, 'navigate').mockResolvedValue(true);
     component.showCreateModal = true;
 
     component.handleItemCreated();
 
     expect(component.showCreateModal).toBe(false);
-    expect(navigateSpy).toHaveBeenCalledWith(['/items']);
+    expect(component.activeView).toBe('items');
+    expect(navigateSpy).toHaveBeenCalledWith(
+      ['/dashboard'],
+      { queryParams: { tab: 'items' } }
+    );
   });
 
   it('opens the Items tab when requested in the URL', () => {
@@ -41,6 +45,12 @@ describe('Dashboard', () => {
     component.setActiveViewFromUrl('/dashboard?tab=changes');
 
     expect(component.activeView).toBe('changes');
+  });
+
+  it('filters changes by number, type, description, and owner', () => {
+    component.changeQuery = 'qa team';
+
+    expect(component.filteredChanges.map(change => change.number)).toEqual(['DEV-004']);
   });
 
   it('opens the create change workflow', () => {

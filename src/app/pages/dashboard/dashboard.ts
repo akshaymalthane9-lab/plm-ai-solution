@@ -8,6 +8,16 @@ import { UserService } from '../../services/user.service';
 
 type DashboardView = 'workspace' | 'items' | 'changes' | 'regulatory' | 'reports';
 
+type DashboardChange = {
+  number: string;
+  type: 'ECO' | 'Deviation';
+  description: string;
+  reason: string;
+  workflowState: 'Review' | 'Draft' | 'Completed' | 'Approve';
+  engineer: string;
+  created: string;
+};
+
 @Component({
   selector: 'app-dashboard',
   standalone: true,
@@ -761,27 +771,89 @@ type DashboardView = 'workspace' | 'items' | 'changes' | 'regulatory' | 'reports
             </div>
           </section>
 
-          <section *ngIf="activeView === 'changes'" class="view-panel">
-            <div class="page-heading">
+          <section *ngIf="activeView === 'changes'" class="view-panel changes-view">
+            <div class="page-heading changes-heading">
               <div>
-                <h1>Change Management</h1>
-                <p>Control engineering changes, approvals, and release workflows.</p>
+                <h1>Changes</h1>
+                <p>Engineering change orders, requests, and deviations</p>
               </div>
-              <button class="button primary" (click)="openChangeCreate()">+ New Change</button>
+              <div class="heading-actions">
+                <button class="button secondary" type="button" (click)="browseReleasedChanges()">
+                  Browse Released
+                </button>
+                <button class="button primary" type="button" (click)="openChangeCreate()">
+                  + Create Change
+                </button>
+              </div>
             </div>
-            <div class="quick-grid">
-              <button class="quick-card" (click)="openChangeCreate()">
-                <span>＋</span><strong>Create Change</strong
-                ><small>Define scope, impact, and approval workflow.</small>
-              </button>
-              <button class="quick-card" (click)="openMyChanges()">
-                <span>▤</span><strong>My Changes</strong
-                ><small>Manage your active change requests.</small>
-              </button>
-              <button class="quick-card" (click)="browseReleasedChanges()">
-                <span>✓</span><strong>Released Changes</strong
-                ><small>Browse completed and released orders.</small>
-              </button>
+
+            <div class="item-search">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="11" cy="11" r="7"></circle>
+                <path d="M20 20l-4-4"></path>
+              </svg>
+              <input
+                type="search"
+                [value]="changeQuery"
+                (input)="updateChangeQuery($event)"
+                placeholder="Search changes by number, type, description..."
+                aria-label="Search changes"
+              />
+              <button type="button">Advanced Filter</button>
+            </div>
+
+            <div class="items-table-wrap">
+              <table class="items-table changes-table">
+                <thead>
+                  <tr>
+                    <th>Change #</th>
+                    <th>Type</th>
+                    <th>Description</th>
+                    <th>Reason</th>
+                    <th>Workflow State</th>
+                    <th>Engineer</th>
+                    <th>Created</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let change of filteredChanges">
+                    <td>
+                      <button class="item-number change-number" type="button" (click)="openMyChanges()">
+                        {{ change.number }}
+                      </button>
+                    </td>
+                    <td>
+                      <span
+                        class="item-pill"
+                        [ngClass]="change.type === 'Deviation' ? 'pill-red' : 'pill-blue'"
+                      >
+                        {{ change.type }}
+                      </span>
+                    </td>
+                    <td class="change-description">{{ change.description }}</td>
+                    <td class="change-reason">{{ change.reason }}</td>
+                    <td>
+                      <span
+                        class="item-pill"
+                        [ngClass]="workflowStateClass(change.workflowState)"
+                      >
+                        {{ change.workflowState }}
+                      </span>
+                    </td>
+                    <td>{{ change.engineer }}</td>
+                    <td class="change-created">{{ change.created }}</td>
+                    <td>
+                      <button class="open-item" type="button" (click)="openMyChanges()">
+                        Open &rarr;
+                      </button>
+                    </td>
+                  </tr>
+                  <tr *ngIf="!filteredChanges.length">
+                    <td class="empty-items" colspan="8">No changes match your search.</td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </section>
 
@@ -1978,6 +2050,33 @@ type DashboardView = 'workspace' | 'items' | 'changes' | 'regulatory' | 'reports
       color: var(--subtle) !important;
       text-align: center;
     }
+    .changes-heading {
+      margin-bottom: 20px;
+    }
+    .changes-table {
+      min-width: 1120px;
+    }
+    .change-number {
+      padding: 0;
+      border: 0;
+      background: transparent;
+    }
+    .change-description {
+      min-width: 300px;
+      white-space: normal !important;
+    }
+    .change-reason {
+      min-width: 220px;
+      white-space: normal !important;
+    }
+    .pill-red {
+      border-color: color-mix(in srgb, var(--red) 42%, transparent);
+      background: color-mix(in srgb, var(--red) 14%, transparent);
+      color: var(--red);
+    }
+    .change-created {
+      color: var(--muted);
+    }
     .quick-grid {
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -2253,6 +2352,45 @@ export class Dashboard {
   theme: 'dark' | 'light' = 'dark';
   itemQuery = '';
   itemFilter: 'all' | 'drug-substance' | 'drug-product' | 'raw-material' | 'packaging' = 'all';
+  changeQuery = '';
+  readonly changes: DashboardChange[] = [
+    {
+      number: 'ECO-001',
+      type: 'ECO',
+      description: 'NPI Prototype Release of Product-X',
+      reason: 'New Product Introduction',
+      workflowState: 'Review',
+      engineer: 'Test User',
+      created: '05 Jun 2026',
+    },
+    {
+      number: 'ECO-002',
+      type: 'ECO',
+      description: 'Prototype FG-001 Production Release',
+      reason: 'New Product Introduction',
+      workflowState: 'Draft',
+      engineer: 'Test User',
+      created: '07 Jun 2026',
+    },
+    {
+      number: 'ECO-001A',
+      type: 'ECO',
+      description: 'Release of Component A',
+      reason: 'NPI Component Release',
+      workflowState: 'Completed',
+      engineer: 'Analyst A',
+      created: '03 Jun 2026',
+    },
+    {
+      number: 'DEV-004',
+      type: 'Deviation',
+      description: 'Batch #2024B temperature excursion during storage',
+      reason: 'Manufacturing Deviation',
+      workflowState: 'Approve',
+      engineer: 'QA Team',
+      created: '08 Jun 2026',
+    },
+  ];
   readonly todayLabel = new Intl.DateTimeFormat('en-US', {
     month: 'long',
     day: 'numeric',
@@ -2302,12 +2440,44 @@ export class Dashboard {
       });
   }
 
+  get filteredChanges(): DashboardChange[] {
+    const query = this.changeQuery.trim().toLowerCase();
+    if (!query) {
+      return this.changes;
+    }
+
+    return this.changes.filter((change) =>
+      [
+        change.number,
+        change.type,
+        change.description,
+        change.reason,
+        change.workflowState,
+        change.engineer,
+        change.created,
+      ]
+        .join(' ')
+        .toLowerCase()
+        .includes(query),
+    );
+  }
+
   selectView(view: DashboardView) {
     this.activeView = view;
   }
 
   updateItemQuery(event: Event) {
     this.itemQuery = (event.target as HTMLInputElement).value;
+  }
+
+  updateChangeQuery(event: Event) {
+    this.changeQuery = (event.target as HTMLInputElement).value;
+  }
+
+  workflowStateClass(state: DashboardChange['workflowState']): string {
+    if (state === 'Completed') return 'pill-green';
+    if (state === 'Draft') return 'pill-gray';
+    return 'pill-amber';
   }
 
   browseReleasedItems() {
@@ -2414,7 +2584,8 @@ export class Dashboard {
 
   handleItemCreated() {
     this.showCreateModal = false;
-    this.router.navigate(['/items']);
+    this.activeView = 'items';
+    this.router.navigate(['/dashboard'], { queryParams: { tab: 'items' } });
   }
 
   openChangeCreate() {
