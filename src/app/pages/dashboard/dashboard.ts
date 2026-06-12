@@ -109,60 +109,31 @@ type DashboardChange = {
             <span class="sidebar-badge danger">5</span>
           </button>
 
-          <div class="sidebar-section">Items</div>
-          <button
-            class="sidebar-item"
-            [class.active]="activeView === 'items'"
-            (click)="selectView('items')"
-          >
-            <span class="nav-icon">□</span> All Items
-          </button>
-          <button
-            class="sidebar-item"
-            (click)="showCreateModal = true"
-            [disabled]="userService.isReadOnly()"
-          >
-            <span class="nav-icon">＋</span> Create Item
-          </button>
-          <button class="sidebar-item" (click)="selectView('items')">
-            <span class="nav-icon">⌬</span> Formulations
-          </button>
-          <button class="sidebar-item" (click)="selectView('items')">
-            <span class="nav-icon">✓</span> Released Items
-          </button>
+          <div class="recently-accessed">
+            <div class="recently-accessed-title">Recently Accessed</div>
 
-          <div class="sidebar-section">Changes</div>
-          <button
-            class="sidebar-item"
-            [class.active]="activeView === 'changes'"
-            (click)="selectView('changes')"
-          >
-            <span class="nav-icon">▤</span> Change Orders
-            <span class="sidebar-badge warning">2</span>
-          </button>
-          <button class="sidebar-item" (click)="openMyChanges()">
-            <span class="nav-icon">⌕</span> Change Review
-          </button>
+            <button
+              *ngFor="let item of recentItemsService.recentItems()"
+              class="recent-item"
+              type="button"
+              (click)="openRecentItem(item.sku)"
+            >
+              <span class="recent-item-icon">{{ recentItemInitials(item.partType) }}</span>
+              <span class="recent-item-copy">
+                <strong>{{ item.sku }}</strong>
+                <small>{{ item.name }}</small>
+                <small>{{ item.partType }} · Rev {{ displayRevision(item.revision) }}</small>
+              </span>
+              <span class="recent-item-arrow" aria-hidden="true">›</span>
+            </button>
 
-          <div class="sidebar-section">Quality</div>
-          <button class="sidebar-item" (click)="selectView('regulatory')">
-            <span class="nav-icon">△</span> CAPA <span class="sidebar-badge warning">3</span>
-          </button>
-          <button class="sidebar-item" (click)="selectView('regulatory')">
-            <span class="nav-icon">○</span> Deviations
-          </button>
-
-          <div class="sidebar-section">Regulatory</div>
-          <button
-            class="sidebar-item"
-            [class.active]="activeView === 'regulatory'"
-            (click)="selectView('regulatory')"
-          >
-            <span class="nav-icon">▥</span> Submissions
-          </button>
-          <button class="sidebar-item" (click)="selectView('regulatory')">
-            <span class="nav-icon">⌁</span> Clinical Phases
-          </button>
+            <div
+              *ngIf="recentItemsService.recentItems().length === 0"
+              class="recent-items-empty"
+            >
+              No recently accessed items
+            </div>
+          </div>
         </aside>
 
         <main class="main-content">
@@ -1119,7 +1090,7 @@ type DashboardChange = {
       position: sticky;
       top: 52px;
       display: flex;
-      width: 210px;
+      width: 280px;
       min-width: 210px;
       height: calc(100vh - 52px);
       flex-direction: column;
@@ -1180,6 +1151,86 @@ type DashboardChange = {
     }
     .sidebar-badge.warning {
       background: var(--amber);
+    }
+    .recently-accessed {
+      display: flex;
+      min-height: 190px;
+      flex-direction: column;
+      gap: 8px;
+      margin: 20px 10px 12px;
+      padding: 14px 10px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: color-mix(in srgb, var(--surface-2) 42%, transparent);
+    }
+    .recently-accessed-title {
+      padding: 0 4px 6px;
+      color: var(--text);
+      font-size: 12px;
+      font-weight: 750;
+    }
+    .recent-item {
+      display: grid;
+      grid-template-columns: 30px minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 9px;
+      width: 100%;
+      padding: 9px 8px;
+      border: 1px solid transparent;
+      border-radius: 9px;
+      background: transparent;
+      color: var(--text);
+      text-align: left;
+    }
+    .recent-item:hover {
+      border-color: var(--border);
+      background: var(--surface-2);
+    }
+    .recent-item-icon {
+      display: grid;
+      width: 30px;
+      height: 30px;
+      place-items: center;
+      border-radius: 8px;
+      background: color-mix(in srgb, var(--accent) 15%, transparent);
+      color: var(--accent);
+      font-size: 10px;
+      font-weight: 800;
+    }
+    .recent-item-copy {
+      display: flex;
+      min-width: 0;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .recent-item-copy strong,
+    .recent-item-copy small {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .recent-item-copy strong {
+      color: var(--text);
+      font-size: 14px;
+    }
+    .recent-item-copy small {
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .recent-item-arrow {
+      color: var(--subtle);
+      font-size: 18px;
+    }
+    .recent-items-empty {
+      display: grid;
+      min-height: 116px;
+      place-items: center;
+      padding: 14px;
+      border: 1px dashed var(--border);
+      border-radius: 10px;
+      color: var(--subtle);
+      font-size: 11px;
+      text-align: center;
     }
     .main-content {
       flex: 1;
@@ -1249,7 +1300,7 @@ type DashboardChange = {
     }
     .stat-card span {
       color: var(--muted);
-      font-size: 11.5px;
+      font-size: 14px;
     }
     .stat-card strong {
       margin: 5px 0 3px;
@@ -1557,7 +1608,7 @@ type DashboardChange = {
       min-height: 20px;
       margin-bottom: 12px;
       color: var(--text);
-      font-size: 12.5px;
+      font-size: 14px;
     }
     .section-heading > svg {
       width: 15px;
@@ -2476,6 +2527,16 @@ export class Dashboard {
 
   displayRevision(revision: string): string {
     return revision.split('.')[0] || revision;
+  }
+
+  recentItemInitials(partType: string): string {
+    return partType
+      .split(/\s+/)
+      .filter(Boolean)
+      .map(part => part[0])
+      .join('')
+      .slice(0, 2)
+      .toUpperCase();
   }
 
   ecmStatus(item: Product): string {
