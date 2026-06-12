@@ -184,18 +184,11 @@ type DashboardChange = {
             <div class="page-heading">
               <div>
                 <h1>Welcome, {{ userName }}</h1>
-                <p>NexaPLM Pharma · NPI Process Overview · {{ todayLabel }}</p>
+                <p>NexaPLM· {{ todayLabel }}</p>
               </div>
               <div class="heading-actions">
                 <button class="button secondary" type="button">Import Data</button>
-                <button
-                  class="button primary"
-                  type="button"
-                  (click)="showCreateModal = true"
-                  [disabled]="userService.isReadOnly()"
-                >
-                  + New Item
-                </button>
+
               </div>
             </div>
 
@@ -360,7 +353,7 @@ type DashboardChange = {
               </article>
               <article class="stat-card">
                 <span>Pending Approvals</span>
-                <strong class="warning-text">5</strong>
+                <strong class="warning-text">4</strong>
                 <small>Avg. 1.4 days waiting</small>
               </article>
               <article class="stat-card">
@@ -368,11 +361,11 @@ type DashboardChange = {
                 <strong class="production-text">12</strong>
                 <small class="success">↑ 3 from last month</small>
               </article>
-              <article class="stat-card">
+              <!-- <article class="stat-card">
                 <span>Regulatory Filings</span>
                 <strong class="purple-text">3</strong>
                 <small>IND · NDA · EMA-MAA</small>
-              </article>
+              </article> -->
             </div>
 
             <div class="reference-grid">
@@ -383,7 +376,7 @@ type DashboardChange = {
                     <path d="M12 7v5l3 2"></path>
                   </svg>
                   <strong>Pending Approvals</strong>
-                  <span class="count">5</span>
+                  <span class="count">4</span>
                 </div>
                 <div class="approval-table-wrap">
                   <table class="approval-table">
@@ -432,21 +425,6 @@ type DashboardChange = {
                         <td><span class="badge red">Deviation</span></td>
                         <td><span class="badge amber">Approve</span></td>
                         <td class="muted-cell">4d</td>
-                        <td>
-                          <button class="table-action" (click)="selectView('regulatory')">
-                            Review
-                          </button>
-                        </td>
-                      </tr>
-                      <tr>
-                        <td>
-                          <button class="record-link" (click)="selectView('regulatory')">
-                            CAPA-002
-                          </button>
-                        </td>
-                        <td><span class="badge purple">CAPA</span></td>
-                        <td><span class="badge blue">Approve</span></td>
-                        <td class="muted-cell">6h</td>
                         <td>
                           <button class="table-action" (click)="selectView('regulatory')">
                             Review
@@ -503,22 +481,11 @@ type DashboardChange = {
                     <small>1 day ago · AI Assistant</small>
                   </div>
                 </div>
-                <div class="activity-item">
-                  <span class="activity-icon amber">
-                    <svg viewBox="0 0 24 24" aria-hidden="true">
-                      <path d="M7 3h10v4H7zM6 5H4v16h16V5h-2M8 11h8M8 15h8"></path>
-                    </svg>
-                  </span>
-                  <div class="activity-copy">
-                    <p><strong>IND-2026-001</strong> submitted to FDA — acknowledgement pending</p>
-                    <small>2 days ago · Reg Affairs</small>
-                  </div>
-                </div>
               </section>
             </div>
 
             <div class="dashboard-divider"></div>
-
+<!--
             <section class="panel workflow-panel">
               <div class="section-heading">
                 <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -566,7 +533,7 @@ type DashboardChange = {
                   <span>At-Risk Items: <strong class="danger-text">2</strong></span>
                 </div>
               </div>
-            </section>
+            </section> -->
 
             <div class="reference-grid bottom-grid">
               <section class="panel ai-insight-panel">
@@ -932,6 +899,7 @@ type DashboardChange = {
 
     <app-item-form-modal
       *ngIf="showCreateModal"
+      [theme]="theme"
       (saved)="handleItemCreated()"
       (close)="showCreateModal = false"
     ></app-item-form-modal>

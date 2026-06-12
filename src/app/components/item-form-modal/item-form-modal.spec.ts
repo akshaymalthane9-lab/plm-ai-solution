@@ -29,6 +29,24 @@ describe('ItemFormModal', () => {
     expect(component.itemForm.get('partNumber')?.value).toBe(expectedPartNumber);
   });
 
+  it('opens Part Details only after Part is selected and Next is clicked', () => {
+    expect(component.currentStep).toBe(1);
+
+    component.itemForm.patchValue({ part: 'Part' });
+    component.goToDetails();
+
+    expect(component.currentStep).toBe(2);
+    expect(component.detailsTitle).toBe('Enter Part Details');
+    expect(component.itemForm.get('partType')?.value).toBe('Finished Good');
+    expect(component.itemForm.get('partNumber')?.value).toBe('FG-001');
+  });
+
+  it('uses the selected dashboard theme', () => {
+    component.theme = 'light';
+
+    expect(component.activeTheme).toBe('light');
+  });
+
   it('creates an item using the generated part number as its identifier', () => {
     component.itemForm.patchValue({
       part: 'Part',
