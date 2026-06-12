@@ -3,6 +3,7 @@ import { Component, inject, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { GlobalSearch } from '../../components/global-search/global-search';
+import { ThemeToggle } from '../../components/theme-toggle/theme-toggle';
 import {
   AttachmentFile,
   InventoryService,
@@ -10,6 +11,7 @@ import {
   ProductAttachment,
 } from '../../services/inventory.service';
 import { RecentItemsService } from '../../services/recent-items.service';
+import { ThemeService } from '../../services/theme.service';
 import { UserService } from '../../services/user.service';
 
 type ItemDetailTab = 'Overview' | 'BOM' | 'Documents' | 'Changes' | 'History';
@@ -22,9 +24,9 @@ type BomTreeNode = {
 @Component({
   selector: 'app-item-details',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, GlobalSearch],
+  imports: [CommonModule, FormsModule, RouterLink, GlobalSearch, ThemeToggle],
   template: `
-    <div class="detail-page">
+    <div class="detail-page" [class.light-theme]="themeService.theme() === 'light'">
       <header class="reference-header">
         <button class="reference-brand" type="button" (click)="router.navigate(['/dashboard'])">
           <span>N</span>NexaPLM
@@ -47,6 +49,7 @@ type BomTreeNode = {
         </nav>
         <div class="reference-actions">
           <button class="reference-ai">✦ AI Assistant</button>
+          <app-theme-toggle></app-theme-toggle>
           <button class="reference-circle" aria-label="Search">
             <svg viewBox="0 0 24 24">
               <circle cx="11" cy="11" r="7"></circle>
@@ -1097,6 +1100,19 @@ type BomTreeNode = {
       color: var(--detail-text);
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     }
+    .detail-page.light-theme {
+      --detail-bg: #f5f7fa;
+      --detail-surface: #ffffff;
+      --detail-surface-2: #eef2f7;
+      --detail-border: #d8dee7;
+      --detail-text: #172033;
+      --detail-muted: #59677c;
+      --detail-subtle: #7b8798;
+      --detail-blue: #1f6feb;
+      --detail-green: #1a7f37;
+      --detail-amber: #9a6700;
+      --detail-purple: #8250df;
+    }
     .reference-header {
       position: sticky;
       top: 0;
@@ -1706,6 +1722,7 @@ export class ItemDetails implements OnInit {
   readonly router = inject(Router);
   readonly inventoryService = inject(InventoryService);
   readonly recentItemsService = inject(RecentItemsService);
+  readonly themeService = inject(ThemeService);
   readonly userService = inject(UserService);
 
   readonly tabs: ItemDetailTab[] = ['Overview', 'BOM', 'Documents', 'Changes', 'History'];

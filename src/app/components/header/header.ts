@@ -2,12 +2,13 @@ import { Component, inject, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, NavigationEnd } from '@angular/router';
 import { Subscription } from 'rxjs';
+import { ThemeToggle } from '../theme-toggle/theme-toggle';
 import { UserService } from '../../services/user.service';
 
 @Component({
   selector: 'app-header',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, ThemeToggle],
   template: `
     <header class="header flex items-center justify-between">
       <div class="search-bar flex items-center gap-2">
@@ -17,6 +18,7 @@ import { UserService } from '../../services/user.service';
 
       <div class="actions flex items-center gap-6">
         <button *ngIf="showHomeIcon" class="icon-btn" title="Home" (click)="router.navigate(['/dashboard'])">🏠</button>
+        <app-theme-toggle></app-theme-toggle>
         <button class="icon-btn">🔔</button>
         <button class="icon-btn">⚙️</button>
         <div class="user-profile flex items-center gap-2" (click)="logout()" title="Click to Sign Out">

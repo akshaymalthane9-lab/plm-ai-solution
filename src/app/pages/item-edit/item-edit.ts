@@ -3,15 +3,17 @@ import { Component, inject, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { GlobalSearch } from '../../components/global-search/global-search';
 import { ItemFormModal } from '../../components/item-form-modal/item-form-modal';
+import { ThemeToggle } from '../../components/theme-toggle/theme-toggle';
 import { InventoryService, Product } from '../../services/inventory.service';
+import { ThemeService } from '../../services/theme.service';
 import { UserService } from '../../services/user.service';
 
 @Component({
   selector: 'app-item-edit',
   standalone: true,
-  imports: [CommonModule, GlobalSearch, ItemFormModal],
+  imports: [CommonModule, GlobalSearch, ItemFormModal, ThemeToggle],
   template: `
-    <div class="edit-page">
+    <div class="edit-page" [class.dark-theme]="themeService.theme() === 'dark'">
       <header class="topbar">
         <button class="brand" type="button" (click)="router.navigate(['/dashboard'])">NexaPLM</button>
 
@@ -21,6 +23,7 @@ import { UserService } from '../../services/user.service';
           </div>
 
           <div class="top-actions">
+            <app-theme-toggle></app-theme-toggle>
             <button type="button" aria-label="Favorites">
               <svg viewBox="0 0 24 24"><path d="M12 3.8l2.53 5.13 5.66.82-4.1 4 .97 5.65L12 16.74 6.94 19.4l.97-5.65-4.1-4 5.66-.82L12 3.8z"></path></svg>
             </button>
@@ -67,6 +70,7 @@ import { UserService } from '../../services/user.service';
         <app-item-form-modal
           [editItem]="item"
           [pageMode]="true"
+          [theme]="themeService.theme()"
           (saved)="goToItem($event)"
           (close)="goToItem(item.sku)">
         </app-item-form-modal>
@@ -76,6 +80,18 @@ import { UserService } from '../../services/user.service';
   styles: `
     :host { display: block; min-height: 100vh; background: #eeeff4; color: #25324b; }
     .edit-page { min-height: 100vh; padding: 22px 28px 36px; font-family: Inter, ui-sans-serif, system-ui, sans-serif; }
+    .edit-page.dark-theme { background: #0d1117; color: #e6edf3; }
+    .edit-page.dark-theme .brand,
+    .edit-page.dark-theme h1 { color: #e6edf3; }
+    .edit-page.dark-theme .edit-heading p { color: #8b949e; }
+    .edit-page.dark-theme .user-trigger,
+    .edit-page.dark-theme .user-dropdown {
+      border-color: #30363d;
+      background: #161b22;
+      color: #e6edf3;
+    }
+    .edit-page.dark-theme .user-dropdown a { color: #c9d1d9; }
+    .edit-page.dark-theme .user-dropdown a:hover { background: #21262d; }
     .topbar { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin-bottom: 18px; }
     .brand { padding: 0; border: 0; background: transparent; color: #223964; font-size: 1.45rem; font-weight: 900; }
     .topbar-center { display: flex; flex: 1; align-items: center; gap: 18px; min-width: 0; }
@@ -119,6 +135,7 @@ export class ItemEdit implements OnInit {
   readonly route = inject(ActivatedRoute);
   readonly router = inject(Router);
   readonly inventoryService = inject(InventoryService);
+  readonly themeService = inject(ThemeService);
   readonly userService = inject(UserService);
 
   item: Product | null = null;

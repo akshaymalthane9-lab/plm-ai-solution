@@ -2,8 +2,10 @@ import { CommonModule } from '@angular/common';
 import { Component, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { ItemFormModal } from '../../components/item-form-modal/item-form-modal';
+import { ThemeToggle } from '../../components/theme-toggle/theme-toggle';
 import { InventoryService, Product } from '../../services/inventory.service';
 import { RecentItemsService } from '../../services/recent-items.service';
+import { ThemeService } from '../../services/theme.service';
 import { UserService } from '../../services/user.service';
 
 type DashboardView = 'workspace' | 'items' | 'changes' | 'regulatory' | 'reports';
@@ -21,9 +23,9 @@ type DashboardChange = {
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, ItemFormModal],
+  imports: [CommonModule, ItemFormModal, ThemeToggle],
   template: `
-    <div class="plm-shell" [class.light-theme]="theme === 'light'">
+    <div class="plm-shell" [class.light-theme]="themeService.theme() === 'light'">
       <header class="topnav">
         <button
           class="brand"
@@ -57,23 +59,7 @@ type DashboardChange = {
           <button class="ai-button" type="button" (click)="aiOpen = !aiOpen">
             <span aria-hidden="true">✦</span> AI Assistant
           </button>
-          <button
-            class="round-button theme-toggle"
-            type="button"
-            (click)="toggleTheme()"
-            [attr.aria-label]="'Switch to ' + (theme === 'dark' ? 'light' : 'dark') + ' theme'"
-            [title]="'Switch to ' + (theme === 'dark' ? 'light' : 'dark') + ' theme'"
-          >
-            <svg *ngIf="theme === 'dark'" viewBox="0 0 24 24" aria-hidden="true">
-              <circle cx="12" cy="12" r="4"></circle>
-              <path
-                d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42M17.65 17.65l1.42 1.42M2 12h2M20 12h2M4.93 19.07l1.42-1.42M17.65 6.35l1.42-1.42"
-              ></path>
-            </svg>
-            <svg *ngIf="theme === 'light'" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M20.5 14.2A8 8 0 019.8 3.5 8.5 8.5 0 1020.5 14.2z"></path>
-            </svg>
-          </button>
+          <app-theme-toggle></app-theme-toggle>
           <button
             class="round-button notification-button"
             type="button"
@@ -899,7 +885,7 @@ type DashboardChange = {
 
     <app-item-form-modal
       *ngIf="showCreateModal"
-      [theme]="theme"
+      [theme]="themeService.theme()"
       (saved)="handleItemCreated()"
       (close)="showCreateModal = false"
     ></app-item-form-modal>
@@ -2312,12 +2298,12 @@ export class Dashboard {
   readonly userService = inject(UserService);
   readonly inventoryService = inject(InventoryService);
   readonly recentItemsService = inject(RecentItemsService);
+  readonly themeService = inject(ThemeService);
   readonly router = inject(Router);
 
   activeView: DashboardView = 'workspace';
   showCreateModal = false;
   aiOpen = false;
-  theme: 'dark' | 'light' = 'dark';
   itemQuery = '';
   itemFilter: 'all' | 'drug-substance' | 'drug-product' | 'raw-material' | 'packaging' = 'all';
   changeQuery = '';
@@ -2367,7 +2353,6 @@ export class Dashboard {
 
   constructor() {
     this.setActiveViewFromUrl(this.router.url);
-    this.theme = localStorage.getItem('nexaplm_theme') === 'light' ? 'light' : 'dark';
   }
 
   get userName(): string {
@@ -2543,11 +2528,6 @@ export class Dashboard {
       return 'raw-material';
     }
     return 'other';
-  }
-
-  toggleTheme() {
-    this.theme = this.theme === 'dark' ? 'light' : 'dark';
-    localStorage.setItem('nexaplm_theme', this.theme);
   }
 
   handleItemCreated() {

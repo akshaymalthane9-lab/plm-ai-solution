@@ -3,15 +3,17 @@ import { Component, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { GlobalSearch } from '../../components/global-search/global-search';
 import { ItemFormModal } from '../../components/item-form-modal/item-form-modal';
+import { ThemeToggle } from '../../components/theme-toggle/theme-toggle';
 import { InventoryService } from '../../services/inventory.service';
+import { ThemeService } from '../../services/theme.service';
 import { UserService } from '../../services/user.service';
 
 @Component({
   selector: 'app-items',
   standalone: true,
-  imports: [CommonModule, GlobalSearch, ItemFormModal],
+  imports: [CommonModule, GlobalSearch, ItemFormModal, ThemeToggle],
   template: `
-    <div class="items-page">
+    <div class="items-page" [class.dark-theme]="themeService.theme() === 'dark'">
       <header class="topbar">
         <button class="brand" type="button" (click)="router.navigate(['/dashboard'])">NexaPLM</button>
 
@@ -21,6 +23,7 @@ import { UserService } from '../../services/user.service';
           </div>
 
           <div class="top-actions" aria-label="Quick actions">
+            <app-theme-toggle></app-theme-toggle>
             <button type="button" aria-label="Favorites" title="Favorites">
               <svg viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M12 3.8l2.53 5.13 5.66.82-4.1 4 .97 5.65L12 16.74 6.94 19.4l.97-5.65-4.1-4 5.66-.82L12 3.8z"></path>
@@ -105,6 +108,7 @@ import { UserService } from '../../services/user.service';
 
     <app-item-form-modal
       *ngIf="showCreateModal"
+      [theme]="themeService.theme()"
       (saved)="showCreateModal = false"
       (close)="showCreateModal = false">
     </app-item-form-modal>
@@ -124,6 +128,38 @@ import { UserService } from '../../services/user.service';
       padding: 22px 28px 36px;
       font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
     }
+    .items-page.dark-theme {
+      background: #0d1117;
+      color: #e6edf3;
+    }
+    .items-page.dark-theme .brand,
+    .items-page.dark-theme h1 { color: #e6edf3; }
+    .items-page.dark-theme .page-heading p { color: #8b949e; }
+    .items-page.dark-theme .items-card,
+    .items-page.dark-theme .table-wrap {
+      border-color: #30363d;
+      background: #161b22;
+      box-shadow: none;
+    }
+    .items-page.dark-theme th {
+      border-color: #30363d;
+      background: #21262d;
+      color: #8b949e;
+    }
+    .items-page.dark-theme td {
+      border-color: #30363d;
+      color: #c9d1d9;
+    }
+    .items-page.dark-theme tbody tr:hover,
+    .items-page.dark-theme tbody tr:focus { background: rgba(47, 129, 247, .08); }
+    .items-page.dark-theme .user-trigger,
+    .items-page.dark-theme .user-dropdown {
+      border-color: #30363d;
+      background: #161b22;
+      color: #e6edf3;
+    }
+    .items-page.dark-theme .user-dropdown a { color: #c9d1d9; }
+    .items-page.dark-theme .user-dropdown a:hover { background: #21262d; }
 
     .topbar {
       display: flex;
@@ -400,6 +436,7 @@ import { UserService } from '../../services/user.service';
 })
 export class Items {
   readonly inventoryService = inject(InventoryService);
+  readonly themeService = inject(ThemeService);
   readonly userService = inject(UserService);
   readonly router = inject(Router);
 

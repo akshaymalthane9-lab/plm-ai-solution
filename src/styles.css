@@ -202,6 +202,21 @@ button {
   margin-bottom: 18px;
 }
 
+html.nexaplm-dark {
+  --bg-app: #0d1117;
+  --bg-surface: #161b22;
+  --bg-surface-hover: #21262d;
+  --text-primary: #e6edf3;
+  --text-secondary: #c9d1d9;
+  --text-muted: #8b949e;
+  --border-color: #30363d;
+  --border-color-light: #21262d;
+  --accent-primary-subtle: rgba(134, 188, 37, 0.12);
+  --shadow-sm: none;
+  --shadow-md: none;
+  --shadow-float: 0 20px 35px rgba(0, 0, 0, 0.3);
+}
+
 .detail-page .brand {
   flex: 0 0 auto;
   padding: 0;
