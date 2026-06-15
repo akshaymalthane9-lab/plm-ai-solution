@@ -1,90 +1,204 @@
-import { Component } from '@angular/core';
-import { RouterLink, RouterLinkActive } from '@angular/router';
+import { CommonModule } from '@angular/common';
+import { Component, inject } from '@angular/core';
+import { Router } from '@angular/router';
+import { RecentItemsService } from '../../services/recent-items.service';
+import { ThemeService } from '../../services/theme.service';
 
 @Component({
   selector: 'app-sidebar',
   standalone: true,
-  imports: [RouterLink, RouterLinkActive],
+  imports: [CommonModule],
   template: `
-    <aside class="sidebar flex-col">
-      <div class="logo flex items-center gap-2">
-        <img src="favicon.png" alt="Deloitte" style="width: 38px; height: 38px; object-fit: contain;">
-        <h2>Deloitte AI<br><strong>PLM Platform</strong></h2>
-      </div>
+    <aside class="sidebar" [class.dark-theme]="themeService.theme() === 'dark'">
+      <button
+        class="sidebar-item"
+        [class.active]="isDashboardActive()"
+        type="button"
+        (click)="goToDashboard()"
+      >
+        <span class="nav-icon">&#8962;</span>
+        Dashboard
+      </button>
 
-      <nav class="nav-links flex-col">
-        <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" class="nav-item flex items-center gap-4">
-          <span class="icon">🏠</span> <span class="label">Dashboard</span>
-        </a>
-     
-        <a routerLink="/items" routerLinkActive="active" class="nav-item flex items-center gap-4">
-          <span class="icon">📦</span> <span class="label">Items</span>
-        </a>
-        <a routerLink="/changes" routerLinkActive="active" class="nav-item flex items-center gap-4">
-          <span class="icon">📝</span> <span class="label">Changes</span>
-        </a>
+      <button class="sidebar-item" type="button" (click)="goToDashboard()">
+        <span class="nav-icon">&#9671;</span>
+        NPI Tracker
+      </button>
 
-        <!-- <div class="nav-section">ERP (Finance)</div>
-        <div class="nav-item disabled flex items-center gap-4">
-          <span class="icon">📄</span> <span class="label">Invoices</span>
-        </div>
+      <div class="recently-accessed">
+        <div class="recently-accessed-title">Recently Accessed</div>
 
-        <div class="nav-section">HCM (HR)</div>
-        <div class="nav-item disabled flex items-center gap-4">
-          <span class="icon">👥</span> <span class="label">Directory</span>
-        </div> -->
-      </nav>
+        <button
+          *ngFor="let item of recentItemsService.recentItems()"
+          class="recent-item"
+          type="button"
+          (click)="openRecentItem(item.sku)"
+        >
+          <span class="recent-item-copy">
+            <strong>{{ item.sku }} - {{ item.name }}</strong>
+          </span>
+        </button>
 
-      <div class="sidebar-footer">
-        <div class="version-info">
-          Deloitte Release 1.0
+        <div *ngIf="recentItemsService.recentItems().length === 0" class="recent-items-empty">
+          No recently accessed items
         </div>
       </div>
     </aside>
   `,
   styles: `
+    :host {
+      display: block;
+      width: 280px;
+      min-width: 280px;
+    }
     .sidebar {
-      width: 220px;
-      height: 100vh;
-      background-color: var(--bg-surface);
-      border-right: 1px solid var(--border-color);
-      padding: 1.5rem;
+      --sidebar-surface: #ffffff;
+      --sidebar-surface-2: #eef2f7;
+      --sidebar-border: #d8dee7;
+      --sidebar-text: #172033;
+      --sidebar-muted: #59677c;
+      --sidebar-subtle: #7b8798;
+      --sidebar-accent: #1f6feb;
       position: fixed;
-      top: 0;
+      top: 52px;
+      bottom: 0;
       left: 0;
+      z-index: 40;
+      display: flex;
+      width: 280px;
+      flex-direction: column;
+      overflow-y: auto;
+      padding: 8px 0 18px;
+      border-right: 1px solid var(--sidebar-border);
+      background: var(--sidebar-surface);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
     }
-    .logo { margin-bottom: 2.5rem; }
-    .logo h2 { font-size: 1rem; line-height: 1.2; font-weight: 400; color: var(--text-primary); margin:0;}
-    .logo-icon {
-      width: 36px; height: 36px;
-      background: var(--accent-primary);
-      color: white;
-      display: flex; align-items: center; justify-content: center;
-      font-weight: 700; font-size: 1.25rem; font-family: var(--font-heading);
+    .sidebar.dark-theme {
+      --sidebar-surface: #161b22;
+      --sidebar-surface-2: #21262d;
+      --sidebar-border: #30363d;
+      --sidebar-text: #e6edf3;
+      --sidebar-muted: #8b949e;
+      --sidebar-subtle: #6e7681;
+      --sidebar-accent: #2f81f7;
     }
-    .nav-links { gap: 0.25rem; flex: 1; overflow-y: auto; }
-    .nav-section {
-      font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600;
-      color: var(--text-muted); margin-top: 1.5rem; margin-bottom: 0.5rem; padding-left: 0.5rem;
+    .sidebar-item {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      margin: 1px 6px;
+      padding: 7px 10px;
+      border: 0;
+      border-radius: 6px;
+      background: transparent;
+      color: var(--sidebar-muted);
+      font-size: 13px;
+      text-align: left;
     }
-    .nav-item {
-      padding: 0.6rem 0.75rem; border-radius: var(--border-radius-sm);
-      color: var(--text-secondary); transition: background var(--transition-fast);
-      font-size: 0.875rem; font-weight: 500;
-      border-left: 3px solid transparent;
+    .sidebar-item:hover {
+      background: var(--sidebar-surface-2);
+      color: var(--sidebar-text);
     }
-    .nav-item:hover:not(.disabled) {
-      background-color: var(--bg-surface-hover); color: var(--text-primary);
+    .sidebar-item.active {
+      background: color-mix(in srgb, var(--sidebar-accent) 13%, transparent);
+      color: var(--sidebar-accent);
+      font-weight: 650;
     }
-    .nav-item.active {
-      background-color: var(--accent-primary-subtle); color: var(--accent-primary);
-      border-left-color: var(--accent-primary);
+    .nav-icon {
+      width: 17px;
+      color: currentColor;
+      text-align: center;
     }
-    .nav-item.disabled { opacity: 0.5; cursor: not-allowed; }
-    .sidebar-footer { margin-top: auto; padding-top: 1rem; border-top: 1px solid var(--border-color); }
-    .version-info {
-      font-size: 0.75rem; color: var(--text-muted); text-align: center;
+    .recently-accessed {
+      display: flex;
+      min-height: 190px;
+      flex-direction: column;
+      gap: 8px;
+      margin: 20px 10px 12px;
+      padding: 14px 10px;
+      border: 1px solid var(--sidebar-border);
+      border-radius: 12px;
+      background: color-mix(in srgb, var(--sidebar-surface-2) 42%, transparent);
+    }
+    .recently-accessed-title {
+      padding: 0 4px 6px;
+      color: var(--sidebar-text);
+      font-size: 12px;
+      font-weight: 750;
+    }
+    .recent-item {
+      display: flex;
+      align-items: center;
+      width: 100%;
+      padding: 9px 8px;
+      border: 1px solid transparent;
+      border-radius: 9px;
+      background: transparent;
+      color: var(--sidebar-text);
+      text-align: left;
+    }
+    .recent-item:hover {
+      border-color: var(--sidebar-border);
+      background: var(--sidebar-surface-2);
+    }
+    .recent-item-copy { min-width: 0; }
+    .recent-item-copy strong {
+      display: block;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .recent-item-copy strong {
+      color: var(--sidebar-text);
+      font-size: 14px;
+    }
+    .recent-items-empty {
+      display: grid;
+      min-height: 116px;
+      place-items: center;
+      padding: 14px;
+      border: 1px dashed var(--sidebar-border);
+      border-radius: 10px;
+      color: var(--sidebar-subtle);
+      font-size: 11px;
+      text-align: center;
+    }
+    @media (max-width: 780px) {
+      :host {
+        width: 58px;
+        min-width: 58px;
+      }
+      .sidebar {
+        width: 58px;
+      }
+      .sidebar-item {
+        justify-content: center;
+        font-size: 0;
+      }
+      .nav-icon {
+        font-size: 16px;
+      }
+      .recently-accessed {
+        display: none;
+      }
     }
   `
 })
-export class Sidebar {}
+export class Sidebar {
+  readonly recentItemsService = inject(RecentItemsService);
+  readonly themeService = inject(ThemeService);
+  private readonly router = inject(Router);
+
+  goToDashboard() {
+    this.router.navigate(['/dashboard']);
+  }
+
+  isDashboardActive(): boolean {
+    return this.router.url.split('?')[0] === '/dashboard';
+  }
+
+  openRecentItem(sku: string) {
+    this.router.navigate(['/items', sku]);
+  }
+
+}

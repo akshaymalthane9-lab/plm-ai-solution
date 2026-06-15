@@ -3,6 +3,7 @@ import { Component, inject, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { GlobalSearch } from '../../components/global-search/global-search';
+import { Sidebar } from '../../components/sidebar/sidebar';
 import { ThemeToggle } from '../../components/theme-toggle/theme-toggle';
 import {
   AttachmentFile,
@@ -24,8 +25,9 @@ type BomTreeNode = {
 @Component({
   selector: 'app-item-details',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, GlobalSearch, ThemeToggle],
+  imports: [CommonModule, FormsModule, RouterLink, GlobalSearch, Sidebar, ThemeToggle],
   template: `
+    <app-sidebar></app-sidebar>
     <div class="detail-page" [class.light-theme]="themeService.theme() === 'light'">
       <header class="reference-header">
         <button class="reference-brand" type="button" (click)="router.navigate(['/dashboard'])">
@@ -113,6 +115,28 @@ type BomTreeNode = {
         <button (click)="router.navigate(['/dashboard'], { queryParams: { tab: 'regulatory' } })">
           ⌁ Clinical Phases
         </button>
+        <div class="recently-accessed detail-recents" aria-labelledby="detail-recents-title">
+          <div class="recently-accessed-title" id="detail-recents-title">Recently Accessed</div>
+
+          <button
+            *ngFor="let item of recentItemsService.recentItems()"
+            class="recent-item"
+            type="button"
+            (click)="router.navigate(['/items', item.sku])"
+          >
+            <span class="recent-item-icon">{{ recentItemInitials(item.partType) }}</span>
+            <span class="recent-item-copy">
+              <strong>{{ item.sku }}</strong>
+              <small>{{ item.name }}</small>
+              <small>{{ item.partType }} &middot; Rev {{ displayRevision(item.revision) }}</small>
+            </span>
+            <span class="recent-item-arrow" aria-hidden="true">&rsaquo;</span>
+          </button>
+
+          <div *ngIf="recentItemsService.recentItems().length === 0" class="recent-items-empty">
+            No recently accessed items
+          </div>
+        </div>
       </aside>
 
       <header class="topbar">
@@ -1254,6 +1278,7 @@ type BomTreeNode = {
       font-size: 12px;
     }
     .reference-sidebar {
+      display: none !important;
       position: fixed;
       top: 53px;
       bottom: 0;
@@ -1263,7 +1288,7 @@ type BomTreeNode = {
       width: 263px;
       flex-direction: column;
       overflow-y: auto;
-      padding: 23px 12px;
+      padding: 23px 12px 270px;
       border-right: 1px solid var(--detail-border);
       background: var(--detail-surface);
     }
@@ -1303,13 +1328,101 @@ type BomTreeNode = {
     .reference-sidebar b.red {
       background: #f85149;
     }
+    .detail-recents {
+      position: absolute;
+      right: 12px;
+      bottom: 0;
+      left: 12px;
+      max-height: 270px;
+      overflow-y: auto;
+    }
+    .recently-accessed {
+      display: flex;
+      min-height: 190px;
+      flex-direction: column;
+      gap: 8px;
+      margin: 20px 10px 12px;
+      padding: 14px 10px;
+      border: 1px solid var(--detail-border);
+      border-radius: 12px;
+      background: color-mix(in srgb, var(--detail-surface-2) 42%, var(--detail-surface));
+    }
+    .recently-accessed-title {
+      padding: 0 4px 6px;
+      color: var(--detail-text);
+      font-size: 12px;
+      font-weight: 750;
+    }
+    .reference-sidebar .recent-item {
+      display: grid;
+      grid-template-columns: 30px minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 9px;
+      width: 100%;
+      padding: 9px 8px;
+      border: 1px solid transparent;
+      border-radius: 9px;
+      background: transparent;
+      color: var(--detail-text);
+      text-align: left;
+    }
+    .reference-sidebar .recent-item:hover {
+      border-color: var(--detail-border);
+      background: var(--detail-surface-2);
+    }
+    .recent-item-icon {
+      display: grid;
+      width: 30px;
+      height: 30px;
+      place-items: center;
+      border-radius: 8px;
+      background: color-mix(in srgb, var(--detail-blue) 15%, transparent);
+      color: var(--detail-blue);
+      font-size: 10px;
+      font-weight: 800;
+    }
+    .recent-item-copy {
+      display: flex;
+      min-width: 0;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .recent-item-copy strong,
+    .recent-item-copy small {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .recent-item-copy strong {
+      color: var(--detail-text);
+      font-size: 14px;
+    }
+    .recent-item-copy small {
+      color: var(--detail-muted);
+      font-size: 12px;
+    }
+    .recent-item-arrow {
+      color: var(--detail-subtle);
+      font-size: 18px;
+    }
+    .recent-items-empty {
+      display: grid;
+      min-height: 116px;
+      place-items: center;
+      padding: 14px;
+      border: 1px dashed var(--detail-border);
+      border-radius: 10px;
+      color: var(--detail-subtle);
+      font-size: 11px;
+      text-align: center;
+    }
     .topbar,
     .section-separator {
       display: none !important;
     }
     .detail-page > main {
       min-height: calc(100vh - 53px);
-      margin-left: 263px;
+      margin-left: 280px;
       padding: 31px 34px 45px;
       background: var(--detail-bg);
     }
@@ -1667,10 +1780,10 @@ type BomTreeNode = {
 
     @media (max-width: 1000px) {
       .reference-sidebar {
-        width: 190px;
+        display: none !important;
       }
       .detail-page > main {
-        margin-left: 190px;
+        margin-left: 280px;
       }
       .reference-tabs {
         display: none;
@@ -1685,13 +1798,13 @@ type BomTreeNode = {
 
     @media (max-width: 700px) {
       .reference-sidebar {
-        display: none;
+        display: none !important;
       }
       .reference-actions .reference-ai {
         display: none;
       }
       .detail-page > main {
-        margin-left: 0;
+        margin-left: 58px;
         padding: 22px 16px 28px;
       }
       .detail-tabs {
@@ -1779,6 +1892,16 @@ export class ItemDetails implements OnInit {
 
   displayRevision(revision: string): string {
     return revision.split('.')[0] || revision;
+  }
+
+  recentItemInitials(partType: string): string {
+    return partType
+      .split(/\s+/)
+      .filter(Boolean)
+      .map(part => part[0])
+      .join('')
+      .slice(0, 2)
+      .toUpperCase();
   }
 
   getPartTypeLabel(): string {

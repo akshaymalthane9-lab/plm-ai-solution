@@ -3,6 +3,7 @@ import { Component, inject, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { GlobalSearch } from '../../components/global-search/global-search';
 import { ItemFormModal } from '../../components/item-form-modal/item-form-modal';
+import { Sidebar } from '../../components/sidebar/sidebar';
 import { ThemeToggle } from '../../components/theme-toggle/theme-toggle';
 import { InventoryService, Product } from '../../services/inventory.service';
 import { ThemeService } from '../../services/theme.service';
@@ -11,8 +12,9 @@ import { UserService } from '../../services/user.service';
 @Component({
   selector: 'app-item-edit',
   standalone: true,
-  imports: [CommonModule, GlobalSearch, ItemFormModal, ThemeToggle],
+  imports: [CommonModule, GlobalSearch, ItemFormModal, Sidebar, ThemeToggle],
   template: `
+    <app-sidebar></app-sidebar>
     <div class="edit-page" [class.dark-theme]="themeService.theme() === 'dark'">
       <header class="topbar">
         <button class="brand" type="button" (click)="router.navigate(['/dashboard'])">NexaPLM</button>
@@ -79,7 +81,7 @@ import { UserService } from '../../services/user.service';
   `,
   styles: `
     :host { display: block; min-height: 100vh; background: #eeeff4; color: #25324b; }
-    .edit-page { min-height: 100vh; padding: 22px 28px 36px; font-family: Inter, ui-sans-serif, system-ui, sans-serif; }
+    .edit-page { min-height: 100vh; margin-left: 280px; padding: 22px 28px 36px; font-family: Inter, ui-sans-serif, system-ui, sans-serif; }
     .edit-page.dark-theme { background: #0d1117; color: #e6edf3; }
     .edit-page.dark-theme .brand,
     .edit-page.dark-theme h1 { color: #e6edf3; }
@@ -124,6 +126,7 @@ import { UserService } from '../../services/user.service';
       .search-cluster input { width: 100%; }
     }
     @media (max-width: 700px) {
+      .edit-page { margin-left: 58px; }
       .edit-page { padding: 18px 16px 28px; }
       .topbar-center { align-items: stretch; flex-direction: column; }
       .search-cluster { flex: 1 1 auto; width: 100%; }

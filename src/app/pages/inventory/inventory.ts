@@ -3,6 +3,7 @@ import { Component, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { GlobalSearch } from '../../components/global-search/global-search';
 import { ItemFormModal } from '../../components/item-form-modal/item-form-modal';
+import { Sidebar } from '../../components/sidebar/sidebar';
 import { ThemeToggle } from '../../components/theme-toggle/theme-toggle';
 import { InventoryService } from '../../services/inventory.service';
 import { ThemeService } from '../../services/theme.service';
@@ -11,8 +12,9 @@ import { UserService } from '../../services/user.service';
 @Component({
   selector: 'app-items',
   standalone: true,
-  imports: [CommonModule, GlobalSearch, ItemFormModal, ThemeToggle],
+  imports: [CommonModule, GlobalSearch, ItemFormModal, Sidebar, ThemeToggle],
   template: `
+    <app-sidebar></app-sidebar>
     <div class="items-page" [class.dark-theme]="themeService.theme() === 'dark'">
       <header class="topbar">
         <button class="brand" type="button" (click)="router.navigate(['/dashboard'])">NexaPLM</button>
@@ -125,6 +127,7 @@ import { UserService } from '../../services/user.service';
 
     .items-page {
       min-height: 100vh;
+      margin-left: 280px;
       padding: 22px 28px 36px;
       font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
     }
@@ -424,6 +427,7 @@ import { UserService } from '../../services/user.service';
     }
 
     @media (max-width: 700px) {
+      .items-page { margin-left: 58px; }
       .items-page { padding: 18px 16px 28px; }
       .topbar-center { align-items: stretch; flex-direction: column; }
       .search-cluster { flex: 1 1 auto; width: 100%; }

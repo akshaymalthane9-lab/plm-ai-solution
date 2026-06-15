@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { ItemFormModal } from '../../components/item-form-modal/item-form-modal';
+import { Sidebar } from '../../components/sidebar/sidebar';
 import { ThemeToggle } from '../../components/theme-toggle/theme-toggle';
 import { InventoryService, Product } from '../../services/inventory.service';
 import { RecentItemsService } from '../../services/recent-items.service';
@@ -23,7 +24,7 @@ type DashboardChange = {
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, ItemFormModal, ThemeToggle],
+  imports: [CommonModule, ItemFormModal, Sidebar, ThemeToggle],
   template: `
     <div class="plm-shell" [class.light-theme]="themeService.theme() === 'light'">
       <header class="topnav">
@@ -92,8 +93,9 @@ type DashboardChange = {
       </header>
 
       <div class="app-body">
-        <aside class="sidebar">
-          <div class="sidebar-section">NPI Process</div>
+        <app-sidebar></app-sidebar>
+        <aside class="sidebar legacy-sidebar">
+          <!-- <div class="sidebar-section">NPI Process</div> -->
           <button
             class="sidebar-item"
             [class.active]="activeView === 'workspace'"
@@ -104,10 +106,10 @@ type DashboardChange = {
           <button class="sidebar-item" (click)="selectView('workspace')">
             <span class="nav-icon">◇</span> NPI Tracker
           </button>
-          <button class="sidebar-item" (click)="selectView('workspace')">
+          <!-- <button class="sidebar-item" (click)="selectView('workspace')">
             <span class="nav-icon">◷</span> Pending Actions
             <span class="sidebar-badge danger">5</span>
-          </button>
+          </button> -->
 
           <div class="recently-accessed">
             <div class="recently-accessed-title">Recently Accessed</div>
@@ -1086,6 +1088,9 @@ type DashboardChange = {
       display: flex;
       min-height: calc(100vh - 52px);
     }
+    .sidebar.legacy-sidebar {
+      display: none;
+    }
     .sidebar {
       position: sticky;
       top: 52px;
@@ -1285,7 +1290,7 @@ type DashboardChange = {
     }
     .stats-grid {
       display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
+      grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 12px;
       margin-bottom: 18px;
     }
