@@ -205,7 +205,7 @@ type BomTreeNode = {
         </button>
 
         <span class="breadcrumb-item">/ &nbsp; {{ item.sku }}</span>
-        <span class="success-badge breadcrumb-success">✓ Created Successfully</span>
+        <!-- <span class="success-badge breadcrumb-success">✓ Created Successfully</span> -->
 
         <section class="item-heading">
           <div class="item-icon" aria-hidden="true">
@@ -218,14 +218,14 @@ type BomTreeNode = {
           <div>
             <div class="title-line">
               <h1>{{ item.sku }}</h1>
-              <span class="revision-text">Rev {{ displayRevision(item.revision) }}</span>
+              <!-- <span class="revision-text">Rev {{ displayRevision(item.revision) }}</span> -->
             </div>
-            <p>
+            <!-- <p>
               {{ getPartDescription() }} · {{ getPartTypeLabel() }} · Lifecycle:
               {{ lifecycleLabel }}
-            </p>
+            </p> -->
           </div>
-          <div class="reference-heading-actions">
+          <div class="reference-heading-actions removed-heading-actions">
             <span>● {{ lifecycleLabel }}</span>
             <button type="button" [routerLink]="['/items', item.sku, 'edit']">⋮ Actions</button>
           </div>
@@ -238,7 +238,7 @@ type BomTreeNode = {
             [class.active]="activeTab === tab"
             (click)="activeTab = tab"
           >
-            {{ tab === 'BOM' ? 'Formula / BOM' : tab }}
+            {{ tab === 'BOM' ? 'BOM' : tab }}
           </button>
         </nav>
 
@@ -283,13 +283,13 @@ type BomTreeNode = {
                     <strong>{{ getPartTypeLabel() }}</strong>
                   </span>
                 </div>
-                <div class="detail-row no-border">
+                <!-- <div class="detail-row no-border">
                   <span class="detail-icon">L</span>
                   <span>
                     <small>Lifecycle</small>
                     <strong>{{ item.lifecycle }}</strong>
                   </span>
-                </div>
+                </div> -->
                 <div class="detail-row reference-attribute">
                   <span>
                     <small>Classification</small>
@@ -1516,7 +1516,7 @@ type BomTreeNode = {
       background: var(--detail-blue);
     }
     .overview-layout {
-      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
       gap: 17px;
     }
     .card {
@@ -1541,10 +1541,23 @@ type BomTreeNode = {
       grid-column: 1 / -1;
       margin-bottom: 2px;
     }
-    .edit-button,
     .attribute-toggle,
     .extra-content {
       display: none !important;
+    }
+    .removed-heading-actions {
+      display: none !important;
+    }
+    .edit-button {
+      display: inline-flex !important;
+      align-items: center;
+      justify-content: center;
+      padding: 8px 16px;
+      border: 1px solid rgba(139, 92, 246, 0.22);
+      background: rgba(139, 92, 246, 0.08);
+      color: #8b5cf6;
+      font-size: 12px;
+      font-weight: 600;
     }
     .detail-row {
       min-width: 0;
