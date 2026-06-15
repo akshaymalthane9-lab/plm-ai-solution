@@ -604,10 +604,10 @@ type DashboardChange = {
                 placeholder="Search items by number, description, or type..."
                 aria-label="Search items"
               />
-              <button type="button">Advanced Filter</button>
+        
             </div>
 
-            <div class="item-filter-row" aria-label="Item type filters">
+            <!-- <div class="item-filter-row" aria-label="Item type filters">
               <button [class.active]="itemFilter === 'all'" (click)="itemFilter = 'all'">
                 All ({{ inventoryService.inventory().length }})
               </button>
@@ -635,7 +635,7 @@ type DashboardChange = {
               >
                 Packaging ({{ itemCount('packaging') }})
               </button>
-            </div>
+            </div> -->
 
             <div class="items-table-wrap">
               <table class="items-table">
@@ -646,9 +646,7 @@ type DashboardChange = {
                     <th>Type</th>
                     <th>Lifecycle</th>
                     <th>Revision</th>
-                    <th>ECM Status</th>
-                    <th>Updated</th>
-                    <th></th>
+                    <th>Change Status</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -678,19 +676,9 @@ type DashboardChange = {
                         {{ ecmStatus(item) }}
                       </span>
                     </td>
-                    <td class="updated-cell">{{ updatedDate(item) }}</td>
-                    <td>
-                      <button
-                        class="open-item"
-                        type="button"
-                        (click)="$event.stopPropagation(); openRecentItem(item.sku)"
-                      >
-                        Open →
-                      </button>
-                    </td>
                   </tr>
                   <tr *ngIf="!filteredItems.length">
-                    <td class="empty-items" colspan="8">No items match the selected filters.</td>
+                    <td class="empty-items" colspan="6">No items match the selected filters.</td>
                   </tr>
                 </tbody>
               </table>
