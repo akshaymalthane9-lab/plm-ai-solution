@@ -21,6 +21,20 @@ type BomTreeNode = {
   level: number;
   path: string[];
 };
+type ItemDetailDraft = {
+  sku: string;
+  description: string;
+  classification: string;
+  dosageForm: string;
+  strength: string;
+  routeOfAdministration: string;
+  category: string;
+  quantity: number;
+  status: Product['status'];
+  unitOfMeasure: string;
+  material: string;
+  partDimensions: string;
+};
 
 @Component({
   selector: 'app-item-details',
@@ -250,9 +264,9 @@ type BomTreeNode = {
                   *ngIf="!userService.isReadOnly()"
                   class="edit-button"
                   type="button"
-                  [routerLink]="['/items', item.sku, 'edit']"
+                  (click)="isInlineEditing ? saveInlineEdit() : startInlineEdit()"
                 >
-                  Edit
+                  {{ isInlineEditing ? 'Save' : 'Edit' }}
                 </button>
                 <h2>Item Details</h2>
 
@@ -266,14 +280,26 @@ type BomTreeNode = {
                   </span>
                   <span>
                     <small>Item Number</small>
-                    <strong class="green-text">{{ item.sku }}</strong>
+                    <input
+                      *ngIf="isInlineEditing && detailDraft"
+                      class="inline-field green-field"
+                      type="text"
+                      [(ngModel)]="detailDraft.sku"
+                    />
+                    <strong *ngIf="!isInlineEditing" class="green-text">{{ item.sku }}</strong>
                   </span>
                 </div>
                 <div class="detail-row">
                   <span class="detail-icon">D</span>
                   <span>
                     <small>Description</small>
-                    <strong>{{ getPartDescription() }}</strong>
+                    <input
+                      *ngIf="isInlineEditing && detailDraft"
+                      class="inline-field"
+                      type="text"
+                      [(ngModel)]="detailDraft.description"
+                    />
+                    <strong *ngIf="!isInlineEditing">{{ getPartDescription() }}</strong>
                   </span>
                 </div>
                 <div class="detail-row">
@@ -293,24 +319,48 @@ type BomTreeNode = {
                 <div class="detail-row reference-attribute">
                   <span>
                     <small>Classification</small>
-                    <strong>{{ getClassificationLabel() }}</strong>
+                    <input
+                      *ngIf="isInlineEditing && detailDraft"
+                      class="inline-field"
+                      type="text"
+                      [(ngModel)]="detailDraft.classification"
+                    />
+                    <strong *ngIf="!isInlineEditing">{{ getClassificationLabel() }}</strong>
                   </span>
                 </div>
                 <div class="detail-row reference-attribute">
                   <span>
                     <small>Dosage Form</small>
+                    <input
+                      *ngIf="isInlineEditing && detailDraft"
+                      class="inline-field"
+                      type="text"
+                      [(ngModel)]="detailDraft.dosageForm"
+                    />
                     <strong>{{ item.dosageForm || '—' }}</strong>
                   </span>
                 </div>
                 <div class="detail-row reference-attribute">
                   <span>
                     <small>Strength</small>
+                    <input
+                      *ngIf="isInlineEditing && detailDraft"
+                      class="inline-field"
+                      type="text"
+                      [(ngModel)]="detailDraft.strength"
+                    />
                     <strong>{{ item.strength || '—' }}</strong>
                   </span>
                 </div>
                 <div class="detail-row reference-attribute">
                   <span>
                     <small>Route of Admin</small>
+                    <input
+                      *ngIf="isInlineEditing && detailDraft"
+                      class="inline-field"
+                      type="text"
+                      [(ngModel)]="detailDraft.routeOfAdministration"
+                    />
                     <strong>{{ item.routeOfAdministration || '—' }}</strong>
                   </span>
                 </div>
@@ -330,30 +380,76 @@ type BomTreeNode = {
                 <div class="extra-content" *ngIf="showAdditionalAttributes">
                   <div>
                     <small>Part Classification</small>
+                    <input
+                      *ngIf="isInlineEditing && detailDraft"
+                      class="inline-field"
+                      type="text"
+                      [(ngModel)]="detailDraft.classification"
+                    />
                     <strong>{{ getPartTypeLabel() }} | {{ getClassificationLabel() }}</strong>
                   </div>
                   <div>
                     <small>Category</small>
+                    <input
+                      *ngIf="isInlineEditing && detailDraft"
+                      class="inline-field"
+                      type="text"
+                      [(ngModel)]="detailDraft.category"
+                    />
                     <strong>{{ item.category }}</strong>
                   </div>
                   <div>
                     <small>Quantity</small>
+                    <input
+                      *ngIf="isInlineEditing && detailDraft"
+                      class="inline-field"
+                      type="number"
+                      min="0"
+                      [(ngModel)]="detailDraft.quantity"
+                    />
                     <strong>{{ item.quantity }}</strong>
                   </div>
                   <div>
                     <small>Status</small>
+                    <select
+                      *ngIf="isInlineEditing && detailDraft"
+                      class="inline-field"
+                      [(ngModel)]="detailDraft.status"
+                    >
+                      <option value="in-stock">In Stock</option>
+                      <option value="low-stock">Low Stock</option>
+                      <option value="out-of-stock">Out Of Stock</option>
+                    </select>
                     <strong>{{ formatStatus(item.status) }}</strong>
                   </div>
                   <div>
                     <small>Unit of Measure (UOM)</small>
+                    <input
+                      *ngIf="isInlineEditing && detailDraft"
+                      class="inline-field"
+                      type="text"
+                      [(ngModel)]="detailDraft.unitOfMeasure"
+                    />
                     <strong>{{ getUnitOfMeasure() }}</strong>
                   </div>
                   <div>
                     <small>Material</small>
+                    <input
+                      *ngIf="isInlineEditing && detailDraft"
+                      class="inline-field"
+                      type="text"
+                      [(ngModel)]="detailDraft.material"
+                    />
                     <strong>{{ item.material || '—' }}</strong>
                   </div>
                   <div>
                     <small>Part Dimensions</small>
+                    <input
+                      *ngIf="isInlineEditing && detailDraft"
+                      class="inline-field"
+                      type="text"
+                      [(ngModel)]="detailDraft.partDimensions"
+                    />
                     <strong>{{ item.partDimensions || '—' }}</strong>
                   </div>
                 </div>
@@ -472,10 +568,10 @@ type BomTreeNode = {
             <div class="data-table">
               <div class="bom-row bom-header">
                 <span>Item Number</span>
-                <span>Description</span>
-                <span>Revision</span>
-                <span>Lifecycle</span>
-                <span>Level</span>
+                <span>Item Description</span>
+                <span>Item Revision</span>
+                <span>Lifecycle Status</span>
+                <span>BOM Level</span>
                 <span *ngIf="!userService.isReadOnly()">Actions</span>
               </div>
               <div *ngFor="let node of getBomTree()" class="bom-row" [style.--level]="node.level">
@@ -807,6 +903,29 @@ type BomTreeNode = {
     .extra-content strong {
       color: #25324b;
       font-size: 0.9rem;
+    }
+    .inline-field {
+      width: min(100%, 320px);
+      min-height: 36px;
+      padding: 7px 10px;
+      border: 1px solid var(--detail-border, #d8dee7);
+      border-radius: 10px;
+      background: var(--detail-surface-2, #f5f7fa);
+      color: var(--detail-text, #25324b);
+      font: inherit;
+      font-size: 0.9rem;
+      font-weight: 700;
+      outline: none;
+    }
+    .inline-field:focus {
+      border-color: var(--detail-blue, #1f6feb);
+      box-shadow: 0 0 0 3px rgba(47, 129, 247, 0.14);
+    }
+    .green-field {
+      color: var(--detail-green, #6a951c);
+    }
+    .inline-field + strong {
+      display: none;
     }
     .green-text {
       color: #6a951c !important;
@@ -1938,6 +2057,8 @@ export class ItemDetails implements OnInit {
   item: Product | null = null;
   activeTab: ItemDetailTab = 'Overview';
   showAdditionalAttributes = false;
+  isInlineEditing = false;
+  detailDraft: ItemDetailDraft | null = null;
   isBomAddOpen = false;
   isBomRemoveOpen = false;
   selectedBomParentSku = '';
@@ -1963,6 +2084,61 @@ export class ItemDetails implements OnInit {
     }
 
     this.recentItemsService.track(this.item);
+    this.isInlineEditing = false;
+    this.detailDraft = null;
+  }
+
+  startInlineEdit() {
+    if (!this.item || this.userService.isReadOnly()) return;
+    this.detailDraft = {
+      sku: this.item.sku,
+      description: this.getPartDescription() === 'No description available' ? '' : this.getPartDescription(),
+      classification: this.item.classification || this.item.category || '',
+      dosageForm: this.item.dosageForm || '',
+      strength: this.item.strength || '',
+      routeOfAdministration: this.item.routeOfAdministration || '',
+      category: this.item.category || '',
+      quantity: this.item.quantity || 0,
+      status: this.item.status,
+      unitOfMeasure: this.getUnitOfMeasure(),
+      material: this.item.material || '',
+      partDimensions: this.item.partDimensions || '',
+    };
+    this.showAdditionalAttributes = true;
+    this.isInlineEditing = true;
+  }
+
+  saveInlineEdit() {
+    if (!this.item || !this.detailDraft || this.userService.isReadOnly()) return;
+
+    const originalSku = this.item.sku;
+    const nextSku = this.detailDraft.sku.trim() || originalSku;
+    const description = this.detailDraft.description.trim();
+
+    this.inventoryService.updateProduct(originalSku, {
+      sku: nextSku,
+      name: description || this.item.name,
+      partDescription: description,
+      classification: this.detailDraft.classification.trim(),
+      dosageForm: this.detailDraft.dosageForm.trim(),
+      strength: this.detailDraft.strength.trim(),
+      routeOfAdministration: this.detailDraft.routeOfAdministration.trim(),
+      category: this.detailDraft.category.trim(),
+      quantity: Number(this.detailDraft.quantity) || 0,
+      status: this.detailDraft.status,
+      unitOfMeasure: this.detailDraft.unitOfMeasure.trim(),
+      material: this.detailDraft.material.trim(),
+      partDimensions: this.detailDraft.partDimensions.trim(),
+    });
+
+    this.item = this.inventoryService.getData().find((product) => product.sku === nextSku) || this.item;
+    this.recentItemsService.track(this.item);
+    this.isInlineEditing = false;
+    this.detailDraft = null;
+
+    if (nextSku !== originalSku) {
+      this.router.navigate(['/items', nextSku], { replaceUrl: true });
+    }
   }
 
   get userName(): string {
