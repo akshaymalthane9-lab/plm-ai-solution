@@ -38,7 +38,7 @@ type PharmaItem = {
 
         <div class="search-bar">
           <span class="search-icon">⌕</span>
-          <input type="text" placeholder="Search items by number, description, or type..." />
+          <input type="text" [(ngModel)]="itemSearch" name="itemSearch" placeholder="Search items by number, description, or type..." />
           <button class="btn btn-ghost btn-sm" type="button">Advanced Filter</button>
         </div>
 
@@ -65,7 +65,7 @@ type PharmaItem = {
               </tr>
             </thead>
             <tbody>
-              <tr *ngFor="let item of items" (click)="openItem(item.item)">
+              <tr *ngFor="let item of filteredDisplayItems" (click)="openItem(item.item)">
                 <td><span class="item-link">{{ item.item }}</span></td>
                 <td>{{ item.description }}</td>
                 <td><span class="badge" [ngClass]="'badge-' + item.typeTone">{{ item.type }}</span></td>
@@ -109,7 +109,7 @@ type PharmaItem = {
               <button class="generate-btn" type="button" (click)="generateItemNumber()">Generate</button>
 
               <label class="field full">
-                <span>Description *</span>
+                <span>Description</span>
                 <input [(ngModel)]="draft.description" name="description" />
               </label>
 
@@ -385,7 +385,7 @@ export class Items {
   draft = {
     itemType: 'Finished Good',
     itemNumber: 'FG-001',
-    description: 'test',
+    description: '',
     dosageForm: 'Film-Coated Tablet',
     strength: '',
     route: 'Oral',
@@ -411,7 +411,58 @@ export class Items {
     { item: 'PKG-001', description: 'Blister Pack - PVDC Aluminium', type: 'Packaging', typeTone: 'green', lifecycle: 'Production', lifecycleTone: 'green', revision: 'A', ecmStatus: 'Completed', ecmTone: 'green', updated: '04 Jun 2026' },
   ];
 
+  get displayItems(): Array<PharmaItem & { live: boolean; liveIndex: number }> {
+    const staticItems = [...this.items];
+    const liveItems = this.inventoryService.inventory().map((product, index) => ({
+      ...this.toPharmaItem(product),
+      live: true,
+      liveIndex: index,
+    }));
+    const byItem = new Map<string, PharmaItem & { live: boolean; liveIndex: number }>();
+
+    for (const item of staticItems) {
+      byItem.set(item.item, { ...item, live: false, liveIndex: Number.MAX_SAFE_INTEGER });
+    }
+
+    for (const item of liveItems) {
+      byItem.set(item.item, item);
+    }
+
+    return Array.from(byItem.values()).sort((a, b) => {
+      if (a.live !== b.live) {
+        return a.live ? -1 : 1;
+      }
+      if (a.live && b.live) {
+        return a.liveIndex - b.liveIndex;
+      }
+      return a.item.localeCompare(b.item);
+    });
+  }
+
   showBomResults = false;
+  itemSearch = '';
+
+  get filteredDisplayItems(): PharmaItem[] {
+    const query = this.itemSearch.trim().toLowerCase();
+    if (!query) {
+      return this.displayItems;
+    }
+
+    return this.displayItems.filter(item =>
+      [
+        item.item,
+        item.description,
+        item.type,
+        item.lifecycle,
+        item.revision,
+        item.ecmStatus,
+        item.updated,
+      ]
+        .join(' ')
+        .toLowerCase()
+        .includes(query)
+    );
+  }
 
   get bomOptions(): PharmaItem[] {
     const inventoryOptions: PharmaItem[] = this.inventoryService.inventory().map(product => ({
@@ -497,6 +548,40 @@ export class Items {
       'Semi-Finished Good': 'SFG',
     };
     return mapping[itemType] || 'ITEM';
+  }
+
+  private toPharmaItem(product: ReturnType<InventoryService['inventory']>[number]): PharmaItem {
+    const type = product.partType || product.category || product.type || 'Item';
+    const lifecycle = this.displayLifecycle(product.lifecycle);
+    return {
+      item: product.sku,
+      description: product.partDescription || product.name || product.sku,
+      type,
+      typeTone: this.typeTone(type),
+      lifecycle,
+      lifecycleTone: lifecycle === 'Production' ? 'green' : lifecycle === 'Prototype' ? 'yellow' : 'gray',
+      revision: product.revision?.replace(/^A\.00$/, 'A') || 'A',
+      ecmStatus: product.lifecycle === 'Design' ? 'Pending' : 'Defined',
+      ecmTone: product.lifecycle === 'Design' ? 'yellow' : 'green',
+      updated: 'Current',
+    };
+  }
+
+  private typeTone(type: string): PharmaItem['typeTone'] {
+    if (type === 'Finished Good') {
+      return 'blue';
+    }
+    if (type === 'Drug Substance') {
+      return 'purple';
+    }
+    if (type === 'Packaging') {
+      return 'green';
+    }
+    return 'gray';
+  }
+
+  private displayLifecycle(lifecycle: string): string {
+    return lifecycle === 'Design' ? 'Preliminary' : lifecycle;
   }
 
   createItem() {

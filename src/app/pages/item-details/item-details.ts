@@ -299,19 +299,19 @@ type BomTreeNode = {
                 <div class="detail-row reference-attribute">
                   <span>
                     <small>Dosage Form</small>
-                    <strong>Film-Coated Tablet</strong>
+                    <strong>{{ item.dosageForm || '—' }}</strong>
                   </span>
                 </div>
                 <div class="detail-row reference-attribute">
                   <span>
                     <small>Strength</small>
-                    <strong>50 mg</strong>
+                    <strong>{{ item.strength || '—' }}</strong>
                   </span>
                 </div>
                 <div class="detail-row reference-attribute">
                   <span>
                     <small>Route of Admin</small>
-                    <strong>Oral</strong>
+                    <strong>{{ item.routeOfAdministration || '—' }}</strong>
                   </span>
                 </div>
 
@@ -342,7 +342,19 @@ type BomTreeNode = {
                   </div>
                   <div>
                     <small>Status</small>
-                    <strong>{{ item.status }}</strong>
+                    <strong>{{ formatStatus(item.status) }}</strong>
+                  </div>
+                  <div>
+                    <small>Unit of Measure (UOM)</small>
+                    <strong>{{ getUnitOfMeasure() }}</strong>
+                  </div>
+                  <div>
+                    <small>Material</small>
+                    <strong>{{ item.material || '—' }}</strong>
+                  </div>
+                  <div>
+                    <small>Part Dimensions</small>
+                    <strong>{{ item.partDimensions || '—' }}</strong>
                   </div>
                 </div>
               </article>
@@ -1933,7 +1945,18 @@ export class ItemDetails implements OnInit {
   }
 
   getUnitOfMeasure(): string {
-    return this.item?.type === 'Document' ? 'File' : 'Each';
+    return this.item?.unitOfMeasure || (this.item?.type === 'Document' ? 'File' : 'Each');
+  }
+
+  formatStatus(status?: Product['status']): string {
+    if (!status) {
+      return '—';
+    }
+
+    return status
+      .split('-')
+      .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+      .join(' ');
   }
 
   getBomTree(): BomTreeNode[] {
