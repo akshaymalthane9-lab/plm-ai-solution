@@ -1,8 +1,20 @@
 import { CommonModule } from '@angular/common';
 import { Component, inject } from '@angular/core';
 import { Router } from '@angular/router';
-import { RecentItemsService } from '../../services/recent-items.service';
 import { ThemeService } from '../../services/theme.service';
+
+type SidebarLink = {
+  label: string;
+  icon: string;
+  route?: string;
+  badge?: string;
+  badgeTone?: 'red' | 'yellow' | 'blue';
+};
+
+type SidebarSection = {
+  title: string;
+  links: SidebarLink[];
+};
 
 @Component({
   selector: 'app-sidebar',
@@ -10,46 +22,29 @@ import { ThemeService } from '../../services/theme.service';
   imports: [CommonModule],
   template: `
     <aside class="sidebar" [class.dark-theme]="themeService.theme() === 'dark'">
-      <button
-        class="sidebar-item"
-        [class.active]="isDashboardActive()"
-        type="button"
-        (click)="goToDashboard()"
-      >
-        <span class="nav-icon">&#8962;</span>
-        Dashboard
-      </button>
-
-      <button class="sidebar-item" type="button" (click)="goToDashboard()">
-        <span class="nav-icon">&#9671;</span>
-        NPI Tracker
-      </button>
-
-      <div class="recently-accessed">
-        <div class="recently-accessed-title">Recently Accessed</div>
-
+      <ng-container *ngFor="let section of sections">
+        <div class="sidebar-section">{{ section.title }}</div>
         <button
-          *ngFor="let item of recentItemsService.recentItems()"
-          class="recent-item"
+          *ngFor="let link of section.links"
+          class="sidebar-item"
+          [class.active]="isActive(link)"
           type="button"
-          (click)="openRecentItem(item.sku)"
+          (click)="openLink(link)"
         >
-          <span class="recent-item-copy">
-            <strong>{{ item.sku }} - {{ item.name }}</strong>
+          <span class="nav-icon">{{ link.icon }}</span>
+          <span class="nav-label">{{ link.label }}</span>
+          <span *ngIf="link.badge" class="sidebar-badge" [class.yellow]="link.badgeTone === 'yellow'" [class.blue]="link.badgeTone === 'blue'">
+            {{ link.badge }}
           </span>
         </button>
-
-        <div *ngIf="recentItemsService.recentItems().length === 0" class="recent-items-empty">
-          No recently accessed items
-        </div>
-      </div>
+      </ng-container>
     </aside>
   `,
   styles: `
     :host {
       display: block;
-      width: 280px;
-      min-width: 280px;
+      width: 210px;
+      min-width: 210px;
     }
     .sidebar {
       --sidebar-surface: #ffffff;
@@ -59,19 +54,21 @@ import { ThemeService } from '../../services/theme.service';
       --sidebar-muted: #59677c;
       --sidebar-subtle: #7b8798;
       --sidebar-accent: #1f6feb;
+      --sidebar-red: #cf222e;
+      --sidebar-yellow: #9a6700;
       position: fixed;
       top: 52px;
       bottom: 0;
       left: 0;
       z-index: 40;
       display: flex;
-      width: 280px;
+      width: 210px;
       flex-direction: column;
       overflow-y: auto;
-      padding: 8px 0 18px;
+      padding: 12px 0 18px;
       border-right: 1px solid var(--sidebar-border);
       background: var(--sidebar-surface);
-      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
     .sidebar.dark-theme {
       --sidebar-surface: #161b22;
@@ -81,26 +78,39 @@ import { ThemeService } from '../../services/theme.service';
       --sidebar-muted: #8b949e;
       --sidebar-subtle: #6e7681;
       --sidebar-accent: #2f81f7;
+      --sidebar-red: #f85149;
+      --sidebar-yellow: #d29922;
+    }
+    .sidebar-section {
+      margin-top: 8px;
+      padding: 8px 16px 2px;
+      color: var(--sidebar-subtle);
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: .08em;
+      text-transform: uppercase;
     }
     .sidebar-item {
       display: flex;
       align-items: center;
       gap: 9px;
-      margin: 1px 6px;
-      padding: 7px 10px;
+      margin: 0 6px;
+      padding: 7px 12px;
       border: 0;
       border-radius: 6px;
       background: transparent;
       color: var(--sidebar-muted);
+      cursor: pointer;
       font-size: 13px;
       text-align: left;
+      transition: background .12s, color .12s;
     }
     .sidebar-item:hover {
       background: var(--sidebar-surface-2);
       color: var(--sidebar-text);
     }
     .sidebar-item.active {
-      background: color-mix(in srgb, var(--sidebar-accent) 13%, transparent);
+      background: color-mix(in srgb, var(--sidebar-accent) 12%, transparent);
       color: var(--sidebar-accent);
       font-weight: 650;
     }
@@ -109,59 +119,27 @@ import { ThemeService } from '../../services/theme.service';
       color: currentColor;
       text-align: center;
     }
-    .recently-accessed {
-      display: flex;
-      min-height: 190px;
-      flex-direction: column;
-      gap: 8px;
-      margin: 20px 10px 12px;
-      padding: 14px 10px;
-      border: 1px solid var(--sidebar-border);
-      border-radius: 12px;
-      background: color-mix(in srgb, var(--sidebar-surface-2) 42%, transparent);
-    }
-    .recently-accessed-title {
-      padding: 0 4px 6px;
-      color: var(--sidebar-text);
-      font-size: 12px;
-      font-weight: 750;
-    }
-    .recent-item {
-      display: flex;
-      align-items: center;
-      width: 100%;
-      padding: 9px 8px;
-      border: 1px solid transparent;
-      border-radius: 9px;
-      background: transparent;
-      color: var(--sidebar-text);
-      text-align: left;
-    }
-    .recent-item:hover {
-      border-color: var(--sidebar-border);
-      background: var(--sidebar-surface-2);
-    }
-    .recent-item-copy { min-width: 0; }
-    .recent-item-copy strong {
-      display: block;
+    .nav-label {
+      min-width: 0;
+      flex: 1;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
-    .recent-item-copy strong {
-      color: var(--sidebar-text);
-      font-size: 14px;
+    .sidebar-badge {
+      margin-left: auto;
+      padding: 1px 6px;
+      border-radius: 999px;
+      background: var(--sidebar-red);
+      color: #fff;
+      font-size: 10px;
+      font-weight: 800;
     }
-    .recent-items-empty {
-      display: grid;
-      min-height: 116px;
-      place-items: center;
-      padding: 14px;
-      border: 1px dashed var(--sidebar-border);
-      border-radius: 10px;
-      color: var(--sidebar-subtle);
-      font-size: 11px;
-      text-align: center;
+    .sidebar-badge.yellow {
+      background: var(--sidebar-yellow);
+    }
+    .sidebar-badge.blue {
+      background: var(--sidebar-accent);
     }
     @media (max-width: 780px) {
       :host {
@@ -171,34 +149,71 @@ import { ThemeService } from '../../services/theme.service';
       .sidebar {
         width: 58px;
       }
+      .sidebar-section,
+      .nav-label,
+      .sidebar-badge {
+        display: none;
+      }
       .sidebar-item {
         justify-content: center;
-        font-size: 0;
       }
       .nav-icon {
         font-size: 16px;
-      }
-      .recently-accessed {
-        display: none;
       }
     }
   `
 })
 export class Sidebar {
-  readonly recentItemsService = inject(RecentItemsService);
   readonly themeService = inject(ThemeService);
   private readonly router = inject(Router);
 
-  goToDashboard() {
-    this.router.navigate(['/dashboard']);
+  readonly sections: SidebarSection[] = [
+    {
+      title: 'NPI Process',
+      links: [
+        { label: 'Dashboard', icon: '⌂', route: '/dashboard' },
+        { label: 'NPI Tracker', icon: '◇', route: '/dashboard' },
+        { label: 'Pending Actions', icon: '◷', route: '/dashboard', badge: '5' },
+      ],
+    },
+    {
+      title: 'Items',
+      links: [
+        { label: 'All Items', icon: '□', route: '/items' },
+        { label: 'Create Item', icon: '+', route: '/items' },
+        { label: 'Formulations', icon: '◈', route: '/dashboard' },
+        { label: 'Released Items', icon: '✓', route: '/dashboard' },
+      ],
+    },
+    {
+      title: 'Changes',
+      links: [
+        { label: 'Change Orders', icon: '▤', route: '/dashboard', badge: '2', badgeTone: 'yellow' },
+        { label: 'ECO-001 Detail', icon: '⌬', route: '/dashboard' },
+      ],
+    },
+    {
+      title: 'Quality',
+      links: [
+        { label: 'CAPA', icon: '⚠', route: '/dashboard', badge: '3', badgeTone: 'yellow' },
+        { label: 'Deviations', icon: '⌖', route: '/dashboard' },
+      ],
+    },
+    {
+      title: 'Regulatory',
+      links: [
+        { label: 'Submissions', icon: '⌂', route: '/dashboard' },
+        { label: 'Clinical Phases', icon: '⌬', route: '/dashboard' },
+      ],
+    },
+  ];
+
+  openLink(link: SidebarLink) {
+    this.router.navigate([link.route || '/dashboard']);
   }
 
-  isDashboardActive(): boolean {
-    return this.router.url.split('?')[0] === '/dashboard';
+  isActive(link: SidebarLink): boolean {
+    const path = this.router.url.split('?')[0];
+    return path === (link.route || '/dashboard') && link.label === 'Dashboard';
   }
-
-  openRecentItem(sku: string) {
-    this.router.navigate(['/items', sku]);
-  }
-
 }
