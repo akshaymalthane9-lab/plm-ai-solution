@@ -395,6 +395,7 @@ export class Items {
     lifecycle: 'Preliminary',
     bomSearch: '',
     bomLink: '',
+    bomParentSku: '',
     parentLevel: 'Top Level Finished Good (FG)',
     quantity: 1,
     unit: 'mg',
@@ -528,6 +529,7 @@ export class Items {
   selectBomOption(option: PharmaItem) {
     this.draft.bomSearch = option.item;
     this.draft.bomLink = `${option.item} - Rev ${option.revision}`;
+    this.draft.bomParentSku = option.item;
     this.showBomResults = false;
   }
 
@@ -586,6 +588,32 @@ export class Items {
 
   createItem() {
     const sku = this.draft.itemNumber.trim() || 'FG-002';
+    const typedBomSearch = this.draft.bomSearch.trim();
+    const selectedBomOption = this.bomOptions.find(
+      option =>
+        option.item.toLowerCase() === (this.draft.bomParentSku || typedBomSearch).toLowerCase()
+    );
+    const bomComponentSku = selectedBomOption?.item || '';
+
+    if (
+      selectedBomOption &&
+      bomComponentSku !== sku &&
+      !this.inventoryService.inventory().some(product => product.sku === bomComponentSku)
+    ) {
+      this.inventoryService.addProduct({
+        sku: selectedBomOption.item,
+        name: selectedBomOption.description || selectedBomOption.item,
+        partDescription: selectedBomOption.description,
+        partType: selectedBomOption.type,
+        type: 'Part',
+        part: 'Part',
+        category: selectedBomOption.type,
+        quantity: 0,
+        revision: selectedBomOption.revision,
+        lifecycle: this.toProductLifecycle(selectedBomOption.lifecycle),
+      });
+    }
+
     this.inventoryService.addProduct({
       sku,
       name: this.draft.description || sku,
@@ -602,7 +630,16 @@ export class Items {
       routeOfAdministration: this.draft.route,
       classification: this.draft.classification,
       unitOfMeasure: this.draft.unit,
+      bom: bomComponentSku && bomComponentSku !== sku ? [bomComponentSku] : [],
     });
+
     this.router.navigate(['/items', sku]);
+  }
+
+  private toProductLifecycle(lifecycle: string) {
+    if (lifecycle === 'Prototype' || lifecycle === 'Production' || lifecycle === 'Obsolete') {
+      return lifecycle;
+    }
+    return 'Design';
   }
 }
