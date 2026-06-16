@@ -92,7 +92,7 @@ type PharmaItem = {
             <form class="create-card" (ngSubmit)="createItem()">
               <label class="field full">
                 <span>Item Type *</span>
-                <select [(ngModel)]="draft.itemType" name="itemType">
+                <select [(ngModel)]="draft.itemType" name="itemType" (ngModelChange)="updateItemNumberForType()">
                   <option>Finished Good</option>
                   <option>Drug Substance</option>
                   <option>Raw Material</option>
@@ -106,7 +106,7 @@ type PharmaItem = {
                 <input [(ngModel)]="draft.itemNumber" name="itemNumber" />
                 <small>Leave blank to auto generate on save</small>
               </label>
-              <button class="generate-btn" type="button" (click)="draft.itemNumber = 'FG-010'">Generate</button>
+              <button class="generate-btn" type="button" (click)="generateItemNumber()">Generate</button>
 
               <label class="field full">
                 <span>Description *</span>
@@ -187,10 +187,25 @@ type PharmaItem = {
             <div class="create-card bom-card">
               <label class="field full">
                 <span>Associate with Formula / BOM</span>
-                <select [(ngModel)]="draft.bomLink" name="bomLink">
-                  <option>FG-001 - Product-X (BOM Rev B)</option>
-                  <option>FG-002 - New Product Formula</option>
-                </select>
+                <input
+                  [(ngModel)]="draft.bomSearch"
+                  name="bomSearch"
+                  placeholder="Search item number, description, or BOM..."
+                  autocomplete="off"
+                  (input)="showBomResults = !!draft.bomSearch.trim()"
+                  (focus)="showBomResults = !!draft.bomSearch.trim()"
+                />
+                <div class="bom-search-results" *ngIf="showBomResults && filteredBomOptions.length">
+                  <button
+                    *ngFor="let option of filteredBomOptions"
+                    type="button"
+                    (click)="selectBomOption(option)"
+                  >
+                    <strong>{{ option.item }}</strong>
+                    <span>{{ option.description }}</span>
+                    <small>{{ option.lifecycle }} · Rev {{ option.revision }}</small>
+                  </button>
+                </div>
               </label>
               <label class="field full">
                 <span>Parent Assembly / Formula Level</span>
@@ -243,7 +258,7 @@ type PharmaItem = {
               <div><span>Name</span><strong>{{ draft.description || '-' }}</strong></div>
               <div><span>Type</span><b class="badge badge-gray">{{ draft.itemType }}</b></div>
               <div><span>Lifecycle</span><b class="badge badge-gray">{{ draft.lifecycle }}</b></div>
-              <div><span>BOM Link</span><strong>FG-001 - Rev B</strong></div>
+              <div><span>BOM Link</span><strong>{{ draft.bomLink || 'FG-001 - Rev B' }}</strong></div>
             </div>
 
             <h2 class="preview-title">✦ Similar Existing Items</h2>
@@ -317,12 +332,19 @@ type PharmaItem = {
     .create-card, .bom-preview, .item-preview, .similar-items { border:1px solid var(--border); border-radius:10px; background:var(--bg2); }
     .create-card { display:grid; grid-template-columns:1fr 1fr; gap:14px; padding:18px; }
     .field { display:flex; min-width:0; flex-direction:column; gap:7px; }
+    .field.full { position: relative; }
     .field.full, .ai-suggestions.full, .form-actions.full { grid-column:1 / -1; }
     .field span { color:var(--text2); font-size:12px; font-weight:700; }
     .field input, .field select { width:100%; min-height:36px; border:1px solid var(--border); border-radius:6px; outline:none; background:var(--bg3); color:var(--text); padding:8px 11px; font-size:13px; }
     .field small { color:var(--text3); font-size:11px; }
     .item-number-field { grid-column:1 / 2; }
     .generate-btn { align-self:center; justify-self:start; margin-top:19px; min-height:32px; padding:5px 12px; border:1px solid var(--border); border-radius:6px; background:var(--bg3); color:var(--text); cursor:pointer; font-size:12px; font-weight:700; }
+    .bom-search-results { position:absolute; top:100%; right:0; left:0; z-index:20; overflow:hidden; margin-top:4px; border:1px solid var(--border); border-radius:8px; background:var(--bg2); box-shadow:0 18px 42px rgba(0,0,0,.35); }
+    .bom-search-results button { display:grid; width:100%; grid-template-columns:110px 1fr auto; gap:10px; align-items:center; padding:9px 11px; border:0; border-bottom:1px solid var(--border); background:transparent; color:var(--text); cursor:pointer; text-align:left; }
+    .bom-search-results button:last-child { border-bottom:0; }
+    .bom-search-results button:hover { background:var(--bg3); }
+    .bom-search-results strong { color:var(--accent); font-size:12px; }
+    .bom-search-results span, .bom-search-results small { overflow:hidden; color:var(--text2); font-size:12px; text-overflow:ellipsis; white-space:nowrap; }
     .ai-suggestions { padding:12px; border:1px solid rgba(188,140,255,.28); border-radius:8px; background:rgba(188,140,255,.07); }
     .ai-suggestions strong { display:block; margin-bottom:8px; color:var(--purple); font-size:11px; }
     .ai-suggestions button { margin:2px 4px 2px 0; padding:3px 9px; border:1px solid var(--border); border-radius:999px; background:var(--bg3); color:var(--text); cursor:pointer; font-size:11px; font-weight:700; }
@@ -362,7 +384,7 @@ export class Items {
 
   draft = {
     itemType: 'Finished Good',
-    itemNumber: 'FG-010',
+    itemNumber: 'FG-001',
     description: 'test',
     dosageForm: 'Film-Coated Tablet',
     strength: '',
@@ -371,7 +393,8 @@ export class Items {
     gmpGrade: 'ICH Q7',
     shelfLife: '',
     lifecycle: 'Preliminary',
-    bomLink: 'FG-001 - Product-X (BOM Rev B)',
+    bomSearch: '',
+    bomLink: '',
     parentLevel: 'Top Level Finished Good (FG)',
     quantity: 1,
     unit: 'mg',
@@ -387,6 +410,48 @@ export class Items {
     { item: 'COMP-003', description: 'Component C - Modified Release Coat', type: 'Semi-Finished', typeTone: 'gray', lifecycle: 'Prototype', lifecycleTone: 'yellow', revision: 'A', ecmStatus: 'Pending', ecmTone: 'yellow', updated: '07 Jun 2026' },
     { item: 'PKG-001', description: 'Blister Pack - PVDC Aluminium', type: 'Packaging', typeTone: 'green', lifecycle: 'Production', lifecycleTone: 'green', revision: 'A', ecmStatus: 'Completed', ecmTone: 'green', updated: '04 Jun 2026' },
   ];
+
+  showBomResults = false;
+
+  get bomOptions(): PharmaItem[] {
+    const inventoryOptions: PharmaItem[] = this.inventoryService.inventory().map(product => ({
+      item: product.sku,
+      description: product.partDescription || product.name,
+      type: product.partType || product.type,
+      typeTone: 'gray',
+      lifecycle: product.lifecycle,
+      lifecycleTone: product.lifecycle === 'Production' ? 'green' : product.lifecycle === 'Prototype' ? 'yellow' : 'gray',
+      revision: product.revision || 'A',
+      ecmStatus: 'Defined',
+      ecmTone: 'green',
+      updated: 'Current',
+    }));
+
+    const seen = new Set<string>();
+    return [...this.items, ...inventoryOptions].filter(option => {
+      if (seen.has(option.item)) {
+        return false;
+      }
+      seen.add(option.item);
+      return true;
+    });
+  }
+
+  get filteredBomOptions(): PharmaItem[] {
+    const query = this.draft.bomSearch.trim().toLowerCase();
+    if (!query) {
+      return [];
+    }
+    const options = this.bomOptions;
+    return options
+      .filter(option =>
+        [option.item, option.description, option.type]
+          .join(' ')
+          .toLowerCase()
+          .includes(query)
+      )
+      .slice(0, 6);
+  }
 
   get isCreateMode(): boolean {
     return this.router.url.split('?')[0] === '/items/create';
@@ -407,6 +472,31 @@ export class Items {
 
   applySuggestion(field: 'dosageForm' | 'route' | 'classification' | 'gmpGrade' | 'shelfLife', value: string) {
     this.draft[field] = value;
+  }
+
+  selectBomOption(option: PharmaItem) {
+    this.draft.bomSearch = option.item;
+    this.draft.bomLink = `${option.item} - Rev ${option.revision}`;
+    this.showBomResults = false;
+  }
+
+  updateItemNumberForType() {
+    this.generateItemNumber();
+  }
+
+  generateItemNumber() {
+    this.draft.itemNumber = `${this.itemTypePrefix(this.draft.itemType)}-001`;
+  }
+
+  private itemTypePrefix(itemType: string): string {
+    const mapping: Record<string, string> = {
+      'Finished Good': 'FG',
+      'Drug Substance': 'DS',
+      'Raw Material': 'RM',
+      Packaging: 'PKG',
+      'Semi-Finished Good': 'SFG',
+    };
+    return mapping[itemType] || 'ITEM';
   }
 
   createItem() {
