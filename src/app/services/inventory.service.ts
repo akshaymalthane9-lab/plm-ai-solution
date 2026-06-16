@@ -30,6 +30,12 @@ export interface Product {
   partType?: string;
   partNumber?: string;
   classification?: string;
+  dosageForm?: string;
+  strength?: string;
+  routeOfAdministration?: string;
+  unitOfMeasure?: string;
+  material?: string;
+  partDimensions?: string;
   bom: string[]; 
   relationships?: string[];
   history: Array<{ date: string; action: string; user: string; details?: string }>;
@@ -92,6 +98,12 @@ export class InventoryService {
         part: p.part || p.type || (p.category === 'Software' ? 'Document' : 'Part'),
         partType: p.partType ? this.normalizePartType(p.partType) : p.partType,
         partNumber: p.partNumber || '',
+        dosageForm: p.dosageForm || '',
+        strength: p.strength || '',
+        routeOfAdministration: p.routeOfAdministration || '',
+        unitOfMeasure: p.unitOfMeasure || '',
+        material: p.material || '',
+        partDimensions: p.partDimensions || '',
         relationships: p.relationships || [],
         history: p.history || [],
         status: p.status || this.calculateStatus(p.quantity || 0)
@@ -138,6 +150,12 @@ export class InventoryService {
       partType: normalizedPartType,
       partNumber: productDef.partNumber || '',
       classification: productDef.classification || '',
+      dosageForm: productDef.dosageForm || '',
+      strength: productDef.strength || '',
+      routeOfAdministration: productDef.routeOfAdministration || '',
+      unitOfMeasure: productDef.unitOfMeasure || '',
+      material: productDef.material || '',
+      partDimensions: productDef.partDimensions || '',
       document: productDef.document || '',
       revision: productDef.revision || 'A.00',
       lifecycle: productDef.lifecycle || 'Design',
@@ -166,7 +184,7 @@ export class InventoryService {
     this.inventory.update(current => current.map(p => {
       if (p.sku === sku) {
         const updated = { ...p, ...updates };
-        if (updates.quantity !== undefined) {
+        if (updates.quantity !== undefined && updates.status === undefined) {
            updated.status = this.calculateStatus(updates.quantity);
         }
         const details = this.describeProductUpdates(p, updated, updates);
@@ -399,7 +417,13 @@ export class InventoryService {
       document: 'Document',
       partType: 'Part Type',
       partNumber: 'Part Number',
-      classification: 'Classification'
+      classification: 'Classification',
+      dosageForm: 'Dosage Form',
+      strength: 'Strength',
+      routeOfAdministration: 'Route of Admin',
+      unitOfMeasure: 'Unit of Measure',
+      material: 'Material',
+      partDimensions: 'Part Dimensions'
     };
 
     return (Object.keys(labels) as Array<keyof Product>)

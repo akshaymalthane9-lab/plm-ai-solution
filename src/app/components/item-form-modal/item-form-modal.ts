@@ -60,8 +60,70 @@ import { UserService } from '../../services/user.service';
               </div>
             </div>
 
-            <div *ngIf="currentStep === 2 || editItem" class="details-step">
-              <ng-container *ngIf="isPartSelected(); else documentDetails">
+            <div *ngIf="editItem" class="details-step edit-details-grid">
+              <div class="form-group">
+                <label class="form-label" for="editSku">Item Number</label>
+                <input id="editSku" class="form-control" [value]="editItem.sku" disabled />
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="editDescription">Description</label>
+                <textarea
+                  id="editDescription"
+                  class="form-control description-control compact-description"
+                  formControlName="partDescription"
+                  maxlength="1000"
+                  (input)="updateDescriptionCount()"
+                ></textarea>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="editPartType">Item Type</label>
+                <input id="editPartType" class="form-control" formControlName="partType" readonly />
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="editClassification">Classification</label>
+                <input id="editClassification" class="form-control" formControlName="classification" />
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="editDosageForm">Dosage Form</label>
+                <input id="editDosageForm" class="form-control" formControlName="dosageForm" />
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="editStrength">Strength</label>
+                <input id="editStrength" class="form-control" formControlName="strength" />
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="editRoute">Route of Admin</label>
+                <input id="editRoute" class="form-control" formControlName="routeOfAdministration" />
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="editCategory">Category</label>
+                <input id="editCategory" class="form-control" formControlName="category" />
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="editQuantity">Quantity</label>
+                <input id="editQuantity" class="form-control" type="number" formControlName="quantity" />
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="editStatus">Status</label>
+                <select id="editStatus" class="form-control" formControlName="status">
+                  <option value="in-stock">In Stock</option>
+                  <option value="low-stock">Low Stock</option>
+                  <option value="out-of-stock">Out of Stock</option>
+                </select>
+              </div>
+            </div>
+
+            <div *ngIf="currentStep === 2 && !editItem" class="details-step">
+              <ng-container *ngIf="!editItem && isPartSelected(); else documentDetails">
                 <div class="form-group">
                   <label class="form-label" for="partType">Part Type</label>
                   <select
@@ -113,6 +175,7 @@ import { UserService } from '../../services/user.service';
               </ng-container>
 
               <ng-template #documentDetails>
+                <ng-container *ngIf="!editItem">
                 <div class="form-group">
                   <label class="form-label" for="document">Document Name *</label>
                   <input
@@ -133,6 +196,7 @@ import { UserService } from '../../services/user.service';
                   ></textarea>
                   <div class="description-limit">Maximum 1000 characters</div>
                 </div>
+                </ng-container>
               </ng-template>
             </div>
           </form>
@@ -218,7 +282,7 @@ import { UserService } from '../../services/user.service';
       border-radius: 16px;
       box-shadow: 0 24px 70px rgba(0, 0, 0, 0.34);
     }
-    .edit-page-shell { width: 100%; margin-top: 1rem; }
+    .edit-page-shell { width: 100%; margin-top: 0.5rem; }
     .edit-page-card { width: 100%; border-radius: 20px; }
     .edit-page-shell .modal-body {
       max-height: none;
@@ -228,8 +292,8 @@ import { UserService } from '../../services/user.service';
       display: flex;
       align-items: center;
       justify-content: space-between;
-      min-height: 76px;
-      padding: 20px 26px;
+      min-height: 58px;
+      padding: 14px 22px;
       border-bottom: 1px solid var(--dialog-border);
     }
     .title {
@@ -252,12 +316,18 @@ import { UserService } from '../../services/user.service';
     .modal-body {
       max-height: 66vh;
       overflow-y: auto;
-      padding: 28px 26px 22px;
+      padding: 18px 22px 16px;
       background: var(--dialog-bg);
     }
     .type-step { min-height: 110px; }
-    .details-step { display: grid; gap: 20px; }
-    .form-group { display: grid; gap: 9px; }
+    .details-step { display: grid; gap: 14px; }
+    .edit-details-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .edit-details-grid .form-group:nth-child(2) {
+      grid-column: 1 / -1;
+    }
+    .form-group { display: grid; gap: 6px; }
     .form-label {
       color: var(--dialog-label);
       font-size: 13px;
@@ -265,8 +335,8 @@ import { UserService } from '../../services/user.service';
     }
     .form-control {
       width: 100%;
-      min-height: 50px;
-      padding: 0 16px;
+      min-height: 42px;
+      padding: 0 14px;
       border: 1px solid var(--dialog-border);
       border-radius: 16px;
       outline: none;
@@ -276,6 +346,11 @@ import { UserService } from '../../services/user.service';
     .form-control:focus {
       border-color: var(--dialog-accent);
       box-shadow: 0 0 0 3px color-mix(in srgb, var(--dialog-accent) 15%, transparent);
+    }
+    .form-control:disabled,
+    .form-control[readonly] {
+      opacity: 0.78;
+      cursor: not-allowed;
     }
     select.form-control { cursor: pointer; }
     .part-number-row {
@@ -296,10 +371,11 @@ import { UserService } from '../../services/user.service';
     .generate-button:hover:not(:disabled) { border-color: var(--dialog-accent); }
     .generate-button:disabled { opacity: 0.45; cursor: not-allowed; }
     .description-control {
-      min-height: 126px;
-      padding: 14px 16px;
+      min-height: 96px;
+      padding: 12px 14px;
       resize: vertical;
     }
+    .compact-description { min-height: 74px; }
     .description-limit {
       color: var(--dialog-muted);
       font-size: 11px;
@@ -316,7 +392,7 @@ import { UserService } from '../../services/user.service';
       display: flex;
       justify-content: flex-end;
       gap: 12px;
-      padding: 20px 26px;
+      padding: 14px 22px;
       border-top: 1px solid var(--dialog-border);
       background: var(--dialog-surface);
     }
@@ -350,6 +426,7 @@ import { UserService } from '../../services/user.service';
       .modal-header, .modal-body, .modal-footer { padding-left: 18px; padding-right: 18px; }
       .part-number-row { grid-template-columns: 1fr; }
       .generate-button { width: 100%; }
+      .edit-details-grid { grid-template-columns: 1fr; }
     }
     @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
   `
@@ -378,6 +455,11 @@ export class ItemFormModal implements OnInit {
     partNumberAction: ['Generate part number'],
     partNumber: [''],
     classification: [''],
+    dosageForm: [''],
+    strength: [''],
+    routeOfAdministration: [''],
+    category: [''],
+    status: ['in-stock'],
     quantity: [0]
   });
 
@@ -400,10 +482,15 @@ export class ItemFormModal implements OnInit {
         type: this.editItem.type,
         lifecycle: this.editItem.lifecycle,
         part: (this.editItem as any)?.part || this.editItem.type || '',
-        partDescription: (this.editItem as any)?.partDescription || '',
+        partDescription: (this.editItem as any)?.partDescription || this.editItem.name || '',
         document: (this.editItem as any)?.document || '',
         partType: normalizedPartType || '',
         classification: (this.editItem as any)?.classification || '',
+        dosageForm: this.editItem.dosageForm || 'Film-Coated Tablet',
+        strength: this.editItem.strength || '50 mg',
+        routeOfAdministration: this.editItem.routeOfAdministration || 'Oral',
+        category: this.editItem.category || '',
+        status: this.editItem.status || 'in-stock',
         quantity: this.editItem.quantity,
         partNumber: (this.editItem as any)?.partNumber || this.partNumberOptions[0] || ''
       });
