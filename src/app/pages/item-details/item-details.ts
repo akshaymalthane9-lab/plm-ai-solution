@@ -587,7 +587,7 @@ type BomTreeNode = {
             <div class="history-list">
               <article *ngFor="let entry of item.history">
                 <span class="history-dot"></span>
-                <span>
+                <span class="history-content">
                   <strong>{{ entry.action }}</strong>
                   <small>{{ entry.user }} · {{ entry.date | date: 'medium' }}</small>
                   <p *ngIf="entry.details">{{ entry.details }}</p>
@@ -1138,8 +1138,8 @@ type BomTreeNode = {
       gap: 12px;
     }
     .history-list article {
-      display: grid;
-      grid-template-columns: 10px minmax(0, 1fr);
+      display: flex;
+      align-items: center;
       gap: 12px;
       padding: 14px;
       border: 1px solid #e6e9ef;
@@ -1152,10 +1152,15 @@ type BomTreeNode = {
       margin-top: 6px;
       border-radius: 50%;
       background: #86bc25;
+      flex: 0 0 auto;
     }
-    .history-list strong,
-    .history-list small {
-      display: block;
+    .history-content {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+      white-space: nowrap;
+      overflow: hidden;
     }
     .history-list small,
     .history-list p {
@@ -1163,7 +1168,9 @@ type BomTreeNode = {
       font-size: 0.74rem;
     }
     .history-list p {
-      margin: 5px 0 0;
+      margin: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
     .empty-message,
     .missing-item {
