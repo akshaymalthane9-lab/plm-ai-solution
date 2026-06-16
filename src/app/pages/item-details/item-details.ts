@@ -411,9 +411,9 @@ type BomTreeNode = {
                 <h2>Bill of Materials</h2>
                 <p>Manage components and nested assemblies for {{ item.sku }}.</p>
               </div>
-              <div class="panel-actions" *ngIf="!userService.isReadOnly()">
+              <div class="panel-actions bom-panel-actions" *ngIf="!userService.isReadOnly()">
                 <button class="primary-button" type="button" (click)="openBomAdd(item.sku)">
-                  Add
+                  Add Component
                 </button>
                 <button
                   class="danger-button"
@@ -421,7 +421,10 @@ type BomTreeNode = {
                   [disabled]="!getBomTree().length"
                   (click)="openBomRemove()"
                 >
-                  Remove
+                  Remove Component
+                </button>
+                <button class="soft-button export-button" type="button">
+                  Export
                 </button>
               </div>
             </div>
@@ -476,18 +479,18 @@ type BomTreeNode = {
                 <span *ngIf="!userService.isReadOnly()">Actions</span>
               </div>
               <div *ngFor="let node of getBomTree()" class="bom-row" [style.--level]="node.level">
-                <button class="item-link" type="button" (click)="navigateToItem(node.product.sku)">
+                <span class="item-link">
                   {{ node.product.sku }}
-                </button>
+                </span>
                 <span>{{ getBomDescription(node.product) }}</span>
                 <span>{{ node.product.revision }}</span>
                 <span>{{ node.product.lifecycle }}</span>
                 <span>{{ node.level }}</span>
                 <span class="row-actions" *ngIf="!userService.isReadOnly()">
-                  <button class="soft-button" type="button" (click)="openBomAdd(node.product.sku)">
+                  <button class="soft-button" type="button" (click)="openBomAdd(node.product.sku); $event.stopPropagation()">
                     Add
                   </button>
-                  <button class="danger-button" type="button" (click)="removeBomItem(node)">
+                  <button class="danger-button" type="button" (click)="removeBomItem(node); $event.stopPropagation()">
                     Remove
                   </button>
                 </span>
@@ -966,6 +969,62 @@ type BomTreeNode = {
       border: 1px solid #f3c4c4;
       background: #fff1f1;
       color: #b42318;
+    }
+    .bom-panel-actions .primary-button,
+    .bom-panel-actions .danger-button,
+    .bom-panel-actions .soft-button {
+      min-height: 36px;
+      padding: 8px 16px;
+      border-radius: 8px;
+      background: transparent;
+      font-size: 0.86rem;
+      font-weight: 700;
+      box-shadow: none;
+    }
+    .bom-panel-actions .primary-button {
+      border-color: rgba(47, 129, 247, 0.45);
+      color: #2f81f7;
+    }
+    .bom-panel-actions .danger-button {
+      border-color: rgba(248, 81, 73, 0.45);
+      color: #f85149;
+    }
+    .bom-panel-actions .soft-button {
+      border-color: rgba(188, 140, 255, 0.45);
+      color: #bc8cff;
+    }
+    .bom-panel-actions .primary-button:hover {
+      background: rgba(47, 129, 247, 0.12);
+    }
+    .bom-panel-actions .danger-button:hover {
+      background: rgba(248, 81, 73, 0.12);
+    }
+    .bom-panel-actions .soft-button:hover {
+      background: rgba(188, 140, 255, 0.12);
+    }
+    .bom-row .row-actions .soft-button,
+    .bom-row .row-actions .danger-button {
+      min-height: 30px;
+      padding: 5px 12px;
+      border-radius: 8px;
+      background: transparent;
+      font-size: 0.76rem;
+      font-weight: 700;
+      box-shadow: none;
+    }
+    .bom-row .row-actions .soft-button {
+      border-color: rgba(47, 129, 247, 0.45);
+      color: #2f81f7;
+    }
+    .bom-row .row-actions .danger-button {
+      border-color: rgba(248, 81, 73, 0.45);
+      color: #f85149;
+    }
+    .bom-row .row-actions .soft-button:hover {
+      background: rgba(47, 129, 247, 0.12);
+    }
+    .bom-row .row-actions .danger-button:hover {
+      background: rgba(248, 81, 73, 0.12);
     }
     button:disabled {
       cursor: not-allowed;
