@@ -220,6 +220,10 @@ import { UserService } from '../../services/user.service';
     }
     .edit-page-shell { width: 100%; margin-top: 1rem; }
     .edit-page-card { width: 100%; border-radius: 20px; }
+    .edit-page-shell .modal-body {
+      max-height: none;
+      overflow: visible;
+    }
     .modal-header {
       display: flex;
       align-items: center;
