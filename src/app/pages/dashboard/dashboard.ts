@@ -37,7 +37,22 @@ import { UserService } from '../../services/user.service';
           <button class="icon-btn" type="button">⌕</button>
           <button class="icon-btn" type="button">⌂<span class="notif-dot"></span></button>
           <button class="icon-btn" type="button">↓</button>
-          <button class="avatar" type="button">{{ initials }}</button>
+          <div class="user-menu">
+            <button class="avatar" type="button" (click)="toggleUserMenu()" aria-label="Open user menu">
+              {{ initials }}
+            </button>
+            <nav class="user-dropdown" *ngIf="userMenuOpen" aria-label="User menu">
+              <div class="account-summary">
+                <strong>{{ userName }}</strong>
+                <span>{{ userService.currentRole() }}</span>
+              </div>
+              <a href="#" (click)="$event.preventDefault()">My Profile</a>
+              <a href="#" (click)="$event.preventDefault()">Password Change</a>
+              <a href="#" (click)="$event.preventDefault()">Help</a>
+              <a href="#" (click)="$event.preventDefault()">About NexaPLM</a>
+              <a href="#" class="logout-link" (click)="logout($event)">Logout</a>
+            </nav>
+          </div>
         </div>
       </header>
 
@@ -48,7 +63,7 @@ import { UserService } from '../../services/user.service';
           <div class="view active">
             <div class="page-header-row">
               <div class="page-header">
-                <h1>Welcome, Rahil</h1>
+                <h1>Welcome, {{ userName }}</h1>
                 <p>NexaPLM Pharma · NPI Process Overview · June 10, 2026</p>
               </div>
               <div class="page-actions">
@@ -350,6 +365,11 @@ import { UserService } from '../../services/user.service';
       border-radius: 50%;
       background: var(--red);
     }
+    .user-menu {
+      position: relative;
+      padding-bottom: 10px;
+      margin-bottom: -10px;
+    }
     .avatar {
       display: grid;
       width: 30px;
@@ -362,6 +382,45 @@ import { UserService } from '../../services/user.service';
       cursor: pointer;
       font-size: 11px;
       font-weight: 700;
+    }
+    .user-dropdown {
+      position: absolute;
+      top: calc(100% + 6px);
+      right: 0;
+      z-index: 260;
+      width: 220px;
+      padding: 8px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--bg2);
+      box-shadow: 0 18px 40px rgba(0,0,0,.28);
+    }
+    .account-summary {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      padding: 7px 9px 9px;
+      border-bottom: 1px solid var(--border);
+      color: var(--text);
+    }
+    .account-summary span {
+      color: var(--text2);
+      font-size: 11px;
+    }
+    .user-dropdown a {
+      display: block;
+      padding: 8px 9px;
+      border-radius: 7px;
+      color: var(--text2);
+      font-size: 12px;
+      text-decoration: none;
+    }
+    .user-dropdown a:hover {
+      background: var(--bg3);
+      color: var(--text);
+    }
+    .logout-link {
+      color: var(--red) !important;
     }
     .app-body { display: flex; min-height: calc(100vh - 52px); }
     .main { flex: 1; min-width: 0; overflow-y: auto; }
@@ -597,6 +656,7 @@ export class Dashboard {
   readonly userService = inject(UserService);
   readonly themeService = inject(ThemeService);
   private readonly router = inject(Router);
+  userMenuOpen = false;
 
   get userName(): string {
     return this.userService.currentUser() || 'RS';
@@ -617,5 +677,15 @@ export class Dashboard {
 
   goToItems() {
     this.router.navigate(['/items']);
+  }
+
+  toggleUserMenu() {
+    this.userMenuOpen = !this.userMenuOpen;
+  }
+
+  logout(event: Event) {
+    event.preventDefault();
+    this.userService.logout();
+    this.router.navigate(['/login']);
   }
 }

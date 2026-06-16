@@ -220,6 +220,9 @@ export class Sidebar {
     if (path.startsWith('/items')) {
       return link.label === 'All Items';
     }
+    if (path.startsWith('/changes')) {
+      return link.label === 'Change Orders';
+    }
     return path === (link.route || '/dashboard');
   }
 }

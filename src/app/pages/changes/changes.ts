@@ -1,869 +1,583 @@
-import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
+import { Router } from '@angular/router';
+import { ThemeService } from '../../services/theme.service';
 
-interface ChangeRequest {
-  coNumber: string;
-  changeType: string;
-  priority: string;
+type ChangeRow = {
+  number: string;
+  type: 'ECO' | 'Deviation';
   description: string;
-  createdDate: string;
-  status: string;
-  requestedBy: string;
-  reviewer?: string;
-  workflowStatus?: string;
-  workflowMaxVisitedIndex?: number;
-  affectedItemSkus?: string[];
-  affectedItemUpdates?: Record<string, unknown>;
-}
+  reason: string;
+  workflowState: 'Review' | 'Draft' | 'Completed' | 'Approve';
+  engineer: string;
+  created: string;
+};
 
 @Component({
   selector: 'app-changes',
   standalone: true,
   imports: [CommonModule, FormsModule],
   template: `
-    <div class="changes-container flex-col gap-8">
-      <div class="page-header">
-        <h1 class="page-title">Changes Management</h1>
-        <p class="text-muted">Create and manage product changes and updates</p>
-      </div>
-
-      <div class="success-banner card p-4" *ngIf="submittedChange">
-        <strong>Change request submitted:</strong>
-        <div>CO Number: {{ submittedChange.coNumber }}</div>
-        <div>Change Type: {{ submittedChange.changeType }}</div>
-        <div>Priority: {{ submittedChange.priority }}</div>
-      </div>
-
-      <div class="options-grid grid" *ngIf="!isManageView">
-        <!-- Create Changes Option -->
-        <div class="option-card card flex-col gap-6">
-          <div class="icon-container">
-            <span class="option-icon">✏️</span>
-          </div>
-          <div class="content flex-col gap-2">
-            <h3 class="option-title">Create Changes</h3>
-            <p class="option-description">Create a new change request and review its details on the review page.</p>
-          </div>
-          <div class="action-footer">
-            <button class="btn btn-primary" type="button" (click)="openCreateForm()">Create Changes</button>
-          </div>
+    <div class="changes-page" [class.light-theme]="themeService.theme() === 'light'">
+      <div class="page-header-row">
+        <div class="page-header">
+          <h1>Changes</h1>
+          <p>Engineering change orders, requests, and deviations</p>
+        </div>
+        <div class="page-actions">
+          <button class="btn btn-secondary btn-sm" type="button">Browse Released</button>
+          <button class="btn btn-primary btn-sm" type="button" (click)="openCreateDialog()">+ Create Change</button>
         </div>
       </div>
 
-      <section class="manage-panel" *ngIf="isManageView">
-        <div class="manage-header">
-          <div>
-            <h2 class="section-title">{{ releasedOnly ? 'Released Changes' : 'Changes Created By Me' }}</h2>
-            <p class="text-muted">
-              {{ releasedOnly ? 'Browse released change requests.' : 'Review and manage your change requests.' }}
-            </p>
-          </div>
-          <div class="manage-actions">
-            <button class="btn btn-secondary" type="button" (click)="returnToChangesTab()">Return to Changes</button>
-            <button class="btn btn-primary" type="button" (click)="openCreateForm()">Create Change</button>
-          </div>
-        </div>
+      <div class="search-bar">
+        <span class="search-icon">⌕</span>
+        <input type="text" placeholder="Search changes by number, type, description..." />
+        <button class="btn btn-ghost btn-sm" type="button">Advanced Filter</button>
+      </div>
 
-        <div class="table-shell" *ngIf="visibleChangeRequests.length; else noChanges">
-          <table>
-            <thead>
-              <tr>
-                <th>CO Number</th>
-                <th>Change Type</th>
-                <th>Priority</th>
-                <th>Description</th>
-                <th>Created Date</th>
-                <th>Status</th>
-                <th>Requested By</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let change of visibleChangeRequests">
-                <td><strong class="co-number">{{ change.coNumber }}</strong></td>
-                <td>{{ change.changeType }}</td>
-                <td>
-                  <span class="priority-pill" [ngClass]="change.priority.toLowerCase()">
-                    {{ change.priority }}
-                  </span>
-                </td>
-                <td class="description-cell" [title]="change.description">{{ change.description || '-' }}</td>
-                <td>{{ change.createdDate }}</td>
-                <td><span class="status-pill">{{ change.workflowStatus || change.status }}</span></td>
-                <td>{{ change.requestedBy }}</td>
-                <td><button class="link-button" type="button" (click)="reviewChange(change)">Review</button></td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Change #</th>
+              <th>Type</th>
+              <th>Description</th>
+              <th>Reason</th>
+              <th>Workflow State</th>
+              <th>Engineer</th>
+              <th>Created</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let change of changes" (click)="openChange(change)">
+              <td><span class="change-link">{{ change.number }}</span></td>
+              <td>
+                <span class="badge" [ngClass]="change.type === 'ECO' ? 'badge-blue' : 'badge-red'">
+                  {{ change.type }}
+                </span>
+              </td>
+              <td>{{ change.description }}</td>
+              <td>{{ change.reason }}</td>
+              <td><span class="badge" [ngClass]="workflowClass(change.workflowState)">{{ change.workflowState }}</span></td>
+              <td>{{ change.engineer }}</td>
+              <td class="muted-cell">{{ change.created }}</td>
+              <td>
+                <button class="open-btn" type="button" (click)="openChange(change); $event.stopPropagation()">Open →</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
 
-        <ng-template #noChanges>
-          <div class="empty-state">
-            <h3>{{ releasedOnly ? 'No released changes' : 'No changes created yet' }}</h3>
-            <p class="text-muted">
-              {{ releasedOnly ? 'Released change requests will appear here.' : 'Create a change request to get started.' }}
-            </p>
-          </div>
-        </ng-template>
-      </section>
-
-      <div class="modal-overlay" *ngIf="showCreateForm" (click)="closeForm()">
-        <div class="modal-card flex-col" (click)="$event.stopPropagation()">
-          <div class="modal-header border-b">
-            <div class="flex justify-between items-center w-full">
-              <div>
-                <h2 class="title">Create Change Request</h2>
-                <p class="text-muted mt-2">Fill in the change order details and submit when ready.</p>
-              </div>
-              <button class="close-icon-btn flex items-center justify-center" type="button" (click)="closeForm()">✕</button>
-            </div>
+      <div class="modal-overlay" *ngIf="showCreateDialog" (click)="closeCreateDialog()">
+        <form class="change-modal" (click)="$event.stopPropagation()" (ngSubmit)="createChange()">
+          <div class="modal-header">
+            <h2>Create Change Order</h2>
+            <button class="modal-close" type="button" (click)="closeCreateDialog()" aria-label="Close">×</button>
           </div>
 
-          <form (ngSubmit)="submitChange()" class="create-change-form">
-            <div class="modal-body">
-              <div class="field-group">
-                <label class="field-label" for="coNumber">CO Number *</label>
-                <input
-                  id="coNumber"
-                  type="text"
-                  class="field-input"
-                  name="coNumber"
-                  [(ngModel)]="coNumber"
-                  placeholder="2500 or CO-2500"
-                  required
-                  (input)="normalizeCOInput()"
-                />
-                
-              </div>
+          <div class="modal-body">
+            <label class="form-group">
+              <span>Change Type</span>
+              <select class="form-control" [(ngModel)]="draft.type" name="type">
+                <option value="Engineering Change Order">Engineering Change Order</option>
+                <option value="Engineering Change Request">Engineering Change Request</option>
+                <option value="Deviation">Deviation</option>
+                <option value="Manufacturing Change Order">Manufacturing Change Order</option>
+              </select>
+            </label>
 
-              <div class="field-group">
-                <label class="field-label" for="changeType">Change Type *</label>
-                <select id="changeType" class="field-input" name="changeType" [(ngModel)]="changeType" required>
-                  <option value="ECO">ECO</option>
-                  <option value="MCO">MCO</option>
-                  <option value="Deviation">Deviation</option>
-                  <option value="Change Request">Change Request</option>
-                </select>
-              </div>
+            <label class="form-group">
+              <span>Change Number</span>
+              <input class="form-control" [(ngModel)]="draft.number" name="number" />
+            </label>
 
-              <div class="field-group">
-                <label class="field-label" for="priority">Priority *</label>
-                <select id="priority" class="field-input" name="priority" [(ngModel)]="priority" required>
-                  <option value="High">High</option>
-                  <option value="Medium">Medium</option>
-                  <option value="Low">Low</option>
-                </select>
-              </div>
+            <label class="form-group">
+              <span>Change Description</span>
+              <textarea class="form-control description-control" [(ngModel)]="draft.description" name="description" placeholder="Describe the change..."></textarea>
+            </label>
 
-              <div class="field-group">
-                <label class="field-label" for="description">Description</label>
-                <textarea
-                  id="description"
-                  class="field-textarea"
-                  name="description"
-                  [(ngModel)]="description"
-                  placeholder="Describe the change details..."
-                  (input)="updateDescriptionCount()"
-                ></textarea>
-                <div class="description-meta flex justify-between items-center">
-                  <span [class.error-text]="description.length > 1000">{{ description.length }} / 1000</span>
-                  <span class="field-help">Max 1000 characters.</span>
-                </div>
-                <div class="error-message" *ngIf="description.length > 1000">
-                  Description cannot exceed 1000 characters.
-                </div>
-              </div>
+            <label class="form-group">
+              <span>Reason for Change</span>
+              <select class="form-control" [(ngModel)]="draft.reason" name="reason">
+                <option value="New Product Introduction">New Product Introduction</option>
+                <option value="Quality Improvement">Quality Improvement</option>
+                <option value="Cost Reduction">Cost Reduction</option>
+                <option value="Regulatory Requirement">Regulatory Requirement</option>
+                <option value="Safety">Safety</option>
+              </select>
+            </label>
+          </div>
 
-            </div>
-
-            <div class="modal-footer border-t bg-surface">
-              <div class="flex justify-end items-center w-full gap-4">
-                <button class="btn btn-secondary" type="button" (click)="closeForm()">Cancel</button>
-                <button class="btn btn-primary" type="submit" [disabled]="!canSubmit()">Submit Change</button>
-              </div>
-            </div>
-          </form>
-        </div>
+          <div class="modal-footer">
+            <button class="modal-button cancel-button" type="button" (click)="closeCreateDialog()">Cancel</button>
+            <button class="modal-button create-button" type="submit">Create Change</button>
+          </div>
+        </form>
       </div>
     </div>
   `,
   styles: `
-    .changes-container {
-      animation: fadeIn var(--transition-fast);
-      max-width: 1200px;
-      margin: 0 auto;
-      width: 100%;
-      padding: 0;
+    :host {
+      display: block;
+      min-height: calc(100vh - 52px);
     }
-
-    .page-header {
+    * {
+      box-sizing: border-box;
+    }
+    button,
+    input {
+      font: inherit;
+    }
+    .changes-page {
+      --bg: #0d1117;
+      --bg2: #161b22;
+      --bg3: #21262d;
+      --bg4: #30363d;
+      --border: #30363d;
+      --text: #e6edf3;
+      --text2: #8b949e;
+      --text3: #6e7681;
+      --accent: #2f81f7;
+      --green: #3fb950;
+      --yellow: #d29922;
+      --red: #f85149;
+      --purple: #bc8cff;
+      min-height: calc(100vh - 52px);
+      padding: 34px 36px;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    .changes-page.light-theme {
+      --bg: #f5f7fa;
+      --bg2: #ffffff;
+      --bg3: #eef2f7;
+      --bg4: #dfe5ec;
+      --border: #d8dee7;
+      --text: #172033;
+      --text2: #59677c;
+      --text3: #7b8798;
+      --accent: #1f6feb;
+      --green: #1a7f37;
+      --yellow: #9a6700;
+      --red: #cf222e;
+      --purple: #8250df;
+    }
+    .page-header-row {
       display: flex;
-      flex-direction: column;
-      gap: 0.5rem;
-      margin-bottom: 1rem;
-       margin-top: 1rem;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 24px;
     }
-
-    .page-title {
-      font-size: 1.8rem;
-      font-weight: 700;
-      color: var(--text-primary);
+    .page-header h1 {
       margin: 0;
-      letter-spacing: -0.03em;
+      color: var(--text);
+      font-size: 26px;
+      font-weight: 800;
+      letter-spacing: -.03em;
     }
-
-    .text-muted {
-      color: var(--text-muted);
-      font-size: 0.95rem;
-      margin: 0;
+    .page-header p {
+      margin: 4px 0 0;
+      color: var(--text2);
+      font-size: 15px;
     }
-
+    .page-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: -2px;
+    }
     .btn {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      padding: 0.85rem 1.4rem;
-      border-radius: 40px;
-      border: none;
+      gap: 6px;
+      border: 1px solid transparent;
+      border-radius: 7px;
       cursor: pointer;
-      font-weight: 600;
-      transition: all var(--transition-fast);
+      font-weight: 700;
+      transition: background .15s, border-color .15s, color .15s;
     }
-
+    .btn-sm {
+      min-height: 30px;
+      padding: 5px 13px;
+      font-size: 14px;
+    }
     .btn-primary {
-      background: var(--accent-primary);
+      border-color: var(--accent);
+      background: var(--accent);
       color: #fff;
     }
-
-    .btn-primary:hover {
-      transform: translateY(-2px);
-      background: var(--accent-primary-dark, #76ba1b);
-    }
-
     .btn-secondary {
-      background: var(--bg-app);
-      color: var(--text-primary);
-      border: 1px solid var(--border-color);
+      border-color: var(--border);
+      background: var(--bg3);
+      color: var(--text);
     }
-
-    .btn-secondary:hover {
-      transform: translateY(-2px);
-      background: var(--border-color);
+    .btn-ghost {
+      border-color: transparent;
+      background: transparent;
+      color: var(--text2);
     }
-
-    .success-banner {
-      border: 1px solid var(--accent-primary);
-      background: var(--accent-primary-subtle);
-      color: var(--text-primary);
-      padding: 1rem;
-      border-radius: var(--border-radius-sm);
+    .btn-ghost:hover {
+      background: var(--bg3);
+      color: var(--text);
     }
-
+    .search-bar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 20px;
+      padding: 10px 14px;
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      background: var(--bg3);
+    }
+    .search-icon {
+      color: var(--accent);
+      font-size: 21px;
+      line-height: 1;
+    }
+    .search-bar input {
+      flex: 1;
+      min-width: 0;
+      border: 0;
+      outline: none;
+      background: transparent;
+      color: var(--text);
+      font-size: 16px;
+    }
+    .search-bar input::placeholder {
+      color: var(--text3);
+    }
+    .table-wrap {
+      overflow: hidden;
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      background: var(--bg);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 15px;
+    }
+    thead {
+      background: var(--bg3);
+    }
+    th {
+      padding: 12px 16px;
+      color: var(--text2);
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: .05em;
+      text-align: left;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+    td {
+      padding: 15px 16px;
+      border-top: 1px solid var(--border);
+      color: var(--text);
+      vertical-align: middle;
+    }
+    tbody tr {
+      cursor: pointer;
+      transition: background .12s;
+    }
+    tbody tr:hover td {
+      background: rgba(255,255,255,.025);
+    }
+    .change-link {
+      color: var(--accent);
+      font-weight: 800;
+      white-space: nowrap;
+    }
+    .muted-cell {
+      color: var(--text2);
+      white-space: nowrap;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      width: max-content;
+      padding: 3px 10px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: var(--bg3);
+      font-size: 13px;
+      font-weight: 800;
+      line-height: 1.2;
+      white-space: nowrap;
+    }
+    .badge-blue {
+      border-color: rgba(47,129,247,.35);
+      background: rgba(47,129,247,.15);
+      color: var(--accent);
+    }
+    .badge-red {
+      border-color: rgba(248,81,73,.35);
+      background: rgba(248,81,73,.15);
+      color: var(--red);
+    }
+    .badge-yellow {
+      border-color: rgba(210,153,34,.35);
+      background: rgba(210,153,34,.15);
+      color: var(--yellow);
+    }
+    .badge-gray {
+      border-color: var(--border);
+      background: var(--bg3);
+      color: var(--text2);
+    }
+    .badge-green {
+      border-color: rgba(63,185,80,.35);
+      background: rgba(63,185,80,.15);
+      color: var(--green);
+    }
+    .open-btn {
+      border: 0;
+      background: transparent;
+      color: var(--text2);
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .open-btn:hover {
+      color: var(--accent);
+    }
     .modal-overlay {
       position: fixed;
       inset: 0;
-      background: rgba(15, 23, 42, 0.45);
-      z-index: 1000;
+      z-index: 300;
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 1.5rem;
-      backdrop-filter: blur(2px);
-      animation: fadeIn var(--transition-fast);
+      padding: 18px;
+      background: rgba(0,0,0,.62);
     }
-
-    .modal-card {
-      width: min(720px, 100%);
-      max-height: calc(100vh - 3rem);
-      background: var(--bg-surface);
-      border: 1px solid var(--border-color);
-      border-radius: var(--border-radius-md);
-      box-shadow: var(--shadow-float);
+    .change-modal {
+      width: min(600px, 100%);
       overflow: hidden;
-      display: flex;
-      flex-direction: column;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: var(--bg2);
+      box-shadow: 0 24px 80px rgba(0,0,0,.45);
     }
-
     .modal-header {
-      padding: 1.5rem 1.75rem;
-      background: var(--bg-surface);
-      border-bottom: 1px solid var(--border-color);
-      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 26px;
+      border-bottom: 1px solid var(--border);
     }
-
-    .title {
-      font-size: 1.35rem;
+    .modal-header h2 {
       margin: 0;
-      color: var(--text-primary);
-      font-weight: 700;
+      color: var(--text);
+      font-size: 18px;
+      font-weight: 800;
     }
-
-    .close-icon-btn {
+    .modal-close {
+      display: grid;
       width: 36px;
       height: 36px;
+      place-items: center;
+      border: 0;
       border-radius: 50%;
-      background: var(--bg-app);
-      border: 1px solid var(--border-color);
-      font-size: 1.1rem;
-      color: var(--text-muted);
-      transition: all var(--transition-fast);
-      flex-shrink: 0;
+      background: var(--bg3);
+      color: var(--text2);
+      cursor: pointer;
+      font-size: 22px;
+      font-weight: 800;
+      line-height: 1;
     }
-
-    .close-icon-btn:hover {
-      background: var(--border-color);
-      color: var(--text-primary);
+    .modal-close:hover {
+      color: var(--text);
     }
-
-    .create-change-form {
-      min-height: 0;
-      display: flex;
-      flex: 1;
-      flex-direction: column;
-    }
-
     .modal-body {
-      padding: 1.5rem 1.75rem;
-      background: var(--bg-app);
-      overflow-y: auto;
       display: flex;
       flex-direction: column;
-      gap: 1.25rem;
+      gap: 18px;
+      padding: 26px;
     }
-
-    .modal-footer {
-      padding: 1rem 1.75rem;
-      display: flex;
-      background: var(--bg-surface);
-      border-top: 1px solid var(--border-color);
-      flex-shrink: 0;
-    }
-
-    .create-form {
-      display: none;
-    }
-
-    .form-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      gap: 1rem;
-      margin-bottom: 1.75rem;
-    }
-
-    .form-title {
-      margin: 0;
-      font-size: 1.4rem;
-      color: var(--text-primary);
-    }
-
-    .form-body {
+    .form-group {
       display: flex;
       flex-direction: column;
-      gap: 1.5rem;
+      gap: 8px;
     }
-
-    .field-group {
-      display: flex;
-      flex-direction: column;
-      gap: 0.45rem;
+    .form-group span {
+      color: var(--text2);
+      font-size: 14px;
+      font-weight: 800;
     }
-
-    .field-label {
-      font-weight: 600;
-      color: var(--text-secondary);
-      font-size: 0.9rem;
-    }
-
-    .field-input,
-    .field-textarea,
-    select {
+    .form-control {
       width: 100%;
-      padding: 0.8rem 0.9rem;
-      border-radius: var(--border-radius-sm);
-      border: 1px solid var(--border-color);
-      background: var(--bg-surface);
-      color: var(--text-primary);
-      font-size: 0.95rem;
+      min-height: 42px;
+      border: 1px solid var(--border);
+      border-radius: 7px;
       outline: none;
-      transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+      background: var(--bg3);
+      color: var(--text);
+      font-size: 16px;
+      padding: 10px 14px;
     }
-
-    .field-input:focus,
-    .field-textarea:focus,
-    select:focus {
-      border-color: var(--accent-primary);
-      box-shadow: 0 0 0 3px rgba(134, 188, 37, 0.12);
+    .form-control:focus {
+      border-color: rgba(47,129,247,.75);
+      box-shadow: 0 0 0 3px rgba(47,129,247,.12);
     }
-
-    .field-textarea {
-      min-height: 130px;
+    .description-control {
+      min-height: 82px;
       resize: vertical;
     }
-
-    .field-help {
-      color: var(--text-muted);
-      font-size: 0.85rem;
-      line-height: 1.45;
-    }
-
-    .description-meta {
+    .modal-footer {
       display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 1rem;
-      flex-wrap: wrap;
-    }
-
-    .form-actions {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 1rem;
-    }
-
-    .success-message {
-      margin-top: 1rem;
-      padding: 1rem;
-      background: var(--accent-primary-subtle);
-      border-radius: var(--border-radius-sm);
-      border: 1px solid var(--accent-primary);
-      color: var(--text-primary);
-    }
-
-    .error-message {
-      color: var(--color-danger);
-      font-size: 0.9rem;
-    }
-
-    .error-text {
-      color: var(--color-danger);
-    }
-
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-      gap: 2rem;
-    }
-
-    .option-card {
-      padding: 2.5rem;
-      border-radius: var(--border-radius-md);
-      border: 1px solid var(--border-color);
-      background: var(--bg-surface);
-      transition: all var(--transition-fast);
-      box-shadow: var(--shadow-sm);
-    }
-
-    .option-card:hover {
-      transform: translateY(-8px);
-      box-shadow: var(--shadow-float);
-      border-color: var(--accent-primary);
-    }
-
-    .icon-container {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      width: 100%;
-      padding: 1.5rem 0;
-      background: var(--bg-app);
-      border-radius: var(--border-radius-md);
-    }
-
-    .option-icon {
-      font-size: 3rem;
-      display: block;
-    }
-
-    .content {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      gap: 0.75rem;
-    }
-
-    .option-title {
-      font-size: 1.4rem;
-      font-weight: 600;
-      color: var(--text-primary);
-      margin: 0;
-      letter-spacing: -0.02em;
-    }
-
-    .option-description {
-      font-size: 0.95rem;
-      color: var(--text-secondary);
-      line-height: 1.5;
-      margin: 0;
-    }
-
-    .action-footer {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      padding-top: 1rem;
-      border-top: 1px solid var(--border-color-light);
-    }
-
-    .action-text {
-      font-size: 0.95rem;
-      font-weight: 600;
-      color: var(--accent-primary);
-      transition: transform var(--transition-fast);
-    }
-
-    .option-card:hover .action-text {
-      transform: translateX(4px);
-    }
-
-    .manage-panel {
-      background: var(--bg-surface);
-      border: 1px solid var(--border-color);
-      border-radius: var(--border-radius-md);
-      box-shadow: var(--shadow-sm);
-      overflow: hidden;
-    }
-
-    .manage-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      gap: 1rem;
-      padding: 1.5rem;
-      border-bottom: 1px solid var(--border-color);
-    }
-
-    .section-title {
-      margin: 0 0 0.35rem;
-      font-size: 1.35rem;
-      color: var(--text-primary);
-      font-weight: 700;
-    }
-
-    .manage-actions {
-      display: flex;
-      gap: 0.75rem;
-      flex-wrap: wrap;
       justify-content: flex-end;
+      gap: 10px;
+      padding: 18px 26px;
+      border-top: 1px solid var(--border);
     }
-
-    .table-shell {
-      width: 100%;
-      overflow-x: auto;
-    }
-
-    table {
-      width: 100%;
-      min-width: 960px;
-      border-collapse: collapse;
-    }
-
-    th,
-    td {
-      padding: 0.9rem 1rem;
-      text-align: left;
-      border-bottom: 1px solid var(--border-color-light);
-      color: var(--text-secondary);
-      font-size: 0.92rem;
-      vertical-align: middle;
-    }
-
-    th {
-      background: var(--bg-app);
-      color: var(--text-primary);
-      font-weight: 700;
-      white-space: nowrap;
-    }
-
-    tbody tr:hover {
-      background: var(--accent-primary-subtle);
-    }
-
-    .co-number {
-      color: var(--text-primary);
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-      white-space: nowrap;
-    }
-
-    .priority-pill,
-    .status-pill {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      min-width: 68px;
-      padding: 0.25rem 0.65rem;
-      border-radius: 999px;
-      border: 1px solid var(--border-color);
-      font-size: 0.8rem;
-      font-weight: 700;
-      white-space: nowrap;
-    }
-
-    .priority-pill.high {
-      color: #b91c1c;
-      background: #fee2e2;
-      border-color: #fecaca;
-    }
-
-    .priority-pill.medium {
-      color: #92400e;
-      background: #fef3c7;
-      border-color: #fde68a;
-    }
-
-    .priority-pill.low {
-      color: #047857;
-      background: #d1fae5;
-      border-color: #a7f3d0;
-    }
-
-    .status-pill {
-      color: var(--accent-primary-hover);
-      background: var(--accent-primary-subtle);
-      border-color: var(--accent-primary);
-    }
-
-    .description-cell {
-      max-width: 280px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
-    .link-button {
-      border: 0;
-      background: transparent;
-      color: var(--accent-primary-hover);
-      font-weight: 700;
+    .modal-button {
+      min-width: 90px;
+      min-height: 38px;
+      border: 1px solid var(--border);
+      border-radius: 7px;
       cursor: pointer;
-      padding: 0.25rem 0;
+      font-weight: 800;
     }
-
-    .link-button:hover {
-      text-decoration: underline;
+    .cancel-button {
+      background: var(--bg3);
+      color: var(--text);
     }
-
-    .empty-state {
-      display: grid;
-      justify-items: center;
-      gap: 0.75rem;
-      padding: 3rem 1.5rem;
-      text-align: center;
-      background: var(--bg-app);
+    .create-button {
+      border-color: var(--accent);
+      background: var(--accent);
+      color: #fff;
     }
-
-    .empty-state h3 {
-      margin: 0;
-      color: var(--text-primary);
-      font-size: 1.15rem;
-    }
-
-    .flex-col {
-      display: flex;
-      flex-direction: column;
-    }
-
-    .gap-2 { gap: 0.5rem; }
-    .gap-4 { gap: 1rem; }
-    .gap-6 { gap: 1.5rem; }
-    .gap-8 { gap: 2rem; }
-
-    @media (max-width: 640px) {
-      .modal-overlay {
-        align-items: stretch;
-        padding: 0.75rem;
+    @media (max-width: 1100px) {
+      .changes-page {
+        padding: 24px 20px;
       }
-
-      .modal-card {
-        max-height: calc(100vh - 1.5rem);
+      .table-wrap {
+        overflow-x: auto;
       }
-
-      .modal-header,
-      .modal-body,
-      .modal-footer {
-        padding-left: 1rem;
-        padding-right: 1rem;
+      table {
+        min-width: 1120px;
       }
-
-      .modal-footer .flex {
-        flex-direction: column-reverse;
-        align-items: stretch;
-      }
-
-      .modal-footer .btn {
-        width: 100%;
-      }
-
-      .manage-header {
+      .page-header-row {
         flex-direction: column;
       }
-
-      .manage-actions {
-        width: 100%;
-      }
-
-      .manage-actions .btn {
-        flex: 1;
-      }
     }
-
-    @keyframes fadeIn {
-      from {
-        opacity: 0;
-        transform: translateY(10px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-  `
+  `,
 })
 export class Changes {
-  router = inject(Router);
-  private route = inject(ActivatedRoute);
-  private changeStorageKey = 'deloitte_plm_change_requests_v1';
-  showCreateForm = false;
-  isManageView = false;
-  releasedOnly = false;
-  coNumber = '';
-  changeType = 'ECO';
-  priority = 'High';
-  description = '';
-  submittedChange: { coNumber: string; changeType: string; priority: string; description: string } | null = null;
-  changeRequests: ChangeRequest[] = [];
+  readonly themeService = inject(ThemeService);
+  private readonly router = inject(Router);
+  showCreateDialog = false;
+  draft = this.createEmptyDraft();
 
-  constructor() {
-    this.changeRequests = this.loadChangeRequests();
-    this.isManageView = this.router.url.startsWith('/changes/manage');
-    this.showCreateForm = this.router.url.startsWith('/changes/create');
-    this.releasedOnly = this.route.snapshot.queryParamMap.get('status')?.toLowerCase() === 'released';
+  changes: ChangeRow[] = [
+    {
+      number: 'ECO-001',
+      type: 'ECO',
+      description: 'NPI Prototype Release of Product-X',
+      reason: 'New Product Introduction',
+      workflowState: 'Review',
+      engineer: 'Test User',
+      created: '05 Jun 2026',
+    },
+    {
+      number: 'ECO-002',
+      type: 'ECO',
+      description: 'Prototype FG-001 Production Release',
+      reason: 'New Product Introduction',
+      workflowState: 'Draft',
+      engineer: 'Test User',
+      created: '07 Jun 2026',
+    },
+    {
+      number: 'ECO-001A',
+      type: 'ECO',
+      description: 'Release of Component A',
+      reason: 'NPI Component Release',
+      workflowState: 'Completed',
+      engineer: 'Analyst A',
+      created: '03 Jun 2026',
+    },
+    {
+      number: 'DEV-004',
+      type: 'Deviation',
+      description: 'Batch #2024B temperature excursion during storage',
+      reason: 'Manufacturing Deviation',
+      workflowState: 'Approve',
+      engineer: 'QA Team',
+      created: '08 Jun 2026',
+    },
+  ];
+
+  openCreateDialog() {
+    this.showCreateDialog = true;
   }
 
-  get visibleChangeRequests(): ChangeRequest[] {
-    if (!this.releasedOnly) {
-      return this.changeRequests;
-    }
-
-    return this.changeRequests.filter(change =>
-      (change.workflowStatus || change.status).toLowerCase() === 'released'
-    );
+  closeCreateDialog() {
+    this.showCreateDialog = false;
   }
 
-  openCreateForm() {
-    this.showCreateForm = true;
-  }
-
-  closeForm() {
-    this.showCreateForm = false;
-  }
-
-  updateDescriptionCount() {
-    if (this.description.length > 1000) {
-      this.description = this.description.slice(0, 1000);
-    }
-  }
-
-  normalizeCOInput() {
-    const value = this.coNumber.trim();
-    if (!value) {
-      this.coNumber = '';
-      return;
-    }
-    if (/^CO-/i.test(value)) {
-      this.coNumber = value.toUpperCase();
-    } else {
-      this.coNumber = value;
-    }
-  }
-
-  normalizeCONumber(value: string) {
-    const trimmed = value.trim();
-    if (!trimmed) {
-      return '';
-    }
-    const raw = trimmed.replace(/^CO-/i, '').trim();
-    return raw ? `CO-${raw}` : '';
-  }
-
-  canSubmit() {
-    return (
-      !!this.coNumber.trim() &&
-      !!this.changeType &&
-      !!this.priority &&
-      this.description.length <= 1000
-    );
-  }
-
-  submitChange() {
-    if (!this.canSubmit()) {
-      return;
-    }
-
-    const formattedDate = new Date().toLocaleDateString('en-GB', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric'
-    });
-
-    const changeRequest = {
-      coNumber: this.normalizeCONumber(this.coNumber),
-      changeType: this.changeType,
-      priority: this.priority,
-      description: this.description.trim(),
-      createdDate: formattedDate,
-      status: 'Open',
-      requestedBy: 'Admin',
-      reviewer: 'Admin_Product',
-      workflowStatus: 'Open',
-      workflowMaxVisitedIndex: 0,
-      affectedItemSkus: [],
-      affectedItemUpdates: {}
+  createChange() {
+    const number = this.draft.number.trim() || 'ECO-003';
+    const newChange: ChangeRow = {
+      number,
+      type: this.draft.type === 'Deviation' ? 'Deviation' : 'ECO',
+      description: this.draft.description.trim() || 'New change order',
+      reason: this.draft.reason,
+      workflowState: 'Draft',
+      engineer: 'Test User',
+      created: new Intl.DateTimeFormat('en-GB', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+      }).format(new Date()).replace(/ /g, ' '),
     };
+    this.changes = [newChange, ...this.changes.filter(change => change.number !== number)];
+    this.draft = this.createEmptyDraft();
+    this.closeCreateDialog();
+  }
 
-    this.saveChangeRequest(changeRequest);
-
+  openChange(change: ChangeRow) {
     this.router.navigate(['/changes/review'], {
-      state: { changeRequest }
+      state: {
+        changeRequest: {
+          coNumber: change.number,
+          changeType: change.type,
+          priority: change.workflowState === 'Approve' ? 'High' : 'Medium',
+          description: change.description,
+          createdDate: change.created,
+          status: change.workflowState,
+          requestedBy: change.engineer,
+          workflowStatus: change.workflowState,
+        },
+      },
     });
-
-    this.coNumber = '';
-    this.changeType = 'ECO';
-    this.priority = 'High';
-    this.description = '';
-    this.showCreateForm = false;
   }
 
-  reviewChange(changeRequest: ChangeRequest) {
-    this.router.navigate(['/changes/review'], {
-      state: { changeRequest }
-    });
-  }
-
-  returnToChangesTab() {
-    this.router.navigate(['/dashboard'], { queryParams: { tab: 'changes' } });
-  }
-
-  private loadChangeRequests(): ChangeRequest[] {
-    const saved = localStorage.getItem(this.changeStorageKey);
-    if (!saved) {
-      return [];
+  workflowClass(state: ChangeRow['workflowState']): string {
+    if (state === 'Completed') {
+      return 'badge-green';
     }
-
-    try {
-      return JSON.parse(saved) as ChangeRequest[];
-    } catch {
-      return [];
+    if (state === 'Draft') {
+      return 'badge-gray';
     }
+    return 'badge-yellow';
   }
 
-  private saveChangeRequest(changeRequest: ChangeRequest) {
-    this.changeRequests = [
-      changeRequest,
-      ...this.changeRequests.filter(change => change.coNumber !== changeRequest.coNumber)
-    ];
-    localStorage.setItem(this.changeStorageKey, JSON.stringify(this.changeRequests));
+  private createEmptyDraft() {
+    return {
+      type: 'Engineering Change Order',
+      number: 'ECO-003',
+      description: '',
+      reason: 'New Product Introduction',
+    };
   }
 }
