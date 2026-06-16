@@ -199,7 +199,7 @@ type BomTreeNode = {
         <button
           class="back-button"
           type="button"
-          (click)="router.navigate(['/dashboard'], { queryParams: { tab: 'items' } })"
+          (click)="router.navigate(['/items'])"
         >
           ← Back to Items
         </button>
@@ -1416,13 +1416,16 @@ type BomTreeNode = {
       font-size: 11px;
       text-align: center;
     }
+    app-sidebar,
+    .reference-header,
+    .reference-sidebar,
     .topbar,
     .section-separator {
       display: none !important;
     }
     .detail-page > main {
-      min-height: calc(100vh - 53px);
-      margin-left: 280px;
+      min-height: calc(100vh - 52px);
+      margin-left: 0;
       padding: 31px 34px 45px;
       background: var(--detail-bg);
     }
@@ -1796,7 +1799,7 @@ type BomTreeNode = {
         display: none !important;
       }
       .detail-page > main {
-        margin-left: 280px;
+        margin-left: 0;
       }
       .reference-tabs {
         display: none;
@@ -1817,7 +1820,7 @@ type BomTreeNode = {
         display: none;
       }
       .detail-page > main {
-        margin-left: 58px;
+        margin-left: 0;
         padding: 22px 16px 28px;
       }
       .detail-tabs {

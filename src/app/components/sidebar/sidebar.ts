@@ -171,39 +171,39 @@ export class Sidebar {
     {
       title: 'NPI Process',
       links: [
-        { label: 'Dashboard', icon: '⌂', route: '/dashboard' },
-        { label: 'NPI Tracker', icon: '◇', route: '/dashboard' },
-        { label: 'Pending Actions', icon: '◷', route: '/dashboard', badge: '5' },
+        { label: 'Dashboard', icon: '🏠', route: '/dashboard' },
+        { label: 'NPI Tracker', icon: '🗺', route: '/dashboard' },
+        { label: 'Pending Actions', icon: '⏳', route: '/dashboard', badge: '5' },
       ],
     },
     {
       title: 'Items',
       links: [
-        { label: 'All Items', icon: '□', route: '/items' },
-        { label: 'Create Item', icon: '+', route: '/items' },
-        { label: 'Formulations', icon: '◈', route: '/dashboard' },
-        { label: 'Released Items', icon: '✓', route: '/dashboard' },
+        { label: 'All Items', icon: '📦', route: '/items' },
+        { label: 'Create Item', icon: '➕', route: '/items' },
+        { label: 'Formulations', icon: '🧪', route: '/dashboard' },
+        { label: 'Released Items', icon: '✅', route: '/dashboard' },
       ],
     },
     {
       title: 'Changes',
       links: [
-        { label: 'Change Orders', icon: '▤', route: '/dashboard', badge: '2', badgeTone: 'yellow' },
-        { label: 'ECO-001 Detail', icon: '⌬', route: '/dashboard' },
+        { label: 'Change Orders', icon: '📝', route: '/dashboard', badge: '2', badgeTone: 'yellow' },
+        { label: 'ECO-001 Detail', icon: '🔬', route: '/dashboard' },
       ],
     },
     {
       title: 'Quality',
       links: [
-        { label: 'CAPA', icon: '⚠', route: '/dashboard', badge: '3', badgeTone: 'yellow' },
-        { label: 'Deviations', icon: '⌖', route: '/dashboard' },
+        { label: 'CAPA', icon: '⚠️', route: '/dashboard', badge: '3', badgeTone: 'yellow' },
+        { label: 'Deviations', icon: '📌', route: '/dashboard' },
       ],
     },
     {
       title: 'Regulatory',
       links: [
-        { label: 'Submissions', icon: '⌂', route: '/dashboard' },
-        { label: 'Clinical Phases', icon: '⌬', route: '/dashboard' },
+        { label: 'Submissions', icon: '🏛', route: '/dashboard' },
+        { label: 'Clinical Phases', icon: '🔬', route: '/dashboard' },
       ],
     },
   ];
@@ -214,6 +214,12 @@ export class Sidebar {
 
   isActive(link: SidebarLink): boolean {
     const path = this.router.url.split('?')[0];
-    return path === (link.route || '/dashboard') && link.label === 'Dashboard';
+    if (path === '/dashboard') {
+      return link.label === 'Dashboard';
+    }
+    if (path.startsWith('/items')) {
+      return link.label === 'All Items';
+    }
+    return path === (link.route || '/dashboard');
   }
 }

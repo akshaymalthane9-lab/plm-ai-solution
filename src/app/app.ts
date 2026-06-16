@@ -36,7 +36,6 @@ export class AppComponent implements OnDestroy {
 
   private updateShellState(url: string) {
     const path = url.split('?')[0];
-    const isItemDetail = /^\/items\/[^/]+$/.test(path);
-    this.usesStandaloneShell.set(path === '/dashboard' || path === '/items' || isItemDetail);
+    this.usesStandaloneShell.set(path === '/dashboard');
   }
 }

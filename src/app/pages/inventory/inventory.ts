@@ -1,466 +1,369 @@
 import { CommonModule } from '@angular/common';
 import { Component, inject } from '@angular/core';
 import { Router } from '@angular/router';
-import { GlobalSearch } from '../../components/global-search/global-search';
-import { ItemFormModal } from '../../components/item-form-modal/item-form-modal';
-import { Sidebar } from '../../components/sidebar/sidebar';
-import { ThemeToggle } from '../../components/theme-toggle/theme-toggle';
-import { InventoryService } from '../../services/inventory.service';
+import { InventoryService, Product } from '../../services/inventory.service';
 import { ThemeService } from '../../services/theme.service';
-import { UserService } from '../../services/user.service';
+
+type PharmaItem = {
+  item: string;
+  description: string;
+  type: string;
+  typeTone: 'blue' | 'purple' | 'gray' | 'green';
+  lifecycle: string;
+  lifecycleTone: 'yellow' | 'green' | 'gray';
+  revision: string;
+  ecmStatus: string;
+  ecmTone: 'green' | 'yellow';
+  updated: string;
+};
 
 @Component({
   selector: 'app-items',
   standalone: true,
-  imports: [CommonModule, GlobalSearch, ItemFormModal, Sidebar, ThemeToggle],
+  imports: [CommonModule],
   template: `
-    <app-sidebar></app-sidebar>
-    <div class="items-page" [class.dark-theme]="themeService.theme() === 'dark'">
-      <header class="topbar">
-        <button class="brand" type="button" (click)="router.navigate(['/dashboard'])">NexaPLM</button>
-
-        <div class="topbar-center">
-          <div class="search-cluster">
-            <app-global-search></app-global-search>
-          </div>
-
-          <div class="top-actions" aria-label="Quick actions">
-            <app-theme-toggle></app-theme-toggle>
-            <button type="button" aria-label="Favorites" title="Favorites">
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M12 3.8l2.53 5.13 5.66.82-4.1 4 .97 5.65L12 16.74 6.94 19.4l.97-5.65-4.1-4 5.66-.82L12 3.8z"></path>
-              </svg>
-            </button>
-            <button class="notification-button" type="button" aria-label="Notifications" title="Notifications">
-              <span class="notification-dot" aria-hidden="true"></span>
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M15 18H9"></path>
-                <path d="M18 16V11a6 6 0 10-12 0v5l-2 2h16l-2-2z"></path>
-              </svg>
-            </button>
-            <button type="button" aria-label="Data import" title="Data import">
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M12 3v10"></path>
-                <path d="M8 9l4 4 4-4"></path>
-                <path d="M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"></path>
-              </svg>
-            </button>
-          </div>
+    <div class="items-page" [class.light-theme]="themeService.theme() === 'light'">
+      <div class="page-header-row">
+        <div class="page-header">
+          <h1>Items</h1>
+          <p>Drug substances, products, components, and packaging</p>
         </div>
-
-        <div class="user-menu">
-          <button class="user-trigger" type="button">
-            {{ userName }} <span aria-hidden="true">▾</span>
-          </button>
-          <nav class="user-dropdown" aria-label="User menu">
-            <a href="#" (click)="$event.preventDefault()">My Profile</a>
-            <a href="#" (click)="$event.preventDefault()">Password Change</a>
-            <a href="#" (click)="logout($event)">Logout</a>
-            <a href="#" (click)="$event.preventDefault()">Help</a>
-            <a href="#" (click)="$event.preventDefault()">About NexaPLM</a>
-          </nav>
+        <div class="page-actions">
+          <button class="btn btn-secondary btn-sm" type="button">Browse Released</button>
+          <button class="btn btn-primary btn-sm" type="button">+ Create Item</button>
         </div>
-      </header>
+      </div>
 
-      <div class="section-separator" aria-hidden="true"></div>
+      <div class="search-bar">
+        <span class="search-icon">⌕</span>
+        <input type="text" placeholder="Search items by number, description, or type..." />
+        <button class="btn btn-ghost btn-sm" type="button">Advanced Filter</button>
+      </div>
 
-      <main>
-        <div class="page-heading">
-          <div>
-            <h1>Items</h1>
-            <p>Browse and open product lifecycle records.</p>
-          </div>
-          <button class="return-button" type="button" (click)="returnToItemTab()">
-            Return to item
-          </button>
-        </div>
+      <div class="filter-row">
+        <span class="filter-chip active">All (24)</span>
+        <span class="filter-chip">Drug Substance (4)</span>
+        <span class="filter-chip">Drug Product (6)</span>
+        <span class="filter-chip">Raw Material (9)</span>
+        <span class="filter-chip">Packaging (5)</span>
+      </div>
 
-        <section class="items-card">
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Item Number</th>
-                  <th>Active Revision</th>
-                  <th>Item Type</th>
-                  <th>Part Type</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr
-                  *ngFor="let item of inventoryService.inventory()"
-                  tabindex="0"
-                  (click)="navigateToItem(item.sku)"
-                  (keydown.enter)="navigateToItem(item.sku)">
-                  <td><span class="item-number">{{ item.sku }}</span></td>
-                  <td>{{ item.revision }}</td>
-                  <td>{{ item.part || item.type }}</td>
-                  <td>{{ item.partType || '—' }}</td>
-                </tr>
-                <tr *ngIf="inventoryService.inventory().length === 0">
-                  <td colspan="4" class="empty-row">No items found.</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-          <p class="status-text">{{ inventoryService.inventory().length }} items</p>
-        </section>
-      </main>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Item #</th>
+              <th>Description</th>
+              <th>Type</th>
+              <th>Lifecycle</th>
+              <th>Revision</th>
+              <th>ECM Status</th>
+              <th>Updated</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let item of items" (click)="openItem(item.item)">
+              <td><span class="item-link">{{ item.item }}</span></td>
+              <td>{{ item.description }}</td>
+              <td><span class="badge" [ngClass]="'badge-' + item.typeTone">{{ item.type }}</span></td>
+              <td><span class="badge" [ngClass]="'badge-' + item.lifecycleTone">{{ item.lifecycle }}</span></td>
+              <td>{{ item.revision }}</td>
+              <td><span class="badge" [ngClass]="'badge-' + item.ecmTone">{{ item.ecmStatus }}</span></td>
+              <td class="muted-cell">{{ item.updated }}</td>
+              <td><button class="open-btn" type="button" (click)="openItem(item.item); $event.stopPropagation()">Open →</button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
-
-    <app-item-form-modal
-      *ngIf="showCreateModal"
-      [theme]="themeService.theme()"
-      (saved)="showCreateModal = false"
-      (close)="showCreateModal = false">
-    </app-item-form-modal>
   `,
   styles: `
     :host {
       display: block;
-      min-height: 100vh;
-      background: #eeeff4;
-      color: #223964;
+      min-height: calc(100vh - 52px);
     }
-
-    * { box-sizing: border-box; }
-
+    * {
+      box-sizing: border-box;
+    }
+    button,
+    input {
+      font: inherit;
+    }
     .items-page {
-      min-height: 100vh;
-      margin-left: 280px;
-      padding: 22px 28px 36px;
-      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+      --bg: #0d1117;
+      --bg2: #161b22;
+      --bg3: #21262d;
+      --bg4: #30363d;
+      --border: #30363d;
+      --text: #e6edf3;
+      --text2: #8b949e;
+      --text3: #6e7681;
+      --accent: #2f81f7;
+      --green: #3fb950;
+      --yellow: #d29922;
+      --red: #f85149;
+      --purple: #bc8cff;
+      --teal: #39d353;
+      min-height: calc(100vh - 52px);
+      padding: 34px 36px;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
-    .items-page.dark-theme {
-      background: #0d1117;
-      color: #e6edf3;
+    .items-page.light-theme {
+      --bg: #f5f7fa;
+      --bg2: #ffffff;
+      --bg3: #eef2f7;
+      --bg4: #dfe5ec;
+      --border: #d8dee7;
+      --text: #172033;
+      --text2: #59677c;
+      --text3: #7b8798;
+      --accent: #1f6feb;
+      --green: #1a7f37;
+      --yellow: #9a6700;
+      --red: #cf222e;
+      --purple: #8250df;
+      --teal: #087f8c;
     }
-    .items-page.dark-theme .brand,
-    .items-page.dark-theme h1 { color: #e6edf3; }
-    .items-page.dark-theme .page-heading p { color: #8b949e; }
-    .items-page.dark-theme .items-card,
-    .items-page.dark-theme .table-wrap {
-      border-color: #30363d;
-      background: #161b22;
-      box-shadow: none;
-    }
-    .items-page.dark-theme th {
-      border-color: #30363d;
-      background: #21262d;
-      color: #8b949e;
-    }
-    .items-page.dark-theme td {
-      border-color: #30363d;
-      color: #c9d1d9;
-    }
-    .items-page.dark-theme tbody tr:hover,
-    .items-page.dark-theme tbody tr:focus { background: rgba(47, 129, 247, .08); }
-    .items-page.dark-theme .user-trigger,
-    .items-page.dark-theme .user-dropdown {
-      border-color: #30363d;
-      background: #161b22;
-      color: #e6edf3;
-    }
-    .items-page.dark-theme .user-dropdown a { color: #c9d1d9; }
-    .items-page.dark-theme .user-dropdown a:hover { background: #21262d; }
-
-    .topbar {
+    .page-header-row {
       display: flex;
-      align-items: center;
+      align-items: flex-start;
       justify-content: space-between;
-      gap: 18px;
-      margin-bottom: 18px;
+      gap: 16px;
+      margin-bottom: 24px;
     }
-
-    .brand {
-      flex: 0 0 auto;
-      padding: 0;
-      border: 0;
-      background: transparent;
-      color: #223964;
-      font-size: 1.45rem;
-      font-weight: 900;
-      letter-spacing: .01em;
-      line-height: 1;
+    .page-header h1 {
+      margin: 0;
+      color: var(--text);
+      font-size: 26px;
+      font-weight: 800;
+      letter-spacing: -.03em;
     }
-
-    .topbar-center {
+    .page-header p {
+      margin: 4px 0 0;
+      color: var(--text2);
+      font-size: 15px;
+    }
+    .page-actions {
       display: flex;
-      flex: 1;
-      align-items: center;
-      gap: 18px;
-      min-width: 0;
-    }
-
-    .search-cluster {
-      display: flex;
-      flex: 0 0 520px;
-      width: 520px;
-      align-items: center;
       gap: 10px;
-      margin-left: 64px;
+      margin-top: -2px;
     }
-
-    .search-cluster input,
-    .search-cluster button,
-    .top-actions button {
-      height: 44px;
-      border: 1px solid #dbe0e8;
-      border-radius: 18px;
-      background: rgba(255, 255, 255, .84);
-      color: #223964;
-      box-shadow: 0 2px 8px rgba(31, 50, 88, .04), 0 12px 20px rgba(31, 50, 88, .03);
-    }
-
-    .search-cluster input {
-      width: 340px;
-      padding: 0 14px;
-      outline: none;
-      font-size: .88rem;
-    }
-
-    .search-cluster input::placeholder { color: #8191ae; }
-
-    .search-cluster button,
-    .top-actions button {
+    .btn {
       display: inline-flex;
-      width: 48px;
-      min-width: 48px;
       align-items: center;
       justify-content: center;
+      gap: 6px;
+      border: 1px solid transparent;
+      border-radius: 7px;
+      cursor: pointer;
+      font-weight: 700;
+      transition: background .15s, border-color .15s, color .15s;
     }
-
-    .top-actions {
+    .btn-sm {
+      min-height: 30px;
+      padding: 5px 13px;
+      font-size: 14px;
+    }
+    .btn-primary {
+      border-color: var(--accent);
+      background: var(--accent);
+      color: #fff;
+    }
+    .btn-secondary {
+      border-color: var(--border);
+      background: var(--bg3);
+      color: var(--text);
+    }
+    .btn-ghost {
+      border-color: transparent;
+      background: transparent;
+      color: var(--text2);
+    }
+    .btn-ghost:hover {
+      background: var(--bg3);
+      color: var(--text);
+    }
+    .search-bar {
       display: flex;
       align-items: center;
       gap: 10px;
-      margin-left: auto;
+      margin-bottom: 20px;
+      padding: 10px 14px;
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      background: var(--bg3);
     }
-
-    svg {
-      width: 18px;
-      height: 18px;
-      fill: none;
-      stroke: #28406f;
-      stroke-width: 2;
-      stroke-linecap: round;
-      stroke-linejoin: round;
+    .search-icon {
+      color: var(--accent);
+      font-size: 21px;
+      line-height: 1;
     }
-
-    .top-actions button:first-child svg { fill: rgba(40, 64, 111, .08); }
-    .notification-button { position: relative; }
-
-    .notification-dot {
-      position: absolute;
-      top: 8px;
-      right: 9px;
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: #ff6b6b;
-      box-shadow: 0 0 0 2px #fff;
-    }
-
-    .user-menu {
-      position: relative;
-      padding-bottom: 18px;
-      margin-bottom: -18px;
-    }
-
-    .user-trigger {
-      padding: 9px 15px;
-      border: 1px solid #d6dae3;
-      border-radius: 999px;
-      background: rgba(255, 255, 255, .82);
-      color: #223964;
-      font-size: .88rem;
-      font-weight: 700;
-      box-shadow: 0 2px 8px rgba(31, 50, 88, .04);
-    }
-
-    .user-dropdown {
-      position: absolute;
-      top: calc(100% + 2px);
-      right: 0;
-      z-index: 20;
-      display: none;
-      min-width: 200px;
-      padding: 10px;
-      border: 1px solid #dfe2ea;
-      border-radius: 18px;
-      background: #fff;
-      box-shadow: 0 12px 28px rgba(28, 45, 87, .12);
-    }
-
-    .user-menu:hover .user-dropdown,
-    .user-menu:focus-within .user-dropdown { display: block; }
-
-    .user-dropdown a {
-      display: block;
-      padding: 9px 12px;
-      border-radius: 12px;
-      color: #223964;
-      font-size: .92rem;
-      text-decoration: none;
-    }
-
-    .user-dropdown a:hover { background: #f3f5f8; }
-
-    .section-separator {
-      height: 1px;
-      margin: 22px 0 26px;
-      background: linear-gradient(90deg, transparent, rgba(133, 148, 176, .72), transparent);
-    }
-
-    .page-heading {
-      display: flex;
-      align-items: flex-end;
-      justify-content: space-between;
-      gap: 18px;
-      margin-bottom: 22px;
-    }
-
-    h1 {
-      margin: 0;
-      color: #223964;
-      font-size: 1.9rem;
-      font-weight: 800;
-      letter-spacing: .01em;
-    }
-
-    .page-heading p {
-      margin: 4px 0 0;
-      color: #8191ae;
-      font-size: .9rem;
-    }
-
-    .return-button {
-      padding: 11px 22px;
+    .search-bar input {
+      flex: 1;
+      min-width: 0;
       border: 0;
-      border-radius: 14px;
-      background: linear-gradient(135deg, #a7d84a, #86bc25);
-      color: #24420a;
-      font-size: .9rem;
-      font-weight: 800;
-      box-shadow: 0 6px 14px rgba(134, 188, 37, .28);
+      outline: none;
+      background: transparent;
+      color: var(--text);
+      font-size: 16px;
     }
-
-    .items-card {
-      padding: 28px 28px 22px;
-      border: 1px solid #e2e5ec;
-      border-radius: 26px;
-      background: rgba(250, 250, 251, .88);
-      box-shadow: 0 2px 8px rgba(31, 50, 88, .04), 0 12px 20px rgba(31, 50, 88, .03);
+    .search-bar input::placeholder {
+      color: var(--text3);
     }
-
+    .filter-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 18px;
+    }
+    .filter-chip {
+      display: inline-flex;
+      align-items: center;
+      padding: 3px 10px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: var(--bg3);
+      color: var(--text2);
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 650;
+      line-height: 1.2;
+    }
+    .filter-chip.active {
+      border-color: rgba(47,129,247,.4);
+      background: rgba(47,129,247,.16);
+      color: var(--accent);
+    }
     .table-wrap {
-      overflow-x: auto;
-      border: 1px solid #e2e5ec;
-      border-radius: 18px;
-      background: #fafafc;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      background: var(--bg);
     }
-
     table {
       width: 100%;
       border-collapse: collapse;
-      text-align: left;
+      font-size: 15px;
     }
-
+    thead {
+      background: var(--bg3);
+    }
     th {
-      padding: 17px 22px;
-      border-bottom: 1px solid #dfe4ed;
-      background: #f4f6fa;
-      color: #8191ae;
-      font-size: .75rem;
+      padding: 12px 16px;
+      color: var(--text2);
+      font-size: 13px;
       font-weight: 800;
       letter-spacing: .05em;
+      text-align: left;
       text-transform: uppercase;
     }
-
     td {
-      padding: 17px 22px;
-      border-bottom: 1px solid #e6e9ef;
-      color: #50627c;
-      font-size: .88rem;
+      padding: 15px 16px;
+      border-top: 1px solid var(--border);
+      color: var(--text);
+      vertical-align: middle;
     }
-
     tbody tr {
       cursor: pointer;
-      transition: background .2s ease;
+      transition: background .12s;
     }
-
-    tbody tr:hover,
-    tbody tr:focus {
-      outline: none;
-      background: #f3f8e9;
+    tbody tr:hover td {
+      background: rgba(255,255,255,.025);
     }
-
-    tbody tr:last-child td { border-bottom: 0; }
-
-    .item-number {
-      display: inline-flex;
-      padding: 6px 11px;
-      border: 1px solid #dcebc3;
-      border-radius: 999px;
-      background: #f3f8e9;
-      color: #5f8919;
+    .item-link {
+      color: var(--accent);
       font-weight: 800;
     }
-
-    .empty-row {
-      padding: 48px 20px;
-      color: #98a4ba;
-      text-align: center;
+    .muted-cell {
+      color: var(--text2);
+      white-space: nowrap;
     }
-
-    .status-text {
-      margin: 18px 0 0;
-      color: #98a4ba;
-      font-size: .85rem;
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      width: max-content;
+      padding: 3px 10px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: var(--bg3);
+      font-size: 13px;
+      font-weight: 800;
+      line-height: 1.2;
+      white-space: nowrap;
     }
-
-    @media (max-width: 1000px) {
-      .topbar { flex-wrap: wrap; }
-      .topbar-center { order: 3; width: 100%; }
-      .search-cluster { margin-left: 0; }
-      .search-cluster input { width: 100%; }
+    .badge-blue {
+      border-color: rgba(47,129,247,.35);
+      background: rgba(47,129,247,.15);
+      color: var(--accent);
     }
-
-    @media (max-width: 700px) {
-      .items-page { margin-left: 58px; }
-      .items-page { padding: 18px 16px 28px; }
-      .topbar-center { align-items: stretch; flex-direction: column; }
-      .search-cluster { flex: 1 1 auto; width: 100%; }
-      .top-actions { margin-left: 0; }
-      .page-heading { align-items: stretch; flex-direction: column; }
-      .return-button { width: 100%; }
-      .items-card { padding: 18px; }
+    .badge-purple {
+      border-color: rgba(188,140,255,.35);
+      background: rgba(188,140,255,.15);
+      color: var(--purple);
     }
-  `
+    .badge-gray {
+      border-color: var(--border);
+      background: var(--bg3);
+      color: var(--text2);
+    }
+    .badge-green {
+      border-color: rgba(63,185,80,.35);
+      background: rgba(63,185,80,.15);
+      color: var(--green);
+    }
+    .badge-yellow {
+      border-color: rgba(210,153,34,.35);
+      background: rgba(210,153,34,.15);
+      color: var(--yellow);
+    }
+    .open-btn {
+      border: 0;
+      background: transparent;
+      color: var(--text2);
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .open-btn:hover {
+      color: var(--accent);
+    }
+    @media (max-width: 980px) {
+      .items-page {
+        padding: 24px 20px;
+      }
+      .table-wrap {
+        overflow-x: auto;
+      }
+      table {
+        min-width: 980px;
+      }
+      .page-header-row {
+        flex-direction: column;
+      }
+    }
+  `,
 })
 export class Items {
   readonly inventoryService = inject(InventoryService);
   readonly themeService = inject(ThemeService);
-  readonly userService = inject(UserService);
   readonly router = inject(Router);
 
-  showCreateModal = false;
+  readonly items: PharmaItem[] = [
+    { item: 'FG-001', description: 'Product-X (Finished Drug Product)', type: 'Finished Good', typeTone: 'blue', lifecycle: 'Prototype', lifecycleTone: 'yellow', revision: 'B', ecmStatus: 'Defined', ecmTone: 'green', updated: '05 Jun 2026' },
+    { item: 'DS-001', description: 'Active Pharmaceutical Ingredient A', type: 'Drug Substance', typeTone: 'purple', lifecycle: 'Production', lifecycleTone: 'green', revision: 'C', ecmStatus: 'Completed', ecmTone: 'green', updated: '01 Jun 2026' },
+    { item: 'DS-002', description: 'Excipient — Microcrystalline Cellulose', type: 'Drug Substance', typeTone: 'purple', lifecycle: 'Preliminary', lifecycleTone: 'gray', revision: 'A', ecmStatus: 'Pending', ecmTone: 'yellow', updated: '02 Jun 2026' },
+    { item: 'COMP-001', description: 'Component A — Tablet Core', type: 'Semi-Finished', typeTone: 'gray', lifecycle: 'Production', lifecycleTone: 'green', revision: 'B', ecmStatus: 'Completed', ecmTone: 'green', updated: '05 Jun 2026' },
+    { item: 'COMP-002', description: 'Component B — Film Coating', type: 'Semi-Finished', typeTone: 'gray', lifecycle: 'Production', lifecycleTone: 'green', revision: 'B', ecmStatus: 'Completed', ecmTone: 'green', updated: '05 Jun 2026' },
+    { item: 'COMP-003', description: 'Component C — Modified Release Coat', type: 'Semi-Finished', typeTone: 'gray', lifecycle: 'Prototype', lifecycleTone: 'yellow', revision: 'A', ecmStatus: 'Pending', ecmTone: 'yellow', updated: '07 Jun 2026' },
+    { item: 'PKG-001', description: 'Blister Pack — PVDC Aluminium', type: 'Packaging', typeTone: 'green', lifecycle: 'Production', lifecycleTone: 'green', revision: 'A', ecmStatus: 'Completed', ecmTone: 'green', updated: '04 Jun 2026' },
+  ];
 
-  get userName(): string {
-    return this.userService.currentUser() || 'User1';
-  }
-
-  navigateToItem(sku: string) {
-    this.router.navigate(['/items', sku]);
-  }
-
-  returnToItemTab() {
-    this.router.navigate(['/dashboard'], { queryParams: { tab: 'items' } });
-  }
-
-  logout(event: Event) {
-    event.preventDefault();
-    this.userService.logout();
-    this.router.navigate(['/login']);
+  openItem(itemNumber: string) {
+    const existingItem = this.inventoryService.inventory().find(product => product.sku === itemNumber);
+    this.router.navigate(['/items', existingItem?.sku || itemNumber]);
   }
 }
