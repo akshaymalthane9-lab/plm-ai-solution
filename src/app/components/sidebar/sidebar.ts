@@ -180,7 +180,7 @@ export class Sidebar {
       title: 'Items',
       links: [
         { label: 'All Items', icon: '📦', route: '/items' },
-        { label: 'Create Item', icon: '➕', route: '/items' },
+        { label: 'Create Item', icon: '➕', route: '/items/create' },
         { label: 'Formulations', icon: '🧪', route: '/dashboard' },
         { label: 'Released Items', icon: '✅', route: '/dashboard' },
       ],
@@ -218,7 +218,7 @@ export class Sidebar {
       return link.label === 'Dashboard';
     }
     if (path.startsWith('/items')) {
-      return link.label === 'All Items';
+      return path === '/items/create' ? link.label === 'Create Item' : link.label === 'All Items';
     }
     if (path.startsWith('/changes')) {
       return link.label === 'Change Orders';

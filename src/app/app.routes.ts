@@ -20,6 +20,7 @@ export const routes: Routes = [
   { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
   { path: 'dashboard', component: Dashboard, canActivate: [authGuard] },
   { path: 'items', component: Items, canActivate: [authGuard] },
+  { path: 'items/create', component: Items, canActivate: [authGuard] },
   { path: 'items/:sku/edit', component: ItemEdit, canActivate: [authGuard] },
   { path: 'items/:sku', component: ItemDetails, canActivate: [authGuard] },
   { path: 'changes', component: Changes, canActivate: [authGuard] },

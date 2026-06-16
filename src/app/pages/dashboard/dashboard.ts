@@ -68,7 +68,7 @@ import { UserService } from '../../services/user.service';
               </div>
               <div class="page-actions">
                 <button class="btn btn-secondary btn-sm" type="button">Import Data</button>
-                <button class="btn btn-primary btn-sm" type="button" (click)="goToItems()">+ New Item</button>
+                <button class="btn btn-primary btn-sm" type="button" (click)="goToCreateItem()">+ New Item</button>
               </div>
             </div>
 
@@ -677,6 +677,10 @@ export class Dashboard {
 
   goToItems() {
     this.router.navigate(['/items']);
+  }
+
+  goToCreateItem() {
+    this.router.navigate(['/items/create']);
   }
 
   toggleUserMenu() {
