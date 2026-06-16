@@ -1175,8 +1175,9 @@ type ItemDetailDraft = {
     }
     .bom-row {
       display: grid;
-      grid-template-columns: minmax(150px, 1fr) minmax(200px, 1.3fr) 100px 120px 70px 190px;
-      min-width: 880px;
+      grid-template-columns: 196px 387px 187px 185px 177px minmax(190px, 1fr);
+      width: 100%;
+      min-width: 990px;
       align-items: center;
       border-bottom: 1px solid #e6e9ef;
       color: #50627c;
@@ -1184,7 +1185,7 @@ type ItemDetailDraft = {
     }
     .bom-row > span,
     .item-link {
-      padding: 14px 16px;
+      padding: 14px 18px;
     }
     .bom-header {
       background: #f4f6fa;
@@ -1194,13 +1195,20 @@ type ItemDetailDraft = {
       letter-spacing: 0.04em;
       text-transform: uppercase;
     }
+    .bom-header > span {
+      white-space: nowrap;
+    }
+    .bom-row .row-actions {
+      flex-wrap: nowrap;
+      align-items: center;
+    }
     .item-link {
       border: 0;
       background: transparent;
       color: #5f8919;
       font-weight: 800;
       text-align: left;
-      padding-left: calc(16px + (var(--level) - 1) * 20px);
+      padding-left: calc(18px + (var(--level) - 1) * 16px);
     }
     .document-list {
       display: grid;
