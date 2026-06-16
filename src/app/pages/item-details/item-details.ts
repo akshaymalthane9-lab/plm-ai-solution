@@ -381,7 +381,7 @@ type BomTreeNode = {
                 </div>
                 <div>
                   <span>BOM Status</span
-                  ><strong>{{ item.bom.length ? 'Available' : 'No BOM' }}</strong>
+                  ><strong>{{ item.bom.length ? 'Defined' : 'No BOM' }}</strong>
                 </div>
                 <div>
                   <span>CO Status</span
@@ -394,11 +394,11 @@ type BomTreeNode = {
                 <ul>
                   <li
                     *ngFor="let stage of lifecycleStages"
-                    [class.active]="stage === item.lifecycle"
+                    [class.active]="stage === lifecycleLabel"
                   >
                     <span></span>
                     {{ stage }}
-                    <small *ngIf="stage === item.lifecycle">Current</small>
+                    <small *ngIf="stage === lifecycleLabel">Current</small>
                   </li>
                 </ul>
               </article>
@@ -485,7 +485,7 @@ type BomTreeNode = {
                 <span>{{ node.level }}</span>
                 <span class="row-actions" *ngIf="!userService.isReadOnly()">
                   <button class="soft-button" type="button" (click)="openBomAdd(node.product.sku)">
-                    Add child
+                    Add
                   </button>
                   <button class="danger-button" type="button" (click)="removeBomItem(node)">
                     Remove
@@ -1913,9 +1913,7 @@ export class ItemDetails implements OnInit {
   }
 
   get lifecycleLabel(): string {
-    return this.item?.lifecycle === 'Design'
-      ? 'Preliminary'
-      : this.item?.lifecycle || 'Preliminary';
+    return 'Preliminary';
   }
 
   displayRevision(revision: string): string {
